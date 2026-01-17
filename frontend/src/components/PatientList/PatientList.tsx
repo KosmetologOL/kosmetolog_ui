@@ -27,12 +27,12 @@ const PatientList: React.FC = () => {
   }, [fetchPatients]);
 
   const handleAddPatient = async (patient: IPatient) => {
-    await patientsApi.createPatient(patient);
+    const createdPatient = await patientsApi.createPatient(patient);
+
     setShowModal(false);
     fetchPatients();
-    navigate(
-      "/create-report/" + (await patientsApi.createPatient(patient))._id
-    );
+
+    navigate("/create-report/" + createdPatient._id);
   };
 
   return (

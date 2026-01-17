@@ -23,7 +23,7 @@ export const loginUser = async (req: Request, res: Response) => {
     const { accessToken, refreshToken, user } = await AuthService.login(
       email,
       password,
-      rememberMe
+      rememberMe,
     );
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,

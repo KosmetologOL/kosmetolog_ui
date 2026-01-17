@@ -31,7 +31,7 @@ export const register = async (email: string, password: string) => {
 export const login = async (
   email: string,
   password: string,
-  rememberMe: boolean
+  rememberMe: boolean,
 ) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("Неправильний email або пароль");

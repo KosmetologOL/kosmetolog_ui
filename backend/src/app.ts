@@ -11,13 +11,13 @@ dotenv.config({ path: "./src/config/.env" });
 
 const app = express();
 
-app.use(cookieParser());
 app.use(
   cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173/",
     credentials: true,
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-  })
+  }),
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
