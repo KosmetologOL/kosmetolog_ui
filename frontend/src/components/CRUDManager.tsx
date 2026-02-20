@@ -15,6 +15,7 @@ interface Props<T> {
   hasRecommendation?: boolean;
   hasMorningEvening?: boolean;
   mapItem?: (item: T) => CRUDItem;
+  mapToApi?: (item: CRUDItem) => any;
 }
 
 const CRUDManager = <T,>({
@@ -23,6 +24,7 @@ const CRUDManager = <T,>({
   hasRecommendation,
   hasMorningEvening,
   mapItem,
+  mapToApi,
 }: Props<T>) => {
   const [list, setList] = useState<CRUDItem[]>([]);
   const [form, setForm] = useState<CRUDItem>({
@@ -36,7 +38,7 @@ const CRUDManager = <T,>({
 
   const fetchList = async () => {
     const { data } = await axios.get<T[]>(
-      `${import.meta.env.VITE_API_URL}/${apiPath}`
+      `${import.meta.env.VITE_API_URL}/${apiPath}`,
     );
 
     let raw = data;
@@ -66,14 +68,16 @@ const CRUDManager = <T,>({
   const handleSave = async () => {
     if (!form.name.trim()) return;
 
+    const payload = mapToApi ? mapToApi(form) : form;
+
     if (editingId) {
       await axios.put(
         `${import.meta.env.VITE_API_URL}/${apiPath}/${editingId}`,
-        form
+        payload,
       );
       setEditingId(null);
     } else {
-      await axios.post(`${import.meta.env.VITE_API_URL}/${apiPath}`, form);
+      await axios.post(`${import.meta.env.VITE_API_URL}/${apiPath}`, payload);
     }
 
     setForm({ name: "", recommendation: "", morning: false, evening: false });

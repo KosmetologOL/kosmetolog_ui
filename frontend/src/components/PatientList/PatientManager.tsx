@@ -10,6 +10,9 @@ export default function PatientManager() {
         _id: p._id,
         name: `${p.fullName}`,
       })}
+      mapToApi={(item) => ({
+        fullName: item.name,
+      })}
     />
   );
 }

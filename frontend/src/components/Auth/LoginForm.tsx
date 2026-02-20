@@ -2,7 +2,6 @@ import { loginUser, registerUser } from "#api/authApi";
 import greenLogo from "#assets/green.json";
 import AuthButton from "#components/Auth/AuthButton";
 import AuthInput from "#components/Auth/AuthInput";
-import AuthToggle from "#components/Auth/AuthToggle";
 import { AuthContext } from "#context/AuthContext";
 import Lottie from "lottie-react";
 import React, { useContext, useState } from "react";
@@ -64,7 +63,7 @@ const LoginForm: React.FC = () => {
         <div className="flex-[1] flex items-center justify-center p-6 sm:p-10 md:p-12 bg-white">
           <div className="w-full max-w-sm">
             <h2 className="text-3xl md:text-4xl font-semibold text-green-900 mb-8 text-center">
-              {isRegister ? "Реєстрація" : "Вхід"}
+              {"Вхід"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -93,15 +92,8 @@ const LoginForm: React.FC = () => {
                 </label>
               </div>
 
-              <AuthButton text={isRegister ? "Зареєструватися" : "Увійти"} />
+              <AuthButton text={"Увійти"} />
             </form>
-
-            <div className="mt-6">
-              <AuthToggle
-                isRegister={isRegister}
-                onToggle={() => setIsRegister(!isRegister)}
-              />
-            </div>
           </div>
         </div>
       </div>
