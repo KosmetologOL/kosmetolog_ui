@@ -1,4 +1,3 @@
-// models/MedicationSchema.ts
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IMedication extends Document {

@@ -6,6 +6,7 @@ export interface IReportHomeCare {
   morning: boolean;
   evening: boolean;
   medicationName?: string;
+  recommendations?: string;
 }
 
 export interface IReport extends Document {
@@ -20,9 +21,9 @@ export interface IReport extends Document {
           name: String;
           comment: String;
           recommendation: String;
-        }
+        },
       ];
-    }
+    },
   ];
   exams: { name: string; recommendation: string }[];
   specialists: { name: string; query?: string }[];
@@ -41,8 +42,9 @@ const HomeCareSubSchema = new Schema<IReportHomeCare>(
     morning: { type: Boolean, default: false },
     evening: { type: Boolean, default: false },
     medicationName: { type: String, default: "" },
+    recommendations: { type: String, default: "" },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ReportSchema = new Schema<IReport>(
@@ -68,7 +70,7 @@ const ReportSchema = new Schema<IReport>(
     comments: String,
     additionalInfo: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model<IReport>("Report", ReportSchema);
