@@ -3,6 +3,7 @@ import {
   createHomeCareService,
   deleteHomeCareService,
   getAllHomeCaresService,
+  reorderHomeCaresService,
   updateHomeCareService,
 } from "../services/homeCare.service";
 
@@ -46,6 +47,21 @@ export const deleteHomeCare = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Домашній догляд не знайдено" });
     }
     res.json(deletedHomeCare);
+  } catch (err) {
+    res.status(500).json({ message: (err as Error).message });
+  }
+};
+
+export const reorderHomeCares = async (req: Request, res: Response) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+
+    if (!ids.length || ids.some((id) => typeof id !== "string")) {
+      return res.status(400).json({ message: "Некоректний порядок елементів" });
+    }
+
+    const reorderedHomeCares = await reorderHomeCaresService(ids);
+    res.json(reorderedHomeCares);
   } catch (err) {
     res.status(500).json({ message: (err as Error).message });
   }
