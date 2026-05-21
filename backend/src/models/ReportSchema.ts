@@ -9,27 +9,40 @@ export interface IReportHomeCare {
   recommendations?: string;
 }
 
+export interface IReportEditHistoryItem {
+  action: "create" | "update";
+  editedAt: Date;
+  userId?: string;
+  email?: string;
+  role?: string;
+}
+
+export interface IReportProcedureStage {
+  stage: string;
+  procedures: {
+    _id?: string;
+    name: string;
+    comment?: string;
+    recommendation?: string;
+  }[];
+}
+
 export interface IReport extends Document {
   patient: mongoose.Types.ObjectId;
   medications: { name: string; recommendation: string }[];
-  procedures: { name: string; recommendation: string }[];
-  procedureStages: [
-    {
-      stage: String;
-      procedures: [
-        {
-          name: String;
-          comment: String;
-          recommendation: String;
-        },
-      ];
-    },
-  ];
+  procedures: {
+    name: string;
+    comment?: string;
+    recommendation: string;
+    stage?: string;
+  }[];
+  procedureStages: IReportProcedureStage[];
   exams: { name: string; recommendation: string }[];
   specialists: { name: string; query?: string }[];
   homeCares?: IReportHomeCare[];
   comments?: string;
   additionalInfo?: string;
+  editHistory?: IReportEditHistoryItem[];
 }
 
 const HomeCareSubSchema = new Schema<IReportHomeCare>(
@@ -47,16 +60,30 @@ const HomeCareSubSchema = new Schema<IReportHomeCare>(
   { _id: false },
 );
 
+const EditHistorySubSchema = new Schema<IReportEditHistoryItem>(
+  {
+    action: { type: String, enum: ["create", "update"], required: true },
+    editedAt: { type: Date, default: Date.now },
+    userId: { type: String, default: "" },
+    email: { type: String, default: "" },
+    role: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const ReportSchema = new Schema<IReport>(
   {
     patient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
     medications: [{ name: String, recommendation: String }],
-    procedures: [{ name: String, recommendation: String }],
+    procedures: [
+      { name: String, comment: String, recommendation: String, stage: String },
+    ],
     procedureStages: [
       {
         stage: String,
         procedures: [
           {
+            _id: String,
             name: String,
             comment: String,
             recommendation: String,
@@ -69,6 +96,7 @@ const ReportSchema = new Schema<IReport>(
     homeCares: [HomeCareSubSchema],
     comments: String,
     additionalInfo: String,
+    editHistory: [EditHistorySubSchema],
   },
   { timestamps: true },
 );

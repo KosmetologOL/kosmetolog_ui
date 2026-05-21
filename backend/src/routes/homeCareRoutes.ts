@@ -6,13 +6,15 @@ import {
   reorderHomeCares,
   updateHomeCare,
 } from "../controllers/homeCareController";
+import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
-router.get("/", getAllHomeCares);
-router.post("/", createHomeCare);
-router.put("/reorder", reorderHomeCares);
-router.put("/:id", updateHomeCare);
-router.delete("/:id", deleteHomeCare);
+router.use(authMiddleware);
+router.get("/", requireRoles("admin", "doctor"), getAllHomeCares);
+router.post("/", requireRoles("admin"), createHomeCare);
+router.put("/reorder", requireRoles("admin"), reorderHomeCares);
+router.put("/:id", requireRoles("admin"), updateHomeCare);
+router.delete("/:id", requireRoles("admin"), deleteHomeCare);
 
 export default router;

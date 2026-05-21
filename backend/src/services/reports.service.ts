@@ -1,65 +1,131 @@
 import mongoose from "mongoose";
-import Exam from "../models/ExamSchema";
-import Medication from "../models/MedicationSchema";
-import Procedure from "../models/ProcedureSchema";
-import Report, { IReport, IReportHomeCare } from "../models/ReportSchema";
-import Specialist from "../models/SpecialistSchema";
+import Report, {
+  type IReport,
+  type IReportEditHistoryItem,
+  type IReportHomeCare,
+} from "../models/ReportSchema";
 
-export const create = async (data: IReport) => {
-  const extractNames = (arr: (string | { name: string })[]) =>
-    arr.map((item) => (typeof item === "string" ? item : item.name));
+interface ReportActor {
+  id?: string;
+  email?: string;
+  role?: string;
+}
 
-  const medications = await Medication.find({
-    name: { $in: extractNames(data.medications) },
-  });
+const normalizeNamedItems = (
+  items: Array<{
+    name?: string;
+    recommendation?: string;
+    comment?: string;
+    stage?: string;
+  }> = [],
+) =>
+  items.map((item) => ({
+    name: item.name?.trim() || "",
+    recommendation: item.recommendation?.trim() || "",
+    comment: item.comment?.trim() || "",
+    stage: item.stage?.trim() || "",
+  }));
 
-  const procedures = await Procedure.find({
-    name: { $in: extractNames(data.procedures) },
-  });
+const normalizeSpecialists = (
+  items: Array<{ name?: string; query?: string }> = [],
+) =>
+  items.map((item) => ({
+    name: item.name?.trim() || "",
+    query: item.query?.trim() || "",
+  }));
 
-  const exams = await Exam.find({
-    name: { $in: extractNames(data.exams) },
-  });
+const normalizeHomeCares = (items: IReportHomeCare[] = []): IReportHomeCare[] =>
+  items.map((item) => ({
+    _id: item._id || new mongoose.Types.ObjectId().toString(),
+    name: item.name?.trim() || "",
+    morning: Boolean(item.morning),
+    evening: Boolean(item.evening),
+    medicationName: item.medicationName?.trim() || "",
+    recommendations: item.recommendations?.trim() || "",
+  }));
 
-  const specialists = await Specialist.find({
-    name: { $in: extractNames(data.specialists) },
-  });
-
-  const homeCaresData: IReportHomeCare[] =
-    data.homeCares?.map((h) => ({
-      _id: h._id || new mongoose.Types.ObjectId().toString(),
-      name: h.name,
-      morning: h.morning,
-      evening: h.evening,
-      medicationName: h.medicationName || "",
-    })) ?? [];
-
-  const reportData: IReport = {
-    patient: data.patient,
-    medications: medications.map((m) => ({
-      name: m.name,
-      recommendation: m.recommendation,
+const normalizeProcedureStages = (stages: IReport["procedureStages"] = []) =>
+  stages.map((stage) => ({
+    stage: stage.stage?.trim() || "",
+    procedures: (stage.procedures || []).map((procedure) => ({
+      _id: procedure._id || new mongoose.Types.ObjectId().toString(),
+      name: procedure.name?.trim() || "",
+      comment: procedure.comment?.trim() || "",
+      recommendation: procedure.recommendation?.trim() || "",
     })),
-    procedures: procedures.map((p) => ({
-      name: p.name,
-      recommendation: p.recommendation,
-    })),
-    exams: exams.map((e) => ({
-      name: e.name,
-      recommendation: e.recommendation,
-    })),
-    specialists: specialists.map((s) => ({ name: s.name })),
-    homeCares: homeCaresData,
-    additionalInfo: data.additionalInfo,
-    comments: data.comments,
-  } as IReport;
+  }));
 
-  return await Report.create(reportData);
+const createHistoryItem = (
+  action: "create" | "update",
+  actor?: ReportActor,
+): IReportEditHistoryItem => ({
+  action,
+  editedAt: new Date(),
+  userId: actor?.id || "",
+  email: actor?.email || "",
+  role: actor?.role || "",
+});
+
+const buildReportPayload = (data: Partial<IReport>) => ({
+  patient: data.patient,
+  medications: normalizeNamedItems(data.medications).map((item) => ({
+    name: item.name,
+    recommendation: item.recommendation,
+  })),
+  procedures: normalizeNamedItems(data.procedures).map((item) => ({
+    name: item.name,
+    recommendation: item.recommendation,
+    comment: item.comment,
+    stage: item.stage,
+  })),
+  procedureStages: normalizeProcedureStages(data.procedureStages),
+  exams: normalizeNamedItems(data.exams).map((item) => ({
+    name: item.name,
+    recommendation: item.recommendation,
+  })),
+  specialists: normalizeSpecialists(data.specialists),
+  homeCares: normalizeHomeCares(data.homeCares),
+  additionalInfo: data.additionalInfo?.trim() || "",
+  comments: data.comments?.trim() || "",
+});
+
+export const create = async (data: Partial<IReport>, actor?: ReportActor) => {
+  const reportData = buildReportPayload(data);
+
+  return Report.create({
+    ...reportData,
+    editHistory: [createHistoryItem("create", actor)],
+  });
 };
 
 export const getAll = async () => Report.find();
 export const getById = async (id: string) => Report.findById(id);
 export const getByPatientId = async (patientId: string) =>
   Report.findOne({ patient: patientId });
-export const update = async (id: string, data: Partial<IReport>) =>
-  Report.findByIdAndUpdate(id, data, { new: true });
+
+export const update = async (
+  id: string,
+  data: Partial<IReport>,
+  actor?: ReportActor,
+) => {
+  const reportData = buildReportPayload(data);
+  const existing = await Report.findById(id);
+
+  if (!existing) {
+    return null;
+  }
+
+  const editHistory = [
+    ...(existing.editHistory || []),
+    createHistoryItem("update", actor),
+  ];
+
+  return Report.findByIdAndUpdate(
+    id,
+    {
+      ...reportData,
+      editHistory,
+    },
+    { new: true },
+  );
+};

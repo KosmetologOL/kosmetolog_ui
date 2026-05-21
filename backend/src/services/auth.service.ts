@@ -16,7 +16,7 @@ const generateTokens = (user: { id: string; email: string; role: string }) => {
 const toSafeUser = (user: IUser) => ({
   id: (user._id as mongoose.Types.ObjectId).toString(),
   email: user.email,
-  role: user.role ?? "user",
+  role: (user.role ?? "user").toString().trim().toLowerCase(),
 });
 
 export const register = async (email: string, password: string) => {
