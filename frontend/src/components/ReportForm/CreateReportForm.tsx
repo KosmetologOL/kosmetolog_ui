@@ -2,6 +2,7 @@ import { getPatientById, type IPatient } from "#api/patientsApi";
 import {
   createReport,
   getReportByPatientId,
+  type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
 import React, { useEffect, useState } from "react";
@@ -20,7 +21,10 @@ import type { IMedication } from "#api/medicationsApi";
 import type { IProcedure } from "#api/proceduresApi";
 import type { ISpecialist } from "#api/specialistsApi";
 
+import SearchMedication from "#components/Medications/SearchMedication";
+import SelectedMedicationsTable from "#components/Medications/SelectedMedicatonsTable";
 import SearchProcedure from "#components/Procedures/SearchProcedure";
+import ReferenceItemModal from "#components/ReferenceItemModal";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import ReportActions from "#components/ReportForm/ReportActions";
 import ReportComments from "#components/ReportForm/ReportComments";
@@ -33,6 +37,14 @@ interface IProcedureStage {
   procedures: (IProcedure & { comment?: string })[];
 }
 
+interface EditingProcedureState {
+  stageId: string;
+  procedureId: string;
+  name: string;
+  recommendation?: string;
+  comment?: string;
+}
+
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
   const [patient, setPatient] = useState<IPatient | null>(null);
@@ -40,17 +52,25 @@ const CreateReportForm: React.FC = () => {
 
   const [selectedExams, setSelectedExams] = useState<IExam[]>([]);
   const [selectedMedications, setSelectedMedications] = useState<IMedication[]>(
-    []
+    [],
   );
   const [selectedSpecialists, setSelectedSpecialists] = useState<ISpecialist[]>(
-    []
+    [],
   );
   const [selectedHomeCares, setSelectedHomeCares] = useState<IHomeCare[]>([]);
   const [procedureStages, setProcedureStages] = useState<IProcedureStage[]>([]);
+  const [editingProcedure, setEditingProcedure] =
+    useState<EditingProcedureState | null>(null);
+  const [reportHistory, setReportHistory] = useState<IReportEditHistoryItem[]>(
+    [],
+  );
 
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const createdDate = patient?.createdAt
+    ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
+    : "";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,6 +90,7 @@ const CreateReportForm: React.FC = () => {
           setSelectedHomeCares(reportData.homeCares ?? []);
           setAdditionalInfo(reportData.additionalInfo ?? "");
           setComments(reportData.comments ?? "");
+          setReportHistory(reportData.editHistory ?? []);
 
           interface ReportProcedure {
             _id?: string;
@@ -108,7 +129,7 @@ const CreateReportForm: React.FC = () => {
                 acc[stageName].push(proc);
                 return acc;
               },
-              {} as Record<string, ReportProcedure[]>
+              {} as Record<string, ReportProcedure[]>,
             );
 
             const stages = Object.entries(grouped).map(
@@ -116,7 +137,7 @@ const CreateReportForm: React.FC = () => {
                 id: crypto.randomUUID(),
                 title: stageName,
                 procedures: procs as (IProcedure & { comment?: string })[],
-              })
+              }),
             );
 
             setProcedureStages(stages);
@@ -152,6 +173,51 @@ const CreateReportForm: React.FC = () => {
     setProcedureStages((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const openProcedureEditor = (
+    stageId: string,
+    procedure: IProcedure & { comment?: string },
+  ) => {
+    setEditingProcedure({
+      stageId,
+      procedureId: procedure._id ?? procedure.name,
+      name: procedure.name,
+      recommendation: procedure.recommendation ?? "",
+      comment: procedure.comment ?? "",
+    });
+  };
+
+  const saveProcedureEditor = (updatedProcedure: {
+    name: string;
+    recommendation?: string;
+    comment?: string;
+  }) => {
+    if (!editingProcedure) {
+      return;
+    }
+
+    setProcedureStages((prev) =>
+      prev.map((stage) =>
+        stage.id !== editingProcedure.stageId
+          ? stage
+          : {
+              ...stage,
+              procedures: stage.procedures.map((procedure) =>
+                (procedure._id ?? procedure.name) ===
+                editingProcedure.procedureId
+                  ? {
+                      ...procedure,
+                      name: updatedProcedure.name,
+                      recommendation: updatedProcedure.recommendation ?? "",
+                      comment: updatedProcedure.comment ?? "",
+                    }
+                  : procedure,
+              ),
+            },
+      ),
+    );
+    setEditingProcedure(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientId) return toast.error("Пацієнт не вибраний!");
@@ -175,6 +241,7 @@ const CreateReportForm: React.FC = () => {
         morning: h.morning,
         evening: h.evening,
         medicationName: h.medicationName || "Засіб",
+        recommendations: h.recommendations || "",
       })),
       procedureStages: procedureStages.map((s) => ({
         stage: s.title,
@@ -190,7 +257,7 @@ const CreateReportForm: React.FC = () => {
           comment: p.comment,
           recommendation: p.recommendation,
           stage: s.title,
-        }))
+        })),
       ),
       comments,
       additionalInfo,
@@ -200,11 +267,13 @@ const CreateReportForm: React.FC = () => {
       let savedReport;
       if (reportId) {
         savedReport = await updateReport(reportId, payload);
+        setReportHistory(savedReport.editHistory ?? []);
         toast.success("Звіт оновлено успішно!");
       } else {
         savedReport = await createReport(payload);
         toast.success("Звіт створено успішно!");
         setReportId(savedReport?._id ?? null);
+        setReportHistory(savedReport.editHistory ?? []);
       }
     } catch {
       toast.error("Не вдалося зберегти звіт. Спробуйте ще раз.");
@@ -233,10 +302,48 @@ const CreateReportForm: React.FC = () => {
             className="bg-white shadow rounded-lg p-2 sm:p-3 md:p-4 w-full mb-6 transition-all duration-300"
           >
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-800 border-b pb-1 border-gray-200">
-              Рекомендаційний лист {patient.fullName}
+              Рекомендаційний лист {patient?.fullName}
             </h2>
+            <h3 className="text-sm text-gray-500 mb-4">
+              Дата створення: {createdDate || "невідомо"}
+            </h3>
+
+            {reportHistory.length > 0 && (
+              <ReportSection title="Історія редагувань">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                  <ul className="space-y-2">
+                    {reportHistory
+                      .slice()
+                      .reverse()
+                      .map((entry, index) => (
+                        <li key={`${entry.editedAt}-${index}`}>
+                          <span className="font-medium">
+                            {entry.action === "create"
+                              ? "Створення"
+                              : "Оновлення"}
+                          </span>{" "}
+                          — {entry.email || "невідомий користувач"} (
+                          {entry.role || "role не вказана"}) —{" "}
+                          {new Date(entry.editedAt).toLocaleString("uk-UA")}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              </ReportSection>
+            )}
 
             <div className="space-y-3">
+              <ReportSection title="Рекомендована консультація суміжного спеціаліста">
+                <SearchSpecialist
+                  selectedSpecialists={selectedSpecialists}
+                  setSelectedSpecialists={setSelectedSpecialists}
+                />
+                <SelectedSpecialistsTable
+                  selectedSpecialists={selectedSpecialists}
+                  setSelectedSpecialists={setSelectedSpecialists}
+                />
+              </ReportSection>
+
               <ReportSection title="Обстеження">
                 <SearchExam
                   selectedExams={selectedExams}
@@ -246,6 +353,29 @@ const CreateReportForm: React.FC = () => {
                 <SelectedExamsTable
                   selectedExams={selectedExams}
                   setSelectedExams={setSelectedExams}
+                />
+              </ReportSection>
+
+              <ReportSection title="Засоби">
+                <SearchMedication
+                  medication={[]}
+                  selectedMedications={selectedMedications}
+                  setSelectedMedications={setSelectedMedications}
+                />
+                <SelectedMedicationsTable
+                  selectedMedications={selectedMedications}
+                  setSelectedMedications={setSelectedMedications}
+                />
+              </ReportSection>
+
+              <ReportSection title="Домашній догляд">
+                <SearchHomeCare
+                  selectedHomeCares={selectedHomeCares}
+                  setSelectedHomeCares={setSelectedHomeCares}
+                />
+                <SelectedHomeCaresTable
+                  selectedHomeCares={selectedHomeCares}
+                  setSelectedHomeCares={setSelectedHomeCares}
                 />
               </ReportSection>
 
@@ -281,7 +411,7 @@ const CreateReportForm: React.FC = () => {
                       setSelectedProcedures={(updated) => {
                         if (typeof updated === "function") {
                           const newProcedures = updated(
-                            stage.procedures as IProcedure[]
+                            stage.procedures as IProcedure[],
                           );
                           updateStage(stage.id, {
                             ...stage,
@@ -309,17 +439,36 @@ const CreateReportForm: React.FC = () => {
                     {stage.procedures.map((proc) => (
                       <div
                         key={proc._id}
-                        className="flex flex-col border border-green-200 rounded-md p-2 mt-2 bg-white"
+                        className="mt-3 rounded-xl border border-green-200 bg-white p-3 shadow-sm"
                       >
-                        <div className="flex justify-between items-center">
-                          <p className="font-medium text-sm">{proc.name}</p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm text-gray-800">
+                              {proc.name}
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-gray-500 whitespace-pre-wrap">
+                              {proc.recommendation || "Рекомендація відсутня"}
+                            </p>
+                            {proc.comment && (
+                              <div className="mt-2 rounded-lg border border-green-100 bg-green-50 px-2.5 py-2 text-xs leading-5 text-green-900 whitespace-pre-wrap">
+                                {proc.comment}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openProcedureEditor(stage.id, proc)}
+                            className="text-blue-600 text-sm hover:underline"
+                          >
+                            Оновити
+                          </button>
                           <button
                             type="button"
                             onClick={() =>
                               updateStage(stage.id, {
                                 ...stage,
                                 procedures: stage.procedures.filter(
-                                  (p) => p._id !== proc._id
+                                  (p) => p._id !== proc._id,
                                 ),
                               })
                             }
@@ -336,7 +485,7 @@ const CreateReportForm: React.FC = () => {
                               procedures: stage.procedures.map((p) =>
                                 p._id === proc._id
                                   ? { ...p, comment: e.target.value }
-                                  : p
+                                  : p,
                               ),
                             })
                           }
@@ -365,7 +514,7 @@ const CreateReportForm: React.FC = () => {
                       ...new Map(
                         procedureStages
                           .flatMap((s) => s.procedures)
-                          .map((p) => [p.name, p.recommendation])
+                          .map((p) => [p.name, p.recommendation]),
                       ).entries(),
                     ].map(([name, rec]) => (
                       <li key={name}>
@@ -376,28 +525,6 @@ const CreateReportForm: React.FC = () => {
                   </ul>
                 </ReportSection>
               )}
-
-              <ReportSection title="Рекомендована консультація суміжного спеціаліста">
-                <SearchSpecialist
-                  selectedSpecialists={selectedSpecialists}
-                  setSelectedSpecialists={setSelectedSpecialists}
-                />
-                <SelectedSpecialistsTable
-                  selectedSpecialists={selectedSpecialists}
-                  setSelectedSpecialists={setSelectedSpecialists}
-                />
-              </ReportSection>
-
-              <ReportSection title="Домашній догляд">
-                <SearchHomeCare
-                  selectedHomeCares={selectedHomeCares}
-                  setSelectedHomeCares={setSelectedHomeCares}
-                />
-                <SelectedHomeCaresTable
-                  selectedHomeCares={selectedHomeCares}
-                  setSelectedHomeCares={setSelectedHomeCares}
-                />
-              </ReportSection>
 
               <ReportSection title="Все, що необхідно знати про ваш стан">
                 <textarea
@@ -430,6 +557,21 @@ const CreateReportForm: React.FC = () => {
               />
             </div>
           </form>
+
+          <ReferenceItemModal
+            visible={Boolean(editingProcedure)}
+            title="Редагувати рекомендацію до процедури"
+            submitLabel="Зберегти"
+            recommendationLabel="Рекомендація до процедури"
+            commentLabel="Коментар до процедури"
+            item={{
+              name: editingProcedure?.name ?? "",
+              recommendation: editingProcedure?.recommendation ?? "",
+              comment: editingProcedure?.comment ?? "",
+            }}
+            onClose={() => setEditingProcedure(null)}
+            onSave={saveProcedureEditor}
+          />
         </div>
       </div>
     </div>

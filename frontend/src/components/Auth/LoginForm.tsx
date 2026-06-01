@@ -41,8 +41,12 @@ const LoginForm: React.FC = () => {
         toast.success("Реєстрація успішна! Тепер увійдіть.");
         setIsRegister(false);
       } else {
-        const { accessToken } = await loginUser(email, password, rememberMe);
-        login(accessToken);
+        const { accessToken, user } = await loginUser(
+          email,
+          password,
+          rememberMe,
+        );
+        login(accessToken, user);
         toast.success("Вхід виконано успішно!");
       }
     } catch (err) {

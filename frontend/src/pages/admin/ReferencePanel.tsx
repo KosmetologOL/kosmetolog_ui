@@ -4,6 +4,7 @@ import MedicationsManager from "#components/Medications/MedicationsManager";
 import PatientManager from "#components/PatientList/PatientManager";
 import ProceduresManager from "#components/Procedures/ProceduresManager";
 import SpecialistsManager from "#components/Specialists/SpecialistsManager";
+import { useAuth } from "#hooks/useAuth";
 import React, { useState } from "react";
 
 interface ReferencePanelProps {
@@ -26,6 +27,9 @@ const ReferencePanel: React.FC = () => {
     | "homecares"
     | "patients"
   >("medications");
+  const { isAdmin, isDoctor } = useAuth();
+  const readOnly = isDoctor && !isAdmin;
+  const readOnlyReferenceTabs = readOnly;
 
   const tabs: ReferencePanelProps[] = [
     { key: "medications", label: "Засоби" },
@@ -37,54 +41,57 @@ const ReferencePanel: React.FC = () => {
   ];
 
   return (
-    <div
-      className="
-        flex flex-col min-h-[90vh] justify-start 
-        sm:justify-center px-4 sm:px-6 lg:px-8 py-6 
-        max-w-screen-xl mx-auto
-      "
-    >
+    <div className="mx-auto flex min-h-[90vh] max-w-screen-xl flex-col justify-start px-4 py-6 sm:justify-center sm:px-6 lg:px-8">
       <button
         onClick={() => window.history.back()}
-        className="border border-green-300 rounded py-1.5 px-4 mb-4 text-green-700 text-sm font-medium
-                   hover:bg-green-50 active:scale-95 transition-all duration-200 shadow-sm w-fit"
+        className="mb-4 w-fit rounded border border-green-300 px-4 py-1.5 text-sm font-medium text-green-700 shadow-sm transition-all duration-200 hover:bg-green-50 active:scale-95"
       >
         ← Назад
       </button>
 
-      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-700 mb-6 text-center sm:text-left">
+      <h1 className="mb-2 text-center text-xl font-bold text-green-700 sm:text-left sm:text-2xl lg:text-3xl">
         Панель довідників
       </h1>
 
-      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mb-6">
+      {readOnly && (
+        <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Режим лікаря: довідники доступні лише для перегляду.
+        </p>
+      )}
+
+      <div className="mb-6 flex flex-wrap justify-center gap-2 sm:justify-start sm:gap-3">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-3 sm:px-4 py-2 rounded-md border text-sm sm:text-base font-medium transition-all
-              ${
-                activeTab === tab.key
-                  ? "bg-green-600 text-white border-green-700 shadow-md"
-                  : "bg-white text-green-700 border-green-300 hover:bg-green-50"
-              }`}
+            className={`rounded-md border px-3 py-2 text-sm font-medium transition-all sm:px-4 sm:text-base ${
+              activeTab === tab.key
+                ? "border-green-700 bg-green-600 text-white shadow-md"
+                : "border-green-300 bg-white text-green-700 hover:bg-green-50"
+            }`}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <div
-        className="
-          border rounded-lg p-4 sm:p-6 bg-white shadow-sm 
-          flex-grow overflow-auto
-        "
-      >
-        {activeTab === "medications" && <MedicationsManager />}
-        {activeTab === "procedures" && <ProceduresManager />}
-        {activeTab === "exams" && <ExamsManager />}
-        {activeTab === "specialists" && <SpecialistsManager />}
-        {activeTab === "homecares" && <HomeCaresManager />}
-        {activeTab === "patients" && <PatientManager />}
+      <div className="flex-grow overflow-auto rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+        {activeTab === "medications" && (
+          <MedicationsManager readOnly={readOnlyReferenceTabs} />
+        )}
+        {activeTab === "procedures" && (
+          <ProceduresManager readOnly={readOnlyReferenceTabs} />
+        )}
+        {activeTab === "exams" && (
+          <ExamsManager readOnly={readOnlyReferenceTabs} />
+        )}
+        {activeTab === "specialists" && (
+          <SpecialistsManager readOnly={readOnlyReferenceTabs} />
+        )}
+        {activeTab === "homecares" && (
+          <HomeCaresManager readOnly={readOnlyReferenceTabs} />
+        )}
+        {activeTab === "patients" && <PatientManager canDelete={isAdmin} />}
       </div>
     </div>
   );

@@ -7,6 +7,9 @@ import { useNavigate } from "react-router-dom";
 
 const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
   const navigate = useNavigate();
+  const createdDate = patient.createdAt
+    ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
+    : "";
 
   const handleExportPDF = async () => {
     try {
@@ -30,7 +33,14 @@ const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
 
   return (
     <li className="border p-3 rounded-md shadow-sm flex flex-col gap-2">
-      <div className="font-semibold text-lg">{patient.fullName}</div>
+      <div>
+        <div className="font-semibold text-lg">{patient.fullName}</div>
+        {createdDate && (
+          <div className="text-sm text-gray-500">
+            Дата створення: {createdDate}
+          </div>
+        )}
+      </div>
 
       <div className="flex gap-3 mt-2 justify-end">
         <button

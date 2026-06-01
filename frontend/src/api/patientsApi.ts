@@ -3,6 +3,7 @@ import axios from "axios";
 export interface IPatient {
   _id?: string;
   fullName: string;
+  createdAt?: string;
 }
 
 interface ApiResponse {

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CRUDItem {
   _id?: string;
@@ -14,8 +14,11 @@ interface Props<T> {
   apiPath: string;
   hasRecommendation?: boolean;
   hasMorningEvening?: boolean;
+  readOnly?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
   mapItem?: (item: T) => CRUDItem;
-  mapToApi?: (item: CRUDItem) => any;
+  mapToApi?: (item: CRUDItem) => unknown;
 }
 
 const CRUDManager = <T,>({
@@ -23,9 +26,15 @@ const CRUDManager = <T,>({
   apiPath,
   hasRecommendation,
   hasMorningEvening,
+  readOnly = false,
+  canEdit,
+  canDelete,
   mapItem,
   mapToApi,
 }: Props<T>) => {
+  const editable = canEdit ?? !readOnly;
+  const deletable = canDelete ?? !readOnly;
+  const showActions = editable || deletable;
   const [list, setList] = useState<CRUDItem[]>([]);
   const [form, setForm] = useState<CRUDItem>({
     name: "",
@@ -33,10 +42,22 @@ const CRUDManager = <T,>({
     morning: false,
     evening: false,
   });
+  const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const textRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const fetchList = async () => {
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredList = list.filter((item) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [item.name, item.recommendation]
+      .filter(Boolean)
+      .some((value) => value!.toLowerCase().includes(normalizedSearch));
+  });
+
+  const fetchList = useCallback(async () => {
     const { data } = await axios.get<T[]>(
       `${import.meta.env.VITE_API_URL}/${apiPath}`,
     );
@@ -44,29 +65,32 @@ const CRUDManager = <T,>({
     let raw = data;
 
     if (!Array.isArray(raw)) {
-      const foundArray = Object.values(raw).find((v) => Array.isArray(v));
-      if (foundArray) raw = foundArray;
+      const foundArray = Object.values(raw).find((value) =>
+        Array.isArray(value),
+      );
+      if (foundArray) {
+        raw = foundArray as T[];
+      }
     }
 
-    const finalList = mapItem ? (raw as T[]).map(mapItem) : (raw as CRUDItem[]);
-    console.log("RAW DATA:", data);
-
-    setList(finalList);
-  };
+    setList(mapItem ? (raw as T[]).map(mapItem) : (raw as CRUDItem[]));
+  }, [apiPath, mapItem]);
 
   useEffect(() => {
-    fetchList();
-  }, []);
+    void fetchList();
+  }, [fetchList]);
 
   useEffect(() => {
     if (textRef.current) {
       textRef.current.style.height = "auto";
-      textRef.current.style.height = textRef.current.scrollHeight + "px";
+      textRef.current.style.height = `${textRef.current.scrollHeight}px`;
     }
   }, [form.recommendation]);
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      return;
+    }
 
     const payload = mapToApi ? mapToApi(form) : form;
 
@@ -81,14 +105,19 @@ const CRUDManager = <T,>({
     }
 
     setForm({ name: "", recommendation: "", morning: false, evening: false });
-    fetchList();
+    void fetchList();
   };
 
   const handleDelete = async (id?: string) => {
-    if (!confirm("Ви впевнені, що хочете видалити цей елемент?")) return;
-    if (!id) return;
+    if (
+      !id ||
+      !window.confirm("Ви впевнені, що хочете видалити цей елемент?")
+    ) {
+      return;
+    }
+
     await axios.delete(`${import.meta.env.VITE_API_URL}/${apiPath}/${id}`);
-    fetchList();
+    void fetchList();
   };
 
   const handleEdit = (item: CRUDItem) => {
@@ -96,75 +125,89 @@ const CRUDManager = <T,>({
     setForm(item);
   };
 
+  const colSpan =
+    (hasRecommendation ? 2 : 1) +
+    (hasMorningEvening ? 2 : 0) +
+    (showActions ? 1 : 0);
+
   return (
     <div className="flex flex-col items-start justify-start">
-      <h2 className="text-lg font-semibold mb-3 text-green-700">{title}</h2>
+      <h2 className="mb-3 text-lg font-semibold text-green-700">{title}</h2>
 
-      <div className="flex flex-col sm:flex-row gap-2 mb-4 items-start sm:items-center w-full">
-        <input
-          placeholder="Назва"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="border border-green-300 rounded-md px-2 py-[9px] flex-1 min-h-[38px]"
-        />
+      <input
+        placeholder="Пошук"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4 w-full max-w-md rounded-md border border-green-300 px-3 py-2"
+      />
 
-        {hasRecommendation && (
-          <textarea
-            ref={textRef}
-            placeholder="Рекомендація"
-            value={form.recommendation}
-            onChange={(e) =>
-              setForm({ ...form, recommendation: e.target.value })
-            }
-            className="border border-green-300 rounded-md px-2 py-[9px] flex-1 resize-none overflow-hidden min-h-[38px] leading-[1.4]"
+      {editable && (
+        <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+          <input
+            placeholder="Назва"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
           />
-        )}
 
-        {hasMorningEvening && (
-          <div className="flex gap-3 items-center">
-            <label className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={form.morning}
-                onChange={(e) =>
-                  setForm({ ...form, morning: e.target.checked })
-                }
-                className="accent-green-600"
-              />
-              Ранок
-            </label>
-            <label className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={form.evening}
-                onChange={(e) =>
-                  setForm({ ...form, evening: e.target.checked })
-                }
-                className="accent-green-600"
-              />
-              Вечір
-            </label>
-          </div>
-        )}
+          {hasRecommendation && (
+            <textarea
+              ref={textRef}
+              placeholder="Рекомендація"
+              value={form.recommendation}
+              onChange={(e) =>
+                setForm({ ...form, recommendation: e.target.value })
+              }
+              className="min-h-[38px] flex-1 resize-none overflow-hidden rounded-md border border-green-300 px-2 py-[9px] leading-[1.4]"
+            />
+          )}
 
-        <button
-          onClick={handleSave}
-          className={`${
-            editingId
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-green-600 hover:bg-green-700"
-          } text-white px-3 rounded-md h-[38px]`}
-        >
-          {editingId ? "Оновити" : "Додати"}
-        </button>
-      </div>
+          {hasMorningEvening && (
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.morning}
+                  onChange={(e) =>
+                    setForm({ ...form, morning: e.target.checked })
+                  }
+                  className="accent-green-600"
+                />
+                Ранок
+              </label>
+              <label className="flex items-center gap-1 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.evening}
+                  onChange={(e) =>
+                    setForm({ ...form, evening: e.target.checked })
+                  }
+                  className="accent-green-600"
+                />
+                Вечір
+              </label>
+            </div>
+          )}
 
-      <table className="min-w-full border border-green-200 text-sm">
+          <button
+            onClick={handleSave}
+            className={`h-[38px] rounded-md px-3 text-white ${
+              editingId
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            {editingId ? "Оновити" : "Додати"}
+          </button>
+        </div>
+      )}
+
+      <table className="w-full table-fixed border border-green-200 text-sm">
         <thead className="bg-green-100">
           <tr>
-            <th className="px-2 py-1 text-left">Назва</th>
+            <th className="px-2 py-1 text-left break-words">Назва</th>
             {hasRecommendation && (
-              <th className="px-2 py-1 text-left">Рекомендація</th>
+              <th className="px-2 py-1 text-left break-words">Рекомендація</th>
             )}
             {hasMorningEvening && (
               <>
@@ -172,15 +215,15 @@ const CRUDManager = <T,>({
                 <th className="px-2 py-1 text-center">Вечір</th>
               </>
             )}
-            <th className="px-2 py-1 text-center">Дії</th>
+            {showActions && <th className="px-2 py-1 text-center">Дії</th>}
           </tr>
         </thead>
         <tbody>
-          {list.map((item) => (
+          {filteredList.map((item) => (
             <tr key={item._id} className="border-b border-green-100">
-              <td className="px-2 py-1">{item.name}</td>
+              <td className="px-2 py-1 break-words">{item.name}</td>
               {hasRecommendation && (
-                <td className="px-2 py-1 text-gray-700 whitespace-pre-wrap">
+                <td className="whitespace-pre-wrap break-words px-2 py-1 text-gray-700">
                   {item.recommendation}
                 </td>
               )}
@@ -190,22 +233,39 @@ const CRUDManager = <T,>({
                   <td className="text-center">{item.evening ? "✓" : "–"}</td>
                 </>
               )}
-              <td className="px-2 py-1 text-center">
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="text-blue-600 hover:underline mr-3"
-                >
-                  Редагувати
-                </button>
-                <button
-                  onClick={() => handleDelete(item._id)}
-                  className="text-red-600 hover:underline"
-                >
-                  Видалити
-                </button>
-              </td>
+              {showActions && (
+                <td className="px-2 py-1 text-center">
+                  {editable && (
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="mr-3 text-blue-600 hover:underline"
+                    >
+                      Редагувати
+                    </button>
+                  )}
+                  {deletable && (
+                    <button
+                      onClick={() => handleDelete(item._id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Видалити
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
+
+          {filteredList.length === 0 && (
+            <tr>
+              <td
+                colSpan={colSpan}
+                className="px-2 py-4 text-center text-gray-500"
+              >
+                Нічого не знайдено
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

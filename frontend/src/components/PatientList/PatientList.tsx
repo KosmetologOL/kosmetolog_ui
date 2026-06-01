@@ -2,6 +2,7 @@ import type { IPatient } from "#api/patientsApi";
 import * as patientsApi from "#api/patientsApi";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import PatientItem from "#components/PatientList/PatientItem";
+import { useAuth } from "#hooks/useAuth";
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -12,13 +13,20 @@ const PatientList: React.FC = () => {
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
+  const { canAccessReferencePanel } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
 
   const limit = 5;
 
   const fetchPatients = useCallback(async () => {
-    const response = await patientsApi.getAllPatients(page, limit, query);
-    setPatients(response.patients);
-    setTotalPages(response.totalPages);
+    setIsLoading(true);
+    try {
+      const response = await patientsApi.getAllPatients(page, limit, query);
+      setPatients(response.patients);
+      setTotalPages(response.totalPages);
+    } finally {
+      setIsLoading(false);
+    }
   }, [page, query]);
 
   useEffect(() => {
@@ -69,17 +77,23 @@ const PatientList: React.FC = () => {
               Створити карту пацієнта
             </button>
 
-            <button
-              onClick={() => navigate("/admin")}
-              className="px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:scale-95 transition"
-            >
-              Панель довідників
-            </button>
+            {canAccessReferencePanel && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:scale-95 transition"
+              >
+                Панель довідників
+              </button>
+            )}
           </div>
         </div>
 
         <div className="flex-1">
-          {patients.length === 0 ? (
+          {isLoading && patients.length === 0 ? (
+            <p className="text-gray-500 text-center py-8 text-lg">
+              Завантаження карток пацієнтів...
+            </p>
+          ) : patients.length === 0 ? (
             <p className="text-gray-500 text-center py-8 text-lg">
               Пацієнтів не знайдено
             </p>

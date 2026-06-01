@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export interface IMedication {
-  _id: string;
+  _id?: string;
   name: string;
   query?: string;
   recommendation: string;

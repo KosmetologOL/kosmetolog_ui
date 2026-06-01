@@ -37,7 +37,14 @@ export const AppRouter: React.FC = () => {
           </PrivateRoute>
         }
       />
-      <Route path="/admin" element={<ReferencePanel />} />
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute allowedRoles={["admin", "doctor"]}>
+            <ReferencePanel />
+          </PrivateRoute>
+        }
+      />
       <Route path="/error" element={<ErrorPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
