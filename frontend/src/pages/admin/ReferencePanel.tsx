@@ -1,3 +1,9 @@
+import { getCategories } from "#api/adminApi";
+import CategoriesManager from "#components/Admin/CategoriesManager";
+import CategoryItemsManager from "#components/Admin/CategoryItemsManager";
+import DoctorsManager from "#components/Admin/DoctorsManager";
+import HospitalsManager from "#components/Admin/HospitalsManager";
+import RegistrationRequestsManager from "#components/Admin/RegistrationRequestsManager";
 import ExamsManager from "#components/Exams/ExamsManager";
 import HomeCaresManager from "#components/HomeCare/HomeCaresManager";
 import MedicationsManager from "#components/Medications/MedicationsManager";
@@ -5,33 +11,42 @@ import PatientManager from "#components/PatientList/PatientManager";
 import ProceduresManager from "#components/Procedures/ProceduresManager";
 import SpecialistsManager from "#components/Specialists/SpecialistsManager";
 import { useAuth } from "#hooks/useAuth";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-interface ReferencePanelProps {
-  key:
-    | "medications"
-    | "procedures"
-    | "exams"
-    | "specialists"
-    | "homecares"
-    | "patients";
+interface TabItem {
+  key: string;
   label: string;
+  isDynamic?: boolean;
 }
 
 const ReferencePanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    | "medications"
-    | "procedures"
-    | "exams"
-    | "specialists"
-    | "homecares"
-    | "patients"
-  >("medications");
-  const { isAdmin, isDoctor } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("categories");
+  const [categories, setCategories] = useState<any[]>([]);
+  const { isAdmin, isDoctor, user } = useAuth();
   const readOnly = isDoctor && !isAdmin;
-  const readOnlyReferenceTabs = readOnly;
 
-  const tabs: ReferencePanelProps[] = [
+  // Load categories
+  const loadCategories = async () => {
+    try {
+      const cats = await getCategories();
+      setCategories(cats || []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).__categories = cats || [];
+    } catch (err) {
+      console.error("Failed to load categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    void loadCategories();
+    const handler = () => void loadCategories();
+    window.addEventListener("categoriesUpdated", handler as EventListener);
+    return () =>
+      window.removeEventListener("categoriesUpdated", handler as EventListener);
+  }, []);
+
+  // Static reference tabs (original)
+  const referenceTabs: TabItem[] = [
     { key: "medications", label: "Засоби" },
     { key: "procedures", label: "Процедури" },
     { key: "exams", label: "Обстеження" },
@@ -39,6 +54,23 @@ const ReferencePanel: React.FC = () => {
     { key: "homecares", label: "Домашній догляд" },
     { key: "patients", label: "Пацієнти" },
   ];
+
+  // Static admin tabs
+  const adminTabs: TabItem[] = [
+    { key: "categories", label: "Категорії" },
+    { key: "doctors", label: "Лікарі" },
+    { key: "registration-requests", label: "Запити" },
+    { key: "hospitals", label: "Лікарні" },
+  ];
+
+  // Dynamic category tabs
+  const dynamicTabs: TabItem[] = categories.map((cat) => ({
+    key: `cat-${cat._id}`,
+    label: cat.name,
+    isDynamic: true,
+  }));
+
+  const allTabs = [...referenceTabs, ...adminTabs, ...dynamicTabs];
 
   return (
     <div className="mx-auto flex min-h-[90vh] max-w-screen-xl flex-col justify-start px-4 py-6 sm:justify-center sm:px-6 lg:px-8">
@@ -53,18 +85,29 @@ const ReferencePanel: React.FC = () => {
         Панель довідників
       </h1>
 
-      {readOnly && (
-        <p className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Режим лікаря: довідники доступні лише для перегляду.
-        </p>
-      )}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm text-gray-700">
+          Акаунт: {`${user?.email ?? "-"} (${user?.role ?? "-"})`}
+        </div>
+        <div>
+          <button
+            onClick={() => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (window as any).__logout?.();
+            }}
+            className="rounded border px-3 py-1 text-sm text-green-700 hover:bg-green-50"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
 
-      <div className="mb-6 flex flex-wrap justify-center gap-2 sm:justify-start sm:gap-3">
-        {tabs.map((tab) => (
+      <div className="mb-6 flex flex-wrap justify-start gap-2 overflow-x-auto">
+        {allTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`rounded-md border px-3 py-2 text-sm font-medium transition-all sm:px-4 sm:text-base ${
+            className={`whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition-all sm:px-4 sm:text-base ${
               activeTab === tab.key
                 ? "border-green-700 bg-green-600 text-white shadow-md"
                 : "border-green-300 bg-white text-green-700 hover:bg-green-50"
@@ -77,21 +120,35 @@ const ReferencePanel: React.FC = () => {
 
       <div className="flex-grow overflow-auto rounded-lg border bg-white p-4 shadow-sm sm:p-6">
         {activeTab === "medications" && (
-          <MedicationsManager readOnly={readOnlyReferenceTabs} />
+          <MedicationsManager readOnly={readOnly} />
         )}
         {activeTab === "procedures" && (
-          <ProceduresManager readOnly={readOnlyReferenceTabs} />
+          <ProceduresManager readOnly={readOnly} />
         )}
-        {activeTab === "exams" && (
-          <ExamsManager readOnly={readOnlyReferenceTabs} />
-        )}
+        {activeTab === "exams" && <ExamsManager readOnly={readOnly} />}
         {activeTab === "specialists" && (
-          <SpecialistsManager readOnly={readOnlyReferenceTabs} />
+          <SpecialistsManager readOnly={readOnly} />
         )}
-        {activeTab === "homecares" && (
-          <HomeCaresManager readOnly={readOnlyReferenceTabs} />
-        )}
+        {activeTab === "homecares" && <HomeCaresManager readOnly={readOnly} />}
         {activeTab === "patients" && <PatientManager canDelete={isAdmin} />}
+
+        {activeTab === "categories" && <CategoriesManager />}
+        {activeTab === "doctors" && <DoctorsManager />}
+        {activeTab === "registration-requests" && (
+          <RegistrationRequestsManager />
+        )}
+        {activeTab === "hospitals" && <HospitalsManager />}
+
+        {/* Dynamic category tabs */}
+        {activeTab.startsWith("cat-") && (
+          <CategoryItemsManager
+            categoryId={activeTab.replace("cat-", "")}
+            categoryName={
+              categories.find((c) => `cat-${c._id}` === activeTab)?.name ||
+              "Категорія"
+            }
+          />
+        )}
       </div>
     </div>
   );

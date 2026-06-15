@@ -13,6 +13,7 @@ const LoginForm: React.FC = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
+  const [registerAsDoctor, setRegisterAsDoctor] = useState(true);
 
   const validateForm = () => {
     if (!email.trim() || !password.trim()) {
@@ -37,8 +38,9 @@ const LoginForm: React.FC = () => {
 
     try {
       if (isRegister) {
-        await registerUser(email, password);
-        toast.success("Реєстрація успішна! Тепер увійдіть.");
+        const role = registerAsDoctor ? "doctor" : undefined;
+        await registerUser(email, password, undefined, role);
+        toast.success("Запит на реєстрацію створено або реєстрація пройшла.");
         setIsRegister(false);
       } else {
         const { accessToken, user } = await loginUser(
@@ -67,7 +69,7 @@ const LoginForm: React.FC = () => {
         <div className="flex-[1] flex items-center justify-center p-6 sm:p-10 md:p-12 bg-white">
           <div className="w-full max-w-sm">
             <h2 className="text-3xl md:text-4xl font-semibold text-green-900 mb-8 text-center">
-              {"Вхід"}
+              {isRegister ? "Реєстрація" : "Вхід"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -84,6 +86,18 @@ const LoginForm: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
               />
 
+              {isRegister && (
+                <label className="flex items-center text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={registerAsDoctor}
+                    onChange={(e) => setRegisterAsDoctor(e.target.checked)}
+                    className="mr-2 accent-green-600"
+                  />
+                  Реєструвати як лікаря
+                </label>
+              )}
+
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center text-gray-600">
                   <input
@@ -96,8 +110,17 @@ const LoginForm: React.FC = () => {
                 </label>
               </div>
 
-              <AuthButton text={"Увійти"} />
+              <AuthButton text={isRegister ? "Реєстрація" : "Увійти"} />
             </form>
+
+            <div className="mt-4 text-center text-sm">
+              <button
+                onClick={() => setIsRegister(!isRegister)}
+                className="text-green-700 hover:underline"
+              >
+                {isRegister ? "Повернутися до входу" : "Зареєструватись"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

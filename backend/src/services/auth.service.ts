@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import User, { IUser } from "../models/UserSchema";
+import * as AdminService from "./admin.service";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
@@ -19,14 +20,31 @@ const toSafeUser = (user: IUser) => ({
   role: (user.role ?? "user").toString().trim().toLowerCase(),
 });
 
-export const register = async (email: string, password: string) => {
+export const register = async (
+  email: string,
+  password: string,
+  _name?: string,
+  role = "user",
+) => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("Користувач вже існує");
 
-  const user = new User({ email, password });
+  // If registering a doctor, create a registration request for admin approval
+  if ((role ?? "").toString().toLowerCase() === "doctor") {
+    const req = await AdminService.createRegistrationRequest(
+      email,
+      password,
+      role,
+    );
+    return req;
+  }
+
+  const user = new User({ email, password, role });
   await user.save();
   return user;
 };
+
+import RegistrationRequest from "../models/RegistrationRequest";
 
 export const login = async (
   email: string,
@@ -34,7 +52,14 @@ export const login = async (
   rememberMe: boolean,
 ) => {
   const user = await User.findOne({ email });
-  if (!user) throw new Error("Неправильний email або пароль");
+  if (!user) {
+    // if there's a pending registration request, inform the client
+    const pending = await RegistrationRequest.findOne({ email });
+    if (pending) throw new Error("Запит на реєстрацію очікує підтвердження");
+    throw new Error("Неправильний email або пароль");
+  }
+
+  if (user.active === false) throw new Error("Акаунт деактивовано");
 
   const match = await user.comparePassword(password);
   if (!match) throw new Error("Неправильний email або пароль");

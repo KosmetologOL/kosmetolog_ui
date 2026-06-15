@@ -151,7 +151,7 @@ export default function HomeCaresManager({
       />
 
       {!readOnly && (
-        <div className="mb-3 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+        <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
           <input
             placeholder="Назва"
             value={form.name}
@@ -186,7 +186,7 @@ export default function HomeCaresManager({
 
           <button
             onClick={handleSave}
-            className={`h-[38px] rounded-md px-3 text-white ${
+            className={`h-[38px] rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
               editingId
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-green-600 hover:bg-green-700"
@@ -194,6 +194,15 @@ export default function HomeCaresManager({
           >
             {editingId ? "Оновити" : "Додати"}
           </button>
+
+          {editingId && (
+            <button
+              onClick={resetForm}
+              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+            >
+              Скасувати
+            </button>
+          )}
         </div>
       )}
 
@@ -203,83 +212,104 @@ export default function HomeCaresManager({
           : "Перетягуйте рядки, щоб змінювати порядок у списку."}
       </p>
 
-      <table className="min-w-full border border-green-200 text-sm">
-        <thead className="bg-green-100">
-          <tr>
-            <th className="px-2 py-1 text-left">Назва</th>
-            <th className="px-2 py-1 text-center">Ранок</th>
-            <th className="px-2 py-1 text-center">Вечір</th>
-            {!readOnly && <th className="px-2 py-1 text-center">Дії</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredList.map((item) => {
-            const isDragged = draggedId === item._id;
-            const isDropTarget = dragOverId === item._id;
-
-            return (
-              <tr
-                key={item._id || item.name}
-                draggable={!dragDisabled}
-                onDragStart={() => setDraggedId(item._id ?? null)}
-                onDragEnd={() => {
-                  setDraggedId(null);
-                  setDragOverId(null);
-                }}
-                onDragOver={(e) => {
-                  if (dragDisabled) {
-                    return;
-                  }
-
-                  e.preventDefault();
-                  setDragOverId(item._id ?? null);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (item._id) {
-                    void handleDrop(item._id);
-                  }
-                }}
-                className={`border-b border-green-100 ${
-                  isDragged ? "opacity-50" : ""
-                } ${isDropTarget ? "bg-green-50" : ""} ${
-                  dragDisabled ? "" : "cursor-grab"
-                }`}
-              >
-                <td className="px-2 py-1">{item.name}</td>
-                <td className="text-center">{item.morning ? "✓" : "–"}</td>
-                <td className="text-center">{item.evening ? "✓" : "–"}</td>
-                {!readOnly && (
-                  <td className="px-2 py-1 text-center">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="mr-3 text-blue-600 hover:underline"
-                    >
-                      Редагувати
-                    </button>
-                    <button
-                      onClick={() => item._id && handleDelete(item._id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Видалити
-                    </button>
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-          {filteredList.length === 0 && (
-            <tr>
-              <td
-                colSpan={readOnly ? 3 : 4}
-                className="px-2 py-4 text-center text-gray-500"
-              >
-                Нічого не знайдено
-              </td>
+      <div className="w-full overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-green-300 bg-green-50">
+              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
+                Назва
+              </th>
+              <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
+                Ранок
+              </th>
+              <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
+                Вечір
+              </th>
+              {!readOnly && (
+                <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700 w-32">
+                  Дії
+                </th>
+              )}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredList.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={readOnly ? 3 : 4}
+                  className="border border-green-200 px-4 py-3 text-center text-gray-500"
+                >
+                  Немає елементів
+                </td>
+              </tr>
+            ) : (
+              filteredList.map((item) => {
+                const isDragged = draggedId === item._id;
+                const isDropTarget = dragOverId === item._id;
+
+                return (
+                  <tr
+                    key={item._id || item.name}
+                    draggable={!dragDisabled}
+                    onDragStart={() => setDraggedId(item._id ?? null)}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDragOverId(null);
+                    }}
+                    onDragOver={(e) => {
+                      if (dragDisabled) {
+                        return;
+                      }
+
+                      e.preventDefault();
+                      setDragOverId(item._id ?? null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (item._id) {
+                        void handleDrop(item._id);
+                      }
+                    }}
+                    className={`border-b border-green-200 hover:bg-green-50 ${
+                      isDragged ? "opacity-50" : ""
+                    } ${isDropTarget ? "bg-green-100" : ""} ${
+                      dragDisabled ? "" : "cursor-grab active:cursor-grabbing"
+                    }`}
+                  >
+                    <td className="border border-green-200 px-4 py-2 text-green-900">
+                      {item.name}
+                    </td>
+                    <td className="border border-green-200 px-4 py-2 text-center text-green-900">
+                      {item.morning ? "✓" : "–"}
+                    </td>
+                    <td className="border border-green-200 px-4 py-2 text-center text-green-900">
+                      {item.evening ? "✓" : "–"}
+                    </td>
+                    {!readOnly && (
+                      <td className="border border-green-200 px-4 py-2 text-center">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="rounded bg-amber-500 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
+                          >
+                            Редагувати
+                          </button>
+                          <button
+                            onClick={() => item._id && handleDelete(item._id)}
+                            className="rounded bg-red-600 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
+                          >
+                            Видалити
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

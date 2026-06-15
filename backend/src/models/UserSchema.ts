@@ -4,7 +4,9 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IUser extends Document {
   email: string;
   password: string;
+  name?: string;
   role?: string;
+  active?: boolean;
   comparePassword: (candidate: string) => Promise<boolean>;
 }
 
@@ -12,9 +14,11 @@ const UserSchema: Schema<IUser> = new Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    name: { type: String },
     role: { type: String, default: "user" },
+    active: { type: Boolean, default: true },
   },
-  { timestamps: true } // 🕒 додає createdAt та updatedAt
+  { timestamps: true }, // 🕒 додає createdAt та updatedAt
 );
 
 UserSchema.pre("save", async function (next) {

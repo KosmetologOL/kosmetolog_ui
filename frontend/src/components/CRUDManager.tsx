@@ -81,6 +81,15 @@ const CRUDManager = <T,>({
   }, [fetchList]);
 
   useEffect(() => {
+    const handler = () => {
+      void fetchList();
+    };
+    window.addEventListener("categoriesUpdated", handler as EventListener);
+    return () =>
+      window.removeEventListener("categoriesUpdated", handler as EventListener);
+  }, [fetchList]);
+
+  useEffect(() => {
     if (textRef.current) {
       textRef.current.style.height = "auto";
       textRef.current.style.height = `${textRef.current.scrollHeight}px`;
@@ -191,7 +200,7 @@ const CRUDManager = <T,>({
 
           <button
             onClick={handleSave}
-            className={`h-[38px] rounded-md px-3 text-white ${
+            className={`h-[38px] rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
               editingId
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-green-600 hover:bg-green-700"
@@ -199,75 +208,117 @@ const CRUDManager = <T,>({
           >
             {editingId ? "Оновити" : "Додати"}
           </button>
+
+          {editingId && (
+            <button
+              onClick={() => {
+                setEditingId(null);
+                setForm({
+                  name: "",
+                  recommendation: "",
+                  morning: false,
+                  evening: false,
+                });
+              }}
+              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+            >
+              Скасувати
+            </button>
+          )}
         </div>
       )}
 
-      <table className="w-full table-fixed border border-green-200 text-sm">
-        <thead className="bg-green-100">
-          <tr>
-            <th className="px-2 py-1 text-left break-words">Назва</th>
-            {hasRecommendation && (
-              <th className="px-2 py-1 text-left break-words">Рекомендація</th>
-            )}
-            {hasMorningEvening && (
-              <>
-                <th className="px-2 py-1 text-center">Ранок</th>
-                <th className="px-2 py-1 text-center">Вечір</th>
-              </>
-            )}
-            {showActions && <th className="px-2 py-1 text-center">Дії</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredList.map((item) => (
-            <tr key={item._id} className="border-b border-green-100">
-              <td className="px-2 py-1 break-words">{item.name}</td>
+      <div className="w-full overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b-2 border-green-300 bg-green-50">
+              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
+                Назва
+              </th>
               {hasRecommendation && (
-                <td className="whitespace-pre-wrap break-words px-2 py-1 text-gray-700">
-                  {item.recommendation}
-                </td>
+                <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
+                  Рекомендація
+                </th>
               )}
               {hasMorningEvening && (
                 <>
-                  <td className="text-center">{item.morning ? "✓" : "–"}</td>
-                  <td className="text-center">{item.evening ? "✓" : "–"}</td>
+                  <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
+                    Ранок
+                  </th>
+                  <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
+                    Вечір
+                  </th>
                 </>
               )}
               {showActions && (
-                <td className="px-2 py-1 text-center">
-                  {editable && (
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="mr-3 text-blue-600 hover:underline"
-                    >
-                      Редагувати
-                    </button>
-                  )}
-                  {deletable && (
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Видалити
-                    </button>
-                  )}
-                </td>
+                <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700 w-32">
+                  Дії
+                </th>
               )}
             </tr>
-          ))}
-
-          {filteredList.length === 0 && (
-            <tr>
-              <td
-                colSpan={colSpan}
-                className="px-2 py-4 text-center text-gray-500"
-              >
-                Нічого не знайдено
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredList.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={colSpan}
+                  className="border border-green-200 px-4 py-3 text-center text-gray-500"
+                >
+                  Немає елементів
+                </td>
+              </tr>
+            ) : (
+              filteredList.map((item) => (
+                <tr
+                  key={item._id}
+                  className="border-b border-green-200 hover:bg-green-50"
+                >
+                  <td className="border border-green-200 px-4 py-2 text-green-900">
+                    {item.name}
+                  </td>
+                  {hasRecommendation && (
+                    <td className="border border-green-200 px-4 py-2 text-gray-700 whitespace-pre-wrap text-sm max-w-md">
+                      {item.recommendation || "-"}
+                    </td>
+                  )}
+                  {hasMorningEvening && (
+                    <>
+                      <td className="border border-green-200 px-4 py-2 text-center text-green-900">
+                        {item.morning ? "✓" : "–"}
+                      </td>
+                      <td className="border border-green-200 px-4 py-2 text-center text-green-900">
+                        {item.evening ? "✓" : "–"}
+                      </td>
+                    </>
+                  )}
+                  {showActions && (
+                    <td className="border border-green-200 px-4 py-2 text-center">
+                      <div className="flex gap-2 justify-center">
+                        {editable && (
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="rounded bg-amber-500 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
+                          >
+                            Редагувати
+                          </button>
+                        )}
+                        {deletable && (
+                          <button
+                            onClick={() => handleDelete(item._id)}
+                            className="rounded bg-red-600 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
+                          >
+                            Видалити
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

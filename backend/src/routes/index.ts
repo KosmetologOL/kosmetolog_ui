@@ -1,4 +1,5 @@
 import { Router } from "express";
+import adminRoutes from "./admin.routes";
 import authRoutes from "./auth.routes";
 import examsRoutes from "./exams.routes";
 import homeCareRoutes from "./homeCareRoutes";
@@ -16,6 +17,7 @@ router.use("/procedures", proceduresRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/specialists", specialistsRoutes);
 router.use("/auth", authRoutes);
+router.use("/admin", adminRoutes);
 router.use("/patients", patientRoutes);
 router.use("/home-cares", homeCareRoutes);
 
