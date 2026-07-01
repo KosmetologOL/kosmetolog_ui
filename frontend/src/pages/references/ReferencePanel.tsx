@@ -1,8 +1,7 @@
-import { getCategories } from "#api/adminApi";
+import { getCategories as fetchCategories } from "#api/referenceApi";
 import CategoriesManager from "#components/Admin/CategoriesManager";
 import CategoryItemsManager from "#components/Admin/CategoryItemsManager";
 import DoctorsManager from "#components/Admin/DoctorsManager";
-import HospitalsManager from "#components/Admin/HospitalsManager";
 import RegistrationRequestsManager from "#components/Admin/RegistrationRequestsManager";
 import ExamsManager from "#components/Exams/ExamsManager";
 import HomeCaresManager from "#components/HomeCare/HomeCaresManager";
@@ -22,16 +21,13 @@ interface TabItem {
 const ReferencePanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("categories");
   const [categories, setCategories] = useState<any[]>([]);
-  const { isAdmin, isDoctor, user } = useAuth();
+  const { isAdmin, isDoctor, user, logout } = useAuth();
   const readOnly = isDoctor && !isAdmin;
 
-  // Load categories
   const loadCategories = async () => {
     try {
-      const cats = await getCategories();
+      const cats = await fetchCategories();
       setCategories(cats || []);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).__categories = cats || [];
     } catch (err) {
       console.error("Failed to load categories:", err);
     }
@@ -45,7 +41,6 @@ const ReferencePanel: React.FC = () => {
       window.removeEventListener("categoriesUpdated", handler as EventListener);
   }, []);
 
-  // Static reference tabs (original)
   const referenceTabs: TabItem[] = [
     { key: "medications", label: "Засоби" },
     { key: "procedures", label: "Процедури" },
@@ -55,15 +50,12 @@ const ReferencePanel: React.FC = () => {
     { key: "patients", label: "Пацієнти" },
   ];
 
-  // Static admin tabs
   const adminTabs: TabItem[] = [
     { key: "categories", label: "Категорії" },
     { key: "doctors", label: "Лікарі" },
     { key: "registration-requests", label: "Запити" },
-    { key: "hospitals", label: "Лікарні" },
   ];
 
-  // Dynamic category tabs
   const dynamicTabs: TabItem[] = categories.map((cat) => ({
     key: `cat-${cat._id}`,
     label: cat.name,
@@ -91,10 +83,7 @@ const ReferencePanel: React.FC = () => {
         </div>
         <div>
           <button
-            onClick={() => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (window as any).__logout?.();
-            }}
+            onClick={() => void logout()}
             className="rounded border px-3 py-1 text-sm text-green-700 hover:bg-green-50"
           >
             Logout
@@ -137,9 +126,7 @@ const ReferencePanel: React.FC = () => {
         {activeTab === "registration-requests" && (
           <RegistrationRequestsManager />
         )}
-        {activeTab === "hospitals" && <HospitalsManager />}
 
-        {/* Dynamic category tabs */}
         {activeTab.startsWith("cat-") && (
           <CategoryItemsManager
             categoryId={activeTab.replace("cat-", "")}

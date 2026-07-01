@@ -1,11 +1,13 @@
 import type { IPatient } from "#api/patientsApi";
 import { getReportByPatientId } from "#api/reportsApi";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
+import { useAuth } from "#hooks/useAuth";
 import { normalizeProcedureStages } from "#types/normalizeProcedureStages";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
 const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const createdDate = patient.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
@@ -25,6 +27,8 @@ const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
         homeCares: report.homeCares || [],
         additionalInfo: report.additionalInfo || "",
         comments: report.comments || "",
+        finalNote: report.finalNote || "",
+        doctorName: user?.name || "",
       });
     } catch {
       alert("Не вдалося створити PDF — можливо, звіт ще не створено.");

@@ -28,6 +28,8 @@ interface GenerateReportPDFParams {
   homeCares: IHomeCare[];
   additionalInfo: string;
   comments: string;
+  finalNote?: string;
+  doctorName?: string;
 }
 
 export const generateReportPDF = async ({
@@ -39,6 +41,8 @@ export const generateReportPDF = async ({
   homeCares,
   additionalInfo,
   comments,
+  finalNote,
+  doctorName,
 }: GenerateReportPDFParams) => {
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -121,33 +125,33 @@ export const generateReportPDF = async ({
   y += 15;
 
   const addSection = (title: string, lines: string[]) => {
-    if (y > 270) {
+    if (y > 274) {
       pdf.addPage();
-      y = 20;
+      y = 18;
     }
 
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(12);
     pdf.text(`${title}:`, 14, y);
-    y += 6;
+    y += 4;
 
     pdf.setFont("Noah", "normal");
-    pdf.setFontSize(11);
+    pdf.setFontSize(10);
 
     if (lines.length === 0) lines = ["—"];
 
     lines.forEach((line) => {
       const split = pdf.splitTextToSize(line, pageWidth - 28);
       split.forEach((row: string) => {
-        if (y > 285) {
+        if (y > 282) {
           pdf.addPage();
-          y = 20;
+          y = 18;
         }
         pdf.text(row, 18, y);
-        y += 6;
+        y += 4;
       });
     });
-    y += 6;
+    y += 4;
   };
 
   if (specialists.length > 0) {
@@ -204,7 +208,7 @@ export const generateReportPDF = async ({
       pdf.setFont("Noah", "bold");
       pdf.setFontSize(10);
       pdf.text("День", colX.morning, y);
-      pdf.text("Ніч", colX.evening, y);
+      pdf.text("Вечір", colX.evening, y);
       pdf.text("Орієнтовна вартість", colX.price, y);
       y += 7;
 
@@ -348,10 +352,15 @@ export const generateReportPDF = async ({
   if (comments?.trim()) {
     addSection("Додаткова інформація", [comments]);
   }
+
+  if (finalNote?.trim()) {
+    addSection("Додатковий текст", [finalNote]);
+  }
+
   {
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    if (y > pageHeight - 24) {
+    if (y > pageHeight - 30) {
       pdf.addPage();
     }
 
@@ -359,13 +368,24 @@ export const generateReportPDF = async ({
     const labelX = pageWidth - 78;
     const lineX = labelX + 18;
     const lineWidth = 42;
-    const signatureY = finalPageHeight - 6;
+    const signatureY = finalPageHeight - 24;
 
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(11);
-    pdf.text("Лікар", labelX + 6, signatureY);
-
+    pdf.text("Лікар:", labelX, signatureY);
     pdf.line(lineX, signatureY, lineX + lineWidth, signatureY);
+
+    if (doctorName?.trim()) {
+      const name = doctorName.trim();
+      pdf.setFont("Noah", "normal");
+      pdf.setFontSize(10);
+
+      const textWidth = pdf.getTextWidth(name);
+      const textX = lineX + (lineWidth - textWidth) / 2;
+      const textY = signatureY - 1;
+
+      pdf.text(name, textX, textY);
+    }
   }
   pdf.save(
     `Рекомендаційний_лист_${

@@ -3,7 +3,7 @@ import {
   deleteCategory,
   getCategories,
   updateCategory,
-} from "#api/adminApi";
+} from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 const CategoriesManager: React.FC = () => {

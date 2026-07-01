@@ -14,6 +14,8 @@ const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [registerAsDoctor, setRegisterAsDoctor] = useState(true);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   const validateForm = () => {
     if (!email.trim() || !password.trim()) {
@@ -39,9 +41,20 @@ const LoginForm: React.FC = () => {
     try {
       if (isRegister) {
         const role = registerAsDoctor ? "doctor" : undefined;
-        await registerUser(email, password, undefined, role);
+        const name = registerAsDoctor
+          ? `${firstName.trim()} ${lastName.trim()}`.trim()
+          : undefined;
+
+        if (registerAsDoctor && (!firstName.trim() || !lastName.trim())) {
+          toast.error("Вкажіть ім'я та прізвище для реєстрації лікаря");
+          return;
+        }
+
+        await registerUser(email, password, name, role);
         toast.success("Запит на реєстрацію створено або реєстрація пройшла.");
         setIsRegister(false);
+        setFirstName("");
+        setLastName("");
       } else {
         const { accessToken, user } = await loginUser(
           email,
@@ -87,15 +100,34 @@ const LoginForm: React.FC = () => {
               />
 
               {isRegister && (
-                <label className="flex items-center text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={registerAsDoctor}
-                    onChange={(e) => setRegisterAsDoctor(e.target.checked)}
-                    className="mr-2 accent-green-600"
-                  />
-                  Реєструвати як лікаря
-                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={registerAsDoctor}
+                      onChange={(e) => setRegisterAsDoctor(e.target.checked)}
+                      className="mr-2 accent-green-600"
+                    />
+                    Реєструвати як лікаря
+                  </label>
+
+                  {registerAsDoctor && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <AuthInput
+                        type="text"
+                        placeholder="Ім'я"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                      />
+                      <AuthInput
+                        type="text"
+                        placeholder="Прізвище"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="flex items-center justify-between text-sm">

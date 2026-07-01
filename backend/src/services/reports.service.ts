@@ -86,6 +86,7 @@ const buildReportPayload = (data: Partial<IReport>) => ({
   specialists: normalizeSpecialists(data.specialists),
   homeCares: normalizeHomeCares(data.homeCares),
   additionalInfo: data.additionalInfo?.trim() || "",
+  finalNote: data.finalNote?.trim() || "",
   comments: data.comments?.trim() || "",
 });
 

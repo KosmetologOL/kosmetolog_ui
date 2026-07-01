@@ -3,7 +3,7 @@ import {
   deleteCategoryItem,
   listCategoryItems,
   updateCategoryItem,
-} from "#api/adminApi";
+} from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 interface Props {

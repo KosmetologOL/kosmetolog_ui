@@ -1,4 +1,4 @@
-import { getDoctors, setUserActive } from "#api/adminApi";
+import { getDoctors, setUserActive } from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 const DoctorsManager: React.FC = () => {

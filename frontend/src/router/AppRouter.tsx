@@ -38,7 +38,7 @@ export const AppRouter: React.FC = () => {
         }
       />
       <Route
-        path="/admin"
+        path="/references"
         element={
           <PrivateRoute allowedRoles={["admin", "doctor"]}>
             <ReferencePanel />

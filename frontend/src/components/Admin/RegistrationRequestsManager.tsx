@@ -1,4 +1,4 @@
-import { approveRegistration, getRegistrationRequests } from "#api/adminApi";
+import { approveRegistration, getRegistrationRequests } from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 const RegistrationRequestsManager: React.FC = () => {

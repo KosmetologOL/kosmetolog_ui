@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import ActivityLog from "../models/ActivityLog";
 import Category from "../models/Category";
 import CategoryItem from "../models/CategoryItem";
-import Hospital from "../models/Hospital";
 import RegistrationRequest from "../models/RegistrationRequest";
 import User from "../models/UserSchema";
 
@@ -29,6 +28,7 @@ export const createRegistrationRequest = async (
   email: string,
   password: string,
   role = "doctor",
+  name = "",
 ) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error("Користувач з таким email вже існує");
@@ -39,7 +39,7 @@ export const createRegistrationRequest = async (
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  const req = new RegistrationRequest({ email, passwordHash, role });
+  const req = new RegistrationRequest({ email, passwordHash, role, name });
   await req.save();
   await ActivityLog.create({ action: "registration-request", meta: { email } });
   return req;
@@ -56,17 +56,16 @@ export const approveRegistration = async (
     email: req.email,
     password: req.passwordHash,
     role: req.role || "doctor",
+    name: req.name || "",
   });
 
-  // passwordHash is already hashed; place into password field without re-hashing
-  // but the pre-save hook will re-hash only if modified; mark as not modified by directly setting isModified false
   user.password = req.passwordHash as any;
-  // Ensure mongoose does not re-hash: set isModified to false by skipping middleware: save with { validateBeforeSave: false } won't skip pre save; instead we will create using collection insert
 
   const inserted = await (User.collection.insertOne({
     email: user.email,
     password: user.password,
     role: user.role,
+    name: user.name,
     active: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -85,7 +84,6 @@ export const approveRegistration = async (
   return createdUser;
 };
 
-// Categories
 export const listCategories = async () => {
   return Category.find();
 };
@@ -116,51 +114,6 @@ export const deleteCategory = async (id: string) => {
   return cat;
 };
 
-// Hospitals
-export const listHospitals = async () => {
-  return Hospital.find();
-};
-
-export const createHospital = async (payload: {
-  name: string;
-  address?: string;
-  phone?: string;
-}) => {
-  const h = new Hospital(payload);
-  await h.save();
-  await ActivityLog.create({
-    action: "create-hospital",
-    meta: { name: h.name },
-  });
-  return h;
-};
-
-export const updateHospital = async (
-  id: string,
-  payload: Partial<{
-    name: string;
-    address: string;
-    phone: string;
-    active: boolean;
-  }>,
-) => {
-  const h = await Hospital.findByIdAndUpdate(id, payload, { new: true });
-  if (!h) throw new Error("Лікарню не знайдено");
-  await ActivityLog.create({ action: "update-hospital", meta: { id } });
-  return h;
-};
-
-export const deleteHospital = async (id: string) => {
-  const h = await Hospital.findByIdAndDelete(id);
-  if (!h) throw new Error("Лікарню не знайдено");
-  await ActivityLog.create({
-    action: "delete-hospital",
-    meta: { id, name: h.name },
-  });
-  return h;
-};
-
-// Category Items
 export const listCategoryItems = async (categoryId: string) => {
   return CategoryItem.find({ category: categoryId });
 };

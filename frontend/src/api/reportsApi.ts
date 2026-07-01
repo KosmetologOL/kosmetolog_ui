@@ -38,6 +38,7 @@ export interface IReport {
     recommendations?: string;
   }[];
   additionalInfo?: string;
+  finalNote?: string;
   comments?: string;
   createdAt?: string;
   updatedAt?: string;

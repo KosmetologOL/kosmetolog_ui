@@ -2,13 +2,12 @@ import { Request, Response } from "express";
 import * as AuthService from "../services/auth.service";
 
 export const registerUser = async (req: Request, res: Response) => {
-  const { email, password, role } = req.body;
+  const { email, password, name, role } = req.body;
   if (!email || !password)
     return res.status(400).json({ message: "Email і пароль обов'язкові" });
 
   try {
-    const result = await AuthService.register(email, password, undefined, role);
-    // If registration created a request, return info about request
+    const result = await AuthService.register(email, password, name, role);
     if ((result as any)._id && (result as any).passwordHash) {
       return res.status(201).json({ message: "Запит на реєстрацію створено" });
     }

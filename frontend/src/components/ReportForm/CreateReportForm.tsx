@@ -5,6 +5,7 @@ import {
   type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
+import { useAuth } from "#hooks/useAuth";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -65,9 +66,11 @@ const CreateReportForm: React.FC = () => {
     [],
   );
 
+  const { user } = useAuth();
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [finalNote, setFinalNote] = useState("");
   const createdDate = patient?.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
     : "";
@@ -89,6 +92,7 @@ const CreateReportForm: React.FC = () => {
           setSelectedSpecialists(reportData.specialists ?? []);
           setSelectedHomeCares(reportData.homeCares ?? []);
           setAdditionalInfo(reportData.additionalInfo ?? "");
+          setFinalNote(reportData.finalNote ?? "");
           setComments(reportData.comments ?? "");
           setReportHistory(reportData.editHistory ?? []);
 
@@ -261,6 +265,7 @@ const CreateReportForm: React.FC = () => {
       ),
       comments,
       additionalInfo,
+      finalNote,
     };
 
     try {
@@ -538,6 +543,16 @@ const CreateReportForm: React.FC = () => {
 
               <ReportComments comments={comments} setComments={setComments} />
 
+              <ReportSection title="Текст у кінці рекомендаційного листа">
+                <textarea
+                  value={finalNote}
+                  onChange={(e) => setFinalNote(e.target.value)}
+                  placeholder="Текст, який буде додано в кінець PDF"
+                  className="w-full border border-green-200 rounded-md text-sm p-2 resize-none focus:ring-1 focus:outline-none"
+                  rows={4}
+                />
+              </ReportSection>
+
               <ReportActions
                 reportId={reportId}
                 patient={patient}
@@ -552,6 +567,8 @@ const CreateReportForm: React.FC = () => {
                     homeCares: selectedHomeCares,
                     comments,
                     additionalInfo,
+                    finalNote,
+                    doctorName: user?.name || "",
                   })
                 }
               />

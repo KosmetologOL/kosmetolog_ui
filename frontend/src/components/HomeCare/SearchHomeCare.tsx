@@ -72,6 +72,9 @@ const SearchHomeCare: React.FC<Props> = ({
     evening: boolean,
     careId: string,
   ) => {
+    const medicationId =
+      medication._id || `${careId}-${medication.name}-${Math.random()}`;
+
     const isDuplicate = selectedHomeCares.some(
       (item) =>
         item.name === care.name && item.medicationName === medication.name,
@@ -84,7 +87,7 @@ const SearchHomeCare: React.FC<Props> = ({
 
     const newItem: IHomeCare = {
       ...care,
-      _id: care._id || careId,
+      _id: medicationId,
       medicationName: medication.name,
       recommendations: medication.recommendation,
       morning,
@@ -94,6 +97,10 @@ const SearchHomeCare: React.FC<Props> = ({
     setSelectedHomeCares((prev) => [...prev, newItem]);
     setSearchValues((prev) => ({ ...prev, [careId]: "" }));
     setResults((prev) => ({ ...prev, [careId]: [] }));
+    setCheckboxes((prev) => ({
+      ...prev,
+      [medicationId]: { morning: false, evening: false },
+    }));
   };
 
   if (loadingCares) {

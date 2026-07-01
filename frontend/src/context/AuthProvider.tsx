@@ -37,16 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     delete axios.defaults.headers.common.Authorization;
   };
 
-  // expose simple hook for UI places that don't use context directly (admin panel logout button)
-  React.useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__logout = logout;
-    return () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (window as any).__logout;
-    };
-  }, [logout]);
-
   useEffect(() => {
     const initializeAuth = async () => {
       const savedToken = localStorage.getItem("token");

@@ -79,7 +79,7 @@ const PatientList: React.FC = () => {
 
             {canAccessReferencePanel && (
               <button
-                onClick={() => navigate("/admin")}
+                onClick={() => navigate("/references")}
                 className="px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:scale-95 transition"
               >
                 Панель довідників

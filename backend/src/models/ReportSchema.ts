@@ -42,6 +42,7 @@ export interface IReport extends Document {
   homeCares?: IReportHomeCare[];
   comments?: string;
   additionalInfo?: string;
+  finalNote?: string;
   editHistory?: IReportEditHistoryItem[];
 }
 
@@ -96,6 +97,7 @@ const ReportSchema = new Schema<IReport>(
     homeCares: [HomeCareSubSchema],
     comments: String,
     additionalInfo: String,
+    finalNote: String,
     editHistory: [EditHistorySubSchema],
   },
   { timestamps: true },

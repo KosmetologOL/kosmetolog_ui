@@ -7,6 +7,7 @@ axios.defaults.withCredentials = true;
 export interface AuthUser {
   id: string;
   email: string;
+  name?: string;
   role: string;
 }
 
@@ -29,12 +30,13 @@ export const loginUser = async (
 export const registerUser = async (
   email: string,
   password: string,
-  _name?: string,
+  name?: string,
   role?: string,
 ) => {
   const { data } = await axios.post(`${API_URL}/register`, {
     email,
     password,
+    name,
     role,
   });
   return data;
