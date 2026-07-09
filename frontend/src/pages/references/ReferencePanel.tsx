@@ -50,11 +50,24 @@ const ReferencePanel: React.FC = () => {
     { key: "patients", label: "Пацієнти" },
   ];
 
-  const adminTabs: TabItem[] = [
-    { key: "categories", label: "Категорії" },
-    { key: "doctors", label: "Лікарі" },
-    { key: "registration-requests", label: "Запити" },
-  ];
+  useEffect(() => {
+    if (
+      !isAdmin &&
+      (activeTab === "categories" ||
+        activeTab === "doctors" ||
+        activeTab === "registration-requests")
+    ) {
+      setActiveTab("medications");
+    }
+  }, [activeTab, isAdmin]);
+
+  const adminTabs: TabItem[] = isAdmin
+    ? [
+        { key: "categories", label: "Категорії" },
+        { key: "doctors", label: "Лікарі" },
+        { key: "registration-requests", label: "Запити" },
+      ]
+    : [];
 
   const dynamicTabs: TabItem[] = categories.map((cat) => ({
     key: `cat-${cat._id}`,

@@ -86,6 +86,11 @@ export const generateReportPDF = async ({
   pdf.setTextColor(0, 0, 0);
 
   const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentX = 18;
+  const contentWidth = pageWidth - margin * 2;
+  const lineHeight = 5;
   let y = 15;
 
   try {
@@ -116,24 +121,28 @@ export const generateReportPDF = async ({
 
   pdf.setFont("Noah", "bold");
   pdf.setFontSize(12);
-  pdf.text("Пацієнт: ", 14, y + 7);
+  pdf.text("Пацієнт:", margin, y + 7);
 
   pdf.setFont("Noah", "normal");
   pdf.setFontSize(12);
-  pdf.text(patient.fullName || "", 30, y + 7);
+  pdf.text(patient.fullName || "", margin + 18, y + 7);
 
-  y += 15;
+  y += 14;
 
   const addSection = (title: string, lines: string[]) => {
-    if (y > 274) {
-      pdf.addPage();
-      y = 18;
-    }
+    const ensurePage = () => {
+      if (y > pageHeight - 30) {
+        pdf.addPage();
+        y = 18;
+      }
+    };
+
+    ensurePage();
 
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(12);
-    pdf.text(`${title}:`, 14, y);
-    y += 4;
+    pdf.text(`${title}:`, margin, y);
+    y += 6;
 
     pdf.setFont("Noah", "normal");
     pdf.setFontSize(10);
@@ -141,15 +150,14 @@ export const generateReportPDF = async ({
     if (lines.length === 0) lines = ["—"];
 
     lines.forEach((line) => {
-      const split = pdf.splitTextToSize(line, pageWidth - 28);
-      split.forEach((row: string) => {
-        if (y > 282) {
-          pdf.addPage();
-          y = 18;
-        }
-        pdf.text(row, 18, y);
-        y += 4;
+      const split = pdf.splitTextToSize(line, contentWidth - 8);
+      split.forEach((row: string, rowIndex: number) => {
+        ensurePage();
+        const text = rowIndex === 0 ? `• ${row}` : row;
+        pdf.text(text, contentX, y);
+        y += lineHeight;
       });
+      y += 0.5;
     });
     y += 4;
   };
@@ -171,8 +179,8 @@ export const generateReportPDF = async ({
   if (homeCares.length > 0) {
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(12);
-    pdf.text("Домашній догляд", 14, y);
-    y += 8;
+    pdf.text("Домашній догляд", margin, y);
+    y += 6;
 
     const allCares = await getAllHomeCares();
 
@@ -181,7 +189,7 @@ export const generateReportPDF = async ({
     );
 
     const colX = {
-      product: 20,
+      product: contentX,
       morning: pageWidth - 65,
       evening: pageWidth - 47,
       price: pageWidth - 35,
@@ -203,14 +211,14 @@ export const generateReportPDF = async ({
       pdf.setFont("Noah", "bold");
       pdf.setFontSize(11);
       pdf.text(category, 16, y);
-      y += 6;
+      y += 4;
 
       pdf.setFont("Noah", "bold");
       pdf.setFontSize(10);
       pdf.text("День", colX.morning, y);
       pdf.text("Вечір", colX.evening, y);
       pdf.text("Орієнтовна вартість", colX.price, y);
-      y += 7;
+      y += 5;
 
       for (const h of items) {
         if (y > 260) {
@@ -251,23 +259,23 @@ export const generateReportPDF = async ({
           y += 5;
         });
 
-        y += 3;
+        y += 2;
       }
 
-      y += 5;
+      y += 3;
     }
   }
 
   if (procedureStages && procedureStages.length > 0) {
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(12);
-    pdf.text("Протокол процедур:", 14, y);
-    y += 8;
+    pdf.text("Протокол процедур:", margin, y);
+    y += 5;
 
     const priceColumnX = pageWidth - 35;
     const priceLineStartX = priceColumnX + 6;
     const priceLineWidth = 18;
-    const textBlockWidth = priceColumnX - 30;
+    const textBlockWidth = priceColumnX - margin - 6;
 
     for (const [i, stage] of procedureStages.entries()) {
       if (y > 270) {
@@ -302,7 +310,7 @@ export const generateReportPDF = async ({
 
         if (idx > 0) {
           pdf.text("+", 20, y);
-          y += 8;
+          y += 4;
         }
 
         const name = proc.name;
@@ -329,13 +337,13 @@ export const generateReportPDF = async ({
           priceY,
         );
 
-        y += (nameLines.length + commentLines.length) * 5 + 4;
+        y += (nameLines.length + commentLines.length) * 4.5 + 3;
       }
 
-      y += 5;
+      y += 3;
     }
 
-    y += 10;
+    y += 5;
   }
 
   if (procedures.length > 0) {

@@ -46,6 +46,9 @@ interface EditingProcedureState {
   comment?: string;
 }
 
+const DEFAULT_FINAL_NOTE = `Якщо Вас щось турбує, обов’язково повідомте за номером телефону
+📞 +38 (073) 838-23-23 або напишіть нам в Instagram, Telegram. При термінових станах телефонуйте за номером чи у позаробочий час у Instagram (декілька разів, якщо без відповіді).`;
+
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
   const [patient, setPatient] = useState<IPatient | null>(null);
@@ -70,7 +73,7 @@ const CreateReportForm: React.FC = () => {
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
   const [additionalInfo, setAdditionalInfo] = useState("");
-  const [finalNote, setFinalNote] = useState("");
+  const [finalNote, setFinalNote] = useState(DEFAULT_FINAL_NOTE);
   const createdDate = patient?.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
     : "";
@@ -92,7 +95,7 @@ const CreateReportForm: React.FC = () => {
           setSelectedSpecialists(reportData.specialists ?? []);
           setSelectedHomeCares(reportData.homeCares ?? []);
           setAdditionalInfo(reportData.additionalInfo ?? "");
-          setFinalNote(reportData.finalNote ?? "");
+          setFinalNote(reportData.finalNote?.trim() || DEFAULT_FINAL_NOTE);
           setComments(reportData.comments ?? "");
           setReportHistory(reportData.editHistory ?? []);
 
@@ -327,8 +330,14 @@ const CreateReportForm: React.FC = () => {
                               ? "Створення"
                               : "Оновлення"}
                           </span>{" "}
-                          — {entry.email || "невідомий користувач"} (
-                          {entry.role || "role не вказана"}) —{" "}
+                          —{" "}
+                          {[
+                            (entry.name || "").trim(),
+                            (entry.email || "").trim(),
+                          ]
+                            .filter(Boolean)
+                            .join(" • ") || "невідомий користувач"}{" "}
+                          ({entry.role || "role не вказана"}) —{" "}
                           {new Date(entry.editedAt).toLocaleString("uk-UA")}
                         </li>
                       ))}

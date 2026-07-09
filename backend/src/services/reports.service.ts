@@ -8,6 +8,7 @@ import Report, {
 interface ReportActor {
   id?: string;
   email?: string;
+  name?: string;
   role?: string;
 }
 
@@ -63,6 +64,7 @@ const createHistoryItem = (
   editedAt: new Date(),
   userId: actor?.id || "",
   email: actor?.email || "",
+  name: actor?.name || "",
   role: actor?.role || "",
 });
 

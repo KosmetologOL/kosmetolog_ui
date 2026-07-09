@@ -14,6 +14,7 @@ export interface IReportEditHistoryItem {
   editedAt: Date;
   userId?: string;
   email?: string;
+  name?: string;
   role?: string;
 }
 
@@ -67,6 +68,7 @@ const EditHistorySubSchema = new Schema<IReportEditHistoryItem>(
     editedAt: { type: Date, default: Date.now },
     userId: { type: String, default: "" },
     email: { type: String, default: "" },
+    name: { type: String, default: "" },
     role: { type: String, default: "" },
   },
   { _id: false },

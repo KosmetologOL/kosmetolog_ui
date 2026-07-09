@@ -5,6 +5,7 @@ export interface IReportEditHistoryItem {
   editedAt: string;
   userId?: string;
   email?: string;
+  name?: string;
   role?: string;
 }
 

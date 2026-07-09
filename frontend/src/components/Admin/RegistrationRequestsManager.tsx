@@ -1,4 +1,7 @@
-import { approveRegistration, getRegistrationRequests } from "#api/referenceApi";
+import {
+  approveRegistration,
+  getRegistrationRequests,
+} from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 const RegistrationRequestsManager: React.FC = () => {
@@ -22,22 +25,36 @@ const RegistrationRequestsManager: React.FC = () => {
     <div>
       <h2 className="mb-4 text-lg font-semibold">Запити на реєстрацію</h2>
       <div className="space-y-2">
-        {requests.map((r) => (
-          <div
-            key={r._id}
-            className="flex items-center justify-between rounded border p-3"
-          >
-            <div className="font-medium">{r.email}</div>
-            <div>
-              <button
-                onClick={() => approve(r._id)}
-                className="rounded bg-green-600 px-3 py-1.5 text-white"
-              >
-                Підтвердити
-              </button>
+        {requests.map((r) => {
+          const fullName = [r.name, r.firstName, r.lastName]
+            .filter(Boolean)
+            .join(" ")
+            .trim();
+
+          return (
+            <div
+              key={r._id}
+              className="flex items-center justify-between rounded border p-3"
+            >
+              <div className="min-w-0">
+                <div className="font-medium">
+                  {fullName || r.email || "Користувач без імені"}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {fullName ? r.email : "Email не вказано"}
+                </div>
+              </div>
+              <div>
+                <button
+                  onClick={() => approve(r._id)}
+                  className="rounded bg-green-600 px-3 py-1.5 text-white"
+                >
+                  Підтвердити
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
