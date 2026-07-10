@@ -20,3 +20,12 @@ export const setDoctorActive = async (req: Request, res: Response) => {
     res.status(400).json({ message: (err as Error).message });
   }
 };
+
+export const deleteDoctor = async (req: Request, res: Response) => {
+  try {
+    await DoctorsService.deleteDoctor(req.params.id);
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+};

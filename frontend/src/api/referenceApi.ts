@@ -14,6 +14,10 @@ export const setUserActive = async (id: string, active: boolean) => {
   return data.user;
 };
 
+export const deleteDoctor = async (id: string) => {
+  await axios.delete(`${BASE_URL}/doctors/${id}`);
+};
+
 export const getRegistrationRequests = async () => {
   const { data } = await axios.get(`${BASE_URL}/registration-requests`);
   return data.requests;

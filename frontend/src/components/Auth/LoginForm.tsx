@@ -71,21 +71,21 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-green-50">
-      <div className="flex flex-col md:flex-row w-full max-w-[1200px] h-full md:h-[90vh] rounded-2xl overflow-hidden shadow-2xl bg-white">
-        <div className="flex-[2] flex items-center justify-center bg-green-100 p-8 md:p-12">
-          <div className="w-64 h-64 sm:w-80 sm:h-80 md:w-[400px] md:h-[400px] xl:w-[500px] xl:h-[500px]">
+    <div className="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-green-50 md:flex md:items-center md:justify-center">
+      <div className="flex h-full w-full flex-col bg-white shadow-2xl md:h-[90dvh] md:max-w-[1200px] md:flex-row md:overflow-hidden md:rounded-2xl">
+        <div className="flex h-[25dvh] min-h-36 flex-none items-center justify-center bg-green-100 p-4 md:h-auto md:flex-[2] md:p-12">
+          <div className="h-40 w-40 sm:h-48 sm:w-48 md:h-[400px] md:w-[400px] xl:h-[500px] xl:w-[500px]">
             <Lottie animationData={greenLogo} loop={false} autoplay={true} />
           </div>
         </div>
 
-        <div className="flex-[1] flex items-center justify-center p-6 sm:p-10 md:p-12 bg-white">
+        <div className="flex flex-1 items-start justify-center px-4 pt-16 sm:px-6 sm:pt-20 md:flex-[1] md:items-center md:p-12 bg-white">
           <div className="w-full max-w-sm">
-            <h2 className="text-3xl md:text-4xl font-semibold text-green-900 mb-8 text-center">
+            <h2 className="mb-4 text-center text-2xl font-semibold text-green-900 md:mb-8 md:text-4xl">
               {isRegister ? "Реєстрація" : "Вхід"}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-5">
               <AuthInput
                 type="email"
                 placeholder="Email"
@@ -100,8 +100,8 @@ const LoginForm: React.FC = () => {
               />
 
               {isRegister && (
-                <div className="space-y-3">
-                  <label className="flex items-center text-gray-600">
+                <div className="space-y-2 md:space-y-3">
+                  <label className="flex items-center text-sm text-gray-600 md:text-base">
                     <input
                       type="checkbox"
                       checked={registerAsDoctor}
@@ -112,7 +112,7 @@ const LoginForm: React.FC = () => {
                   </label>
 
                   {registerAsDoctor && (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                       <AuthInput
                         type="text"
                         placeholder="Ім'я"
@@ -145,7 +145,7 @@ const LoginForm: React.FC = () => {
               <AuthButton text={isRegister ? "Реєстрація" : "Увійти"} />
             </form>
 
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-2 text-center text-sm md:mt-4">
               <button
                 onClick={() => setIsRegister(!isRegister)}
                 className="text-green-700 hover:underline"

@@ -1,4 +1,4 @@
-import { getDoctors, setUserActive } from "#api/referenceApi";
+import { deleteDoctor, getDoctors, setUserActive } from "#api/referenceApi";
 import React, { useEffect, useState } from "react";
 
 const DoctorsManager: React.FC = () => {
@@ -15,6 +15,12 @@ const DoctorsManager: React.FC = () => {
 
   const toggle = async (id: string, active: boolean) => {
     await setUserActive(id, !active);
+    void load();
+  };
+
+  const remove = async (id: string) => {
+    if (!window.confirm("Видалити цього лікаря?")) return;
+    await deleteDoctor(id);
     void load();
   };
 
@@ -41,12 +47,18 @@ const DoctorsManager: React.FC = () => {
                   {fullName ? d.email : "Email не вказано"}
                 </div>
               </div>
-              <div>
+              <div className="flex gap-2">
                 <button
                   onClick={() => toggle(d._id, d.active)}
                   className={`rounded px-3 py-1 text-sm ${d.active ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
                 >
                   {d.active ? "Деактивувати" : "Активувати"}
+                </button>
+                <button
+                  onClick={() => remove(d._id)}
+                  className="rounded bg-red-600 px-3 py-1 text-sm text-white"
+                >
+                  Видалити
                 </button>
               </div>
             </div>

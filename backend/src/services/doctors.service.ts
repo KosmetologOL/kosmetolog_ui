@@ -19,3 +19,11 @@ export const toggleUserActive = async (id: string, active: boolean) => {
   await ActivityLog.create({ user: user._id, action: `set-active:${active}` });
   return user;
 };
+
+export const deleteDoctor = async (id: string) => {
+  const doctor = await User.findOneAndDelete({ _id: id, role: "doctor" });
+
+  if (!doctor) {
+    throw new Error("Лікаря не знайдено");
+  }
+};
