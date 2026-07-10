@@ -34,7 +34,7 @@ const RegistrationRequestsManager: React.FC = () => {
           return (
             <div
               key={r._id}
-              className="flex items-center justify-between rounded border p-3"
+              className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <div className="font-medium">
@@ -44,7 +44,7 @@ const RegistrationRequestsManager: React.FC = () => {
                   {fullName ? r.email : "Email не вказано"}
                 </div>
               </div>
-              <div>
+              <div className="flex shrink-0 justify-end">
                 <button
                   onClick={() => approve(r._id)}
                   className="rounded bg-green-600 px-3 py-1.5 text-white"

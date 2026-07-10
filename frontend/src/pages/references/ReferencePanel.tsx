@@ -120,7 +120,7 @@ const ReferencePanel: React.FC = () => {
         ))}
       </div>
 
-      <div className="flex-grow overflow-auto rounded-lg border bg-white p-4 shadow-sm sm:p-6">
+      <div className="w-full overflow-visible rounded-lg border bg-white p-4 shadow-sm sm:p-6 md:flex-grow md:overflow-auto">
         {activeTab === "medications" && (
           <MedicationsManager readOnly={readOnly} />
         )}

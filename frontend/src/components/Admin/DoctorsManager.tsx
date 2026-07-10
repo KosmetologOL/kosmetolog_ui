@@ -37,7 +37,7 @@ const DoctorsManager: React.FC = () => {
           return (
             <div
               key={d._id}
-              className="flex items-center justify-between rounded border p-3"
+              className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
                 <div className="font-medium">
@@ -47,7 +47,7 @@ const DoctorsManager: React.FC = () => {
                   {fullName ? d.email : "Email не вказано"}
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 justify-end gap-2">
                 <button
                   onClick={() => toggle(d._id, d.active)}
                   className={`rounded px-3 py-1 text-sm ${d.active ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
