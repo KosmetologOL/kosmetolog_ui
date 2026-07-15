@@ -1,6 +1,12 @@
 import { Router } from "express";
 import * as ProceduresController from "../controllers/procedures.controller";
 import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { validateObjectIdParams } from "../utils/objectId";
+import {
+  nameOnlySchema,
+  nameWithRecommendationSchema,
+} from "../validators/reference.validation";
 
 const router = Router();
 
@@ -15,11 +21,23 @@ router.get(
   requireRoles("admin", "doctor"),
   ProceduresController.searchProcedures,
 );
-router.post("/", requireRoles("admin"), ProceduresController.createProcedure);
-router.put("/:id", requireRoles("admin"), ProceduresController.updateProcedure);
+router.post(
+  "/",
+  requireRoles("admin"),
+  validate(nameWithRecommendationSchema),
+  ProceduresController.createProcedure,
+);
+router.put(
+  "/:id",
+  requireRoles("admin"),
+  validateObjectIdParams("id"),
+  validate(nameOnlySchema),
+  ProceduresController.updateProcedure,
+);
 router.delete(
   "/:id",
   requireRoles("admin"),
+  validateObjectIdParams("id"),
   ProceduresController.deleteProcedure,
 );
 

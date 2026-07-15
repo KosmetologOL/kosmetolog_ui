@@ -1,11 +1,12 @@
 import Procedure, { IProcedure } from "../models/ProcedureSchema";
+import { escapeRegex } from "../utils/regex";
 
 export const getAll = async (): Promise<IProcedure[]> => {
   return Procedure.find();
 };
 export const searchByName = async (query: string): Promise<IProcedure[]> => {
   return Procedure.find({
-    name: { $regex: query, $options: "i" },
+    name: { $regex: escapeRegex(query), $options: "i" },
   }).limit(20);
 };
 export const create = async (data: {

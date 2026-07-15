@@ -7,7 +7,7 @@ import { errorHandler } from "./middlewares/errorHandler";
 import { notFound } from "./middlewares/notFound";
 import routes from "./routes";
 
-dotenv.config({ path: "./src/config/.env" });
+dotenv.config();
 
 const app = express();
 

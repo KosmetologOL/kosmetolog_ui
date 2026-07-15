@@ -5,6 +5,7 @@ import {
   type AuthUser,
 } from "#api/authApi";
 import { AuthContext } from "#context/AuthContext";
+import { registerAuthHandlers } from "../lib/sessionRefresh";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 
@@ -36,6 +37,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("user");
     delete axios.defaults.headers.common.Authorization;
   };
+
+  useEffect(() => {
+    registerAuthHandlers({
+      updateToken: (newToken: string) => {
+        setToken(newToken);
+        localStorage.setItem("token", newToken);
+        axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+      },
+      onSessionExpired: () => {
+        void logout();
+      },
+    });
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {

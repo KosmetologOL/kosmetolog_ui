@@ -1,6 +1,12 @@
 import express from "express";
 import * as ExamsController from "../controllers/exams.controller";
 import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
+import { validate } from "../middlewares/validate.middleware";
+import { validateObjectIdParams } from "../utils/objectId";
+import {
+  nameOnlySchema,
+  nameWithRecommendationSchema,
+} from "../validators/reference.validation";
 
 const router = express.Router();
 
@@ -11,8 +17,24 @@ router.get(
   requireRoles("admin", "doctor"),
   ExamsController.searchExams,
 );
-router.post("/", requireRoles("admin"), ExamsController.createExam);
-router.put("/:id", requireRoles("admin"), ExamsController.updateExam);
-router.delete("/:id", requireRoles("admin"), ExamsController.deleteExam);
+router.post(
+  "/",
+  requireRoles("admin"),
+  validate(nameWithRecommendationSchema),
+  ExamsController.createExam,
+);
+router.put(
+  "/:id",
+  requireRoles("admin"),
+  validateObjectIdParams("id"),
+  validate(nameOnlySchema),
+  ExamsController.updateExam,
+);
+router.delete(
+  "/:id",
+  requireRoles("admin"),
+  validateObjectIdParams("id"),
+  ExamsController.deleteExam,
+);
 
 export default router;

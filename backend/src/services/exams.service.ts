@@ -1,11 +1,12 @@
 import Exam, { IExam } from "../models/ExamSchema";
+import { escapeRegex } from "../utils/regex";
 
 export const getAll = async (): Promise<IExam[]> => {
   return Exam.find();
 };
 export const searchByName = async (query: string): Promise<IExam[]> => {
   return Exam.find({
-    name: { $regex: query, $options: "i" },
+    name: { $regex: escapeRegex(query), $options: "i" },
   }).limit(20);
 };
 export const create = async (data: {
