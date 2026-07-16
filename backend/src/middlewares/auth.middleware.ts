@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+import { JWT_SECRET } from "../config/env";
 
 export type UserRole = "admin" | "doctor" | "user";
 
