@@ -1,4 +1,4 @@
-import axios from "axios";
+import { createReferenceApi } from "./createReferenceApi";
 
 export interface IMedication {
   _id?: string;
@@ -7,24 +7,10 @@ export interface IMedication {
   recommendation: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL + "/medications";
+const medicationsApi = createReferenceApi<IMedication>("medications");
 
-export const setAuthToken = (token: string | null) => {
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete axios.defaults.headers.common["Authorization"];
-  }
-};
-
-export const getAllMedications = async () =>
-  (await axios.get<IMedication[]>(API_URL)).data;
-export const searchMedicationsByName = async (query: string) =>
-  (await axios.get<IMedication[]>(`${API_URL}/search`, { params: { query } }))
-    .data;
-export const createMedication = async (medication: IMedication) =>
-  (await axios.post(API_URL, medication)).data;
-export const updateMedication = async (id: string, medication: IMedication) =>
-  (await axios.put(`${API_URL}/${id}`, medication)).data;
-export const deleteMedication = async (id: string) =>
-  (await axios.delete(`${API_URL}/${id}`)).data;
+export const getAllMedications = medicationsApi.getAll;
+export const searchMedicationsByName = medicationsApi.searchByName;
+export const createMedication = medicationsApi.create;
+export const updateMedication = medicationsApi.update;
+export const deleteMedication = medicationsApi.remove;

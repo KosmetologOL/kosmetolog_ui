@@ -1,28 +1,19 @@
 import Procedure, { IProcedure } from "../models/ProcedureSchema";
-import { escapeRegex } from "../utils/regex";
+import { createReferenceService } from "./createReferenceService";
 
-export const getAll = async (): Promise<IProcedure[]> => {
-  return Procedure.find();
-};
-export const searchByName = async (query: string): Promise<IProcedure[]> => {
-  return Procedure.find({
-    name: { $regex: escapeRegex(query), $options: "i" },
-  }).limit(20);
-};
-export const create = async (data: {
+const service = createReferenceService<IProcedure>(Procedure);
+
+export const getAll = service.getAll;
+export const searchByName = service.searchByName;
+
+export const create = (data: {
   name: string;
   recommendation: string;
-}): Promise<IProcedure> => {
-  const procedure = new Procedure(data);
-  return procedure.save();
-};
+}): Promise<IProcedure> => service.create(data);
 
-export const update = async (
+export const update = (
   id: string,
-  data: { name: string }
-): Promise<IProcedure | null> => {
-  return Procedure.findByIdAndUpdate(id, { $set: data }, { new: true });
-};
-export const remove = async (id: string): Promise<IProcedure | null> => {
-  return Procedure.findByIdAndDelete(id);
-};
+  data: { name: string },
+): Promise<IProcedure | null> => service.update(id, data);
+
+export const remove = service.remove;

@@ -1,4 +1,4 @@
-import axios from "axios";
+import { createReferenceApi } from "./createReferenceApi";
 
 export interface IExam {
   _id?: string;
@@ -7,21 +7,10 @@ export interface IExam {
   recommendation: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL + "/exams";
-export const setAuthToken = (token: string | null) => {
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete axios.defaults.headers.common["Authorization"];
-  }
-};
+const examsApi = createReferenceApi<IExam>("exams");
 
-export const getAllExams = async () => (await axios.get<IExam[]>(API_URL)).data;
-export const searchExamsByName = async (query: string) =>
-  (await axios.get<IExam[]>(`${API_URL}/search`, { params: { query } })).data;
-export const createExam = async (exam: IExam) =>
-  (await axios.post(API_URL, exam)).data;
-export const updateExam = async (id: string, exam: IExam) =>
-  (await axios.put(`${API_URL}/${id}`, exam)).data;
-export const deleteExam = async (id: string) =>
-  (await axios.delete(`${API_URL}/${id}`)).data;
+export const getAllExams = examsApi.getAll;
+export const searchExamsByName = examsApi.searchByName;
+export const createExam = examsApi.create;
+export const updateExam = examsApi.update;
+export const deleteExam = examsApi.remove;

@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL + "/specialists";
+import { createReferenceApi } from "./createReferenceApi";
 
 export interface ISpecialist {
   _id?: string;
@@ -8,14 +6,10 @@ export interface ISpecialist {
   query?: string;
 }
 
-export const getAllSpecialists = async () =>
-  (await axios.get<ISpecialist[]>(API_URL)).data;
-export const searchSpecialistsByName = async (query: string) =>
-  (await axios.get<ISpecialist[]>(`${API_URL}/search`, { params: { query } }))
-    .data;
-export const createSpecialist = async (specialist: ISpecialist) =>
-  (await axios.post(API_URL, specialist)).data;
-export const updateSpecialist = async (id: string, specialist: ISpecialist) =>
-  (await axios.put(`${API_URL}/${id}`, specialist)).data;
-export const deleteSpecialist = async (id: string) =>
-  (await axios.delete(`${API_URL}/${id}`)).data;
+const specialistsApi = createReferenceApi<ISpecialist>("specialists");
+
+export const getAllSpecialists = specialistsApi.getAll;
+export const searchSpecialistsByName = specialistsApi.searchByName;
+export const createSpecialist = specialistsApi.create;
+export const updateSpecialist = specialistsApi.update;
+export const deleteSpecialist = specialistsApi.remove;

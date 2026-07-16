@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL + "/procedures";
+import { createReferenceApi } from "./createReferenceApi";
 
 export interface IProcedure {
   _id?: string;
@@ -9,14 +7,10 @@ export interface IProcedure {
   recommendation: string;
 }
 
-export const getAllProcedures = async () =>
-  (await axios.get<IProcedure[]>(API_URL)).data;
-export const searchProceduresByName = async (query: string) =>
-  (await axios.get<IProcedure[]>(`${API_URL}/search`, { params: { query } }))
-    .data;
-export const createProcedure = async (procedure: IProcedure) =>
-  (await axios.post(API_URL, procedure)).data;
-export const updateProcedure = async (id: string, procedure: IProcedure) =>
-  (await axios.put(`${API_URL}/${id}`, procedure)).data;
-export const deleteProcedure = async (id: string) =>
-  (await axios.delete(`${API_URL}/${id}`)).data;
+const proceduresApi = createReferenceApi<IProcedure>("procedures");
+
+export const getAllProcedures = proceduresApi.getAll;
+export const searchProceduresByName = proceduresApi.searchByName;
+export const createProcedure = proceduresApi.create;
+export const updateProcedure = proceduresApi.update;
+export const deleteProcedure = proceduresApi.remove;
