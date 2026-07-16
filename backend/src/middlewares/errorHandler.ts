@@ -1,7 +1,12 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import ApiError from "../utils/ApiError";
 
-export const errorHandler = (err: ApiError, _req: Request, res: Response) => {
+export const errorHandler = (
+  err: ApiError,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+) => {
   console.error("Error:", err);
 
   const status = err.status || 500;

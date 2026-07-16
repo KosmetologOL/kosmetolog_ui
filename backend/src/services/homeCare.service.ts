@@ -1,4 +1,5 @@
 import HomeCare from "../models/HomeCareSchema";
+import { escapeRegex } from "../utils/regex";
 
 const ensureHomeCareOrder = async () => {
   const homeCares = await HomeCare.find().sort({ order: 1, _id: 1 });
@@ -21,7 +22,7 @@ const ensureHomeCareOrder = async () => {
 export const getAllHomeCaresService = async (search?: string) => {
   await ensureHomeCareOrder();
   const query: any = {};
-  if (search) query.name = { $regex: search, $options: "i" };
+  if (search) query.name = { $regex: escapeRegex(search), $options: "i" };
   return await HomeCare.find(query).sort({ order: 1, _id: 1 });
 };
 
