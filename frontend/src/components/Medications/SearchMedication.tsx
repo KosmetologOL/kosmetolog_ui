@@ -1,4 +1,5 @@
 import { searchMedicationsByName, type IMedication } from "#api/medicationsApi";
+import FormattedText from "#components/FormattedText";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -66,7 +67,9 @@ const SearchMedication: React.FC<Props> = ({
               {results.map((medication) => (
                 <tr key={medication._id}>
                   <td className="px-2 py-1">{medication.name}</td>
-                  <td className="px-2 py-1">{medication.recommendation}</td>
+                  <td className="px-2 py-1">
+                    <FormattedText markdown={medication.recommendation} />
+                  </td>
                   <td className="px-2 py-1">
                     <button
                       onClick={() => addMedication(medication)}

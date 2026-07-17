@@ -26,6 +26,7 @@ import { getReportCreatorName } from "#types/getReportCreatorName";
 import SearchMedication from "#components/Medications/SearchMedication";
 import SelectedMedicationsTable from "#components/Medications/SelectedMedicatonsTable";
 import SearchProcedure from "#components/Procedures/SearchProcedure";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import ReportActions from "#components/ReportForm/ReportActions";
@@ -453,9 +454,11 @@ const CreateReportForm: React.FC = () => {
                             <p className="font-semibold text-sm text-gray-800">
                               {proc.name}
                             </p>
-                            <p className="mt-1 text-xs leading-5 text-gray-500 whitespace-pre-wrap">
-                              {proc.recommendation || "Рекомендація відсутня"}
-                            </p>
+                            <FormattedText
+                              markdown={proc.recommendation}
+                              fallback="Рекомендація відсутня"
+                              className="mt-1 text-xs leading-5 text-gray-500"
+                            />
                             {proc.comment &&
                               proc.comment !== DEFAULT_PROCEDURE_COMMENT && (
                                 <div className="mt-2 rounded-lg border border-green-100 bg-green-50 px-2.5 py-2 text-xs leading-5 text-green-900 whitespace-pre-wrap">
@@ -526,8 +529,11 @@ const CreateReportForm: React.FC = () => {
                       ).entries(),
                     ].map(([name, rec]) => (
                       <li key={name}>
-                        <strong>{name}:</strong>{" "}
-                        {rec || "Рекомендація відсутня"}
+                        <strong>{name}:</strong>
+                        <FormattedText
+                          markdown={rec}
+                          fallback="Рекомендація відсутня"
+                        />
                       </li>
                     ))}
                   </ul>

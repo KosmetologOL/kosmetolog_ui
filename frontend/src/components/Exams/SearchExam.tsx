@@ -1,4 +1,5 @@
 import { searchExamsByName, type IExam } from "#api/examsApi";
+import FormattedText from "#components/FormattedText";
 import React, { useEffect, useState } from "react";
 
 interface Props {
@@ -62,7 +63,9 @@ const SearchExam: React.FC<Props> = ({ selectedExams, setSelectedExams }) => {
               {results.map((exam) => (
                 <tr key={exam._id}>
                   <td className="px-2 py-1">{exam.name}</td>
-                  <td className="px-2 py-1">{exam.recommendation}</td>
+                  <td className="px-2 py-1">
+                    <FormattedText markdown={exam.recommendation} />
+                  </td>
                   <td className="px-2 py-1">
                     <button
                       onClick={() => addExam(exam)}

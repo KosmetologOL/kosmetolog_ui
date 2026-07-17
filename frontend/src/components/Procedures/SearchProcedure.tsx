@@ -1,4 +1,5 @@
 import { searchProceduresByName, type IProcedure } from "#api/proceduresApi";
+import FormattedText from "#components/FormattedText";
 import { useEffect, useState } from "react";
 
 interface Props<T extends IProcedure> {
@@ -66,7 +67,9 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
               {results.map((procedure) => (
                 <tr key={procedure._id}>
                   <td className="px-2 py-1">{procedure.name}</td>
-                  <td className="px-2 py-1">{procedure.recommendation}</td>
+                  <td className="px-2 py-1">
+                    <FormattedText markdown={procedure.recommendation} />
+                  </td>
                   <td className="px-2 py-1">
                     <button
                       onClick={() => addProcedure(procedure)}
