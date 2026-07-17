@@ -11,6 +11,7 @@ export default function ExamsManager({
       apiPath="exams"
       hasRecommendation
       readOnly={readOnly}
+      enableCsvImportExport
     />
   );
 }

@@ -11,6 +11,7 @@ import ProceduresManager from "#components/Procedures/ProceduresManager";
 import SpecialistsManager from "#components/Specialists/SpecialistsManager";
 import { useAuth } from "#hooks/useAuth";
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 interface TabItem {
   key: string;
@@ -19,7 +20,21 @@ interface TabItem {
 }
 
 const ReferencePanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>("categories");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTabState] = useState<string>(
+    () => searchParams.get("tab") || "categories",
+  );
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", tab);
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const [categories, setCategories] = useState<any[]>([]);
   const { isAdmin, isDoctor, user, logout } = useAuth();
   const readOnly = isDoctor && !isAdmin;

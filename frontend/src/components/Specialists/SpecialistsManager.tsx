@@ -5,5 +5,12 @@ export default function SpecialistsManager({
 }: {
   readOnly?: boolean;
 }) {
-  return <CRUDManager title="Спеціалісти" apiPath="specialists" readOnly={readOnly} />;
+  return (
+    <CRUDManager
+      title="Спеціалісти"
+      apiPath="specialists"
+      readOnly={readOnly}
+      enableCsvImportExport
+    />
+  );
 }
