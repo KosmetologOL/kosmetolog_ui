@@ -21,6 +21,7 @@ import type { IHomeCare } from "#api/homeCaresApi";
 import type { IMedication } from "#api/medicationsApi";
 import type { IProcedure } from "#api/proceduresApi";
 import type { ISpecialist } from "#api/specialistsApi";
+import { getReportCreatorName } from "#types/getReportCreatorName";
 
 import SearchMedication from "#components/Medications/SearchMedication";
 import SelectedMedicationsTable from "#components/Medications/SelectedMedicatonsTable";
@@ -47,6 +48,8 @@ interface EditingProcedureState {
 }
 
 const DEFAULT_FINAL_NOTE = `Якщо Вас щось турбує, обов’язково повідомте за номером телефону
+📞 +38 (073) 838-23-23 або напишіть нам в Instagram, Telegram. При термінових станах телефонуйте за номером чи у позаробочий час у Instagram (декілька разів, якщо без відповіді).`;
+const DEFAULT_PROCEDURE_COMMENT = `Якщо Вас щось турбує, обов’язково повідомте за номером телефону
 📞 +38 (073) 838-23-23 або напишіть нам в Instagram, Telegram. При термінових станах телефонуйте за номером чи у позаробочий час у Instagram (декілька разів, якщо без відповіді).`;
 
 const CreateReportForm: React.FC = () => {
@@ -423,30 +426,20 @@ const CreateReportForm: React.FC = () => {
                     <SearchProcedure
                       selectedProcedures={stage.procedures as IProcedure[]}
                       setSelectedProcedures={(updated) => {
-                        if (typeof updated === "function") {
-                          const newProcedures = updated(
-                            stage.procedures as IProcedure[],
-                          );
-                          updateStage(stage.id, {
-                            ...stage,
-                            procedures: newProcedures.map((p) => ({
-                              ...p,
-                              comment:
-                                stage.procedures.find((sp) => sp._id === p._id)
-                                  ?.comment || "",
-                            })),
-                          });
-                        } else {
-                          updateStage(stage.id, {
-                            ...stage,
-                            procedures: updated.map((p) => ({
-                              ...p,
-                              comment:
-                                stage.procedures.find((sp) => sp._id === p._id)
-                                  ?.comment || "",
-                            })),
-                          });
-                        }
+                        const newProcedures =
+                          typeof updated === "function"
+                            ? updated(stage.procedures as IProcedure[])
+                            : updated;
+
+                        updateStage(stage.id, {
+                          ...stage,
+                          procedures: newProcedures.map((p) => ({
+                            ...p,
+                            comment:
+                              stage.procedures.find((sp) => sp._id === p._id)
+                                ?.comment || DEFAULT_PROCEDURE_COMMENT,
+                          })),
+                        });
                       }}
                     />
 
@@ -463,11 +456,12 @@ const CreateReportForm: React.FC = () => {
                             <p className="mt-1 text-xs leading-5 text-gray-500 whitespace-pre-wrap">
                               {proc.recommendation || "Рекомендація відсутня"}
                             </p>
-                            {proc.comment && (
-                              <div className="mt-2 rounded-lg border border-green-100 bg-green-50 px-2.5 py-2 text-xs leading-5 text-green-900 whitespace-pre-wrap">
-                                {proc.comment}
-                              </div>
-                            )}
+                            {proc.comment &&
+                              proc.comment !== DEFAULT_PROCEDURE_COMMENT && (
+                                <div className="mt-2 rounded-lg border border-green-100 bg-green-50 px-2.5 py-2 text-xs leading-5 text-green-900 whitespace-pre-wrap">
+                                  {proc.comment}
+                                </div>
+                              )}
                           </div>
                           <button
                             type="button"
@@ -577,7 +571,8 @@ const CreateReportForm: React.FC = () => {
                     comments,
                     additionalInfo,
                     finalNote,
-                    doctorName: user?.name || "",
+                    doctorName:
+                      getReportCreatorName(reportHistory) || user?.name || "",
                   })
                 }
               />

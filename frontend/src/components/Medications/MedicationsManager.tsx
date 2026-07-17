@@ -11,6 +11,7 @@ export default function MedicationsManager({
       apiPath="medications"
       hasRecommendation
       readOnly={readOnly}
+      enableCsvImportExport
     />
   );
 }

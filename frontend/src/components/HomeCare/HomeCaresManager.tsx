@@ -6,7 +6,13 @@ import {
   reorderHomeCares,
   updateHomeCare,
 } from "#api/homeCaresApi";
-import { useEffect, useState } from "react";
+import { downloadCsv, parseCsv, toCsv } from "#types/csv";
+import { useEffect, useRef, useState } from "react";
+
+const parseCsvBoolean = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  return normalized === "так" || normalized === "1" || normalized === "true";
+};
 
 const moveItem = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   const nextItems = [...items];
@@ -36,6 +42,8 @@ export default function HomeCaresManager({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchList = async () => {
     const data = await getAllHomeCares();
@@ -135,13 +143,141 @@ export default function HomeCaresManager({
     }
   };
 
+  const handleExportCsv = () => {
+    const header = ["Назва", "Ранок", "Вечір", "Засіб", "Рекомендації"];
+    const rows = list.map((item) => [
+      item.name,
+      item.morning ? "так" : "ні",
+      item.evening ? "так" : "ні",
+      item.medicationName ?? "",
+      item.recommendations ?? "",
+    ]);
+    downloadCsv("home-cares.csv", toCsv(header, rows));
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const rawText = await file.text();
+    const text =
+      rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+    const rows = parseCsv(text);
+
+    if (rows.length < 2) {
+      window.alert("Файл порожній або не містить рядків з даними.");
+      return;
+    }
+
+    const [header, ...dataRows] = rows;
+    const nameIdx = header.findIndex((h) => h.trim().toLowerCase() === "назва");
+    const morningIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "ранок",
+    );
+    const eveningIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "вечір",
+    );
+    const medicationIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "засіб",
+    );
+    const recIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "рекомендації",
+    );
+
+    if (nameIdx === -1) {
+      window.alert('У файлі немає колонки "Назва".');
+      return;
+    }
+
+    const parsed = dataRows
+      .map((cols) => ({
+        name: (cols[nameIdx] ?? "").trim(),
+        morning: morningIdx >= 0 ? parseCsvBoolean(cols[morningIdx] ?? "") : false,
+        evening: eveningIdx >= 0 ? parseCsvBoolean(cols[eveningIdx] ?? "") : false,
+        medicationName:
+          medicationIdx >= 0 ? (cols[medicationIdx] ?? "").trim() : "",
+        recommendations: recIdx >= 0 ? (cols[recIdx] ?? "").trim() : "",
+      }))
+      .filter((row) => row.name);
+
+    if (parsed.length === 0) {
+      window.alert("У файлі немає рядків із заповненою назвою.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      for (const row of parsed) {
+        const existing = list.find(
+          (item) => item.name.trim().toLowerCase() === row.name.toLowerCase(),
+        );
+        if (existing?._id) {
+          await updateHomeCare(existing._id, row);
+        } else {
+          await createHomeCare(row);
+        }
+      }
+      await fetchList();
+      window.alert("Імпорт завершено.");
+    } catch {
+      window.alert(
+        "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const dragDisabled = readOnly || Boolean(normalizedSearch) || isSavingOrder;
 
   return (
     <div className="flex w-full flex-col items-start justify-start">
-      <h2 className="mb-3 text-lg font-semibold text-green-700">
-        Домашній догляд
-      </h2>
+      <div className="mb-3 flex w-full flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-green-700">
+          Домашній догляд
+        </h2>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95"
+          >
+            Експортувати в CSV
+          </button>
+
+          {!readOnly && (
+            <>
+              <button
+                type="button"
+                onClick={handleImportClick}
+                disabled={isImporting}
+                className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95 disabled:opacity-50"
+              >
+                {isImporting ? "Імпортування..." : "Імпортувати з CSV"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleImportFile}
+                className="hidden"
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       <input
         placeholder="Пошук"

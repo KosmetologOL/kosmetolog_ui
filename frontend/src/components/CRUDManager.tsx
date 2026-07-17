@@ -1,3 +1,4 @@
+import { downloadCsv, parseCsv, toCsv } from "#types/csv";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -17,6 +18,7 @@ interface Props<T> {
   readOnly?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  enableCsvImportExport?: boolean;
   mapItem?: (item: T) => CRUDItem;
   mapToApi?: (item: CRUDItem) => unknown;
 }
@@ -29,6 +31,7 @@ const CRUDManager = <T,>({
   readOnly = false,
   canEdit,
   canDelete,
+  enableCsvImportExport = false,
   mapItem,
   mapToApi,
 }: Props<T>) => {
@@ -44,7 +47,9 @@ const CRUDManager = <T,>({
   });
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const textRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = list.filter((item) => {
@@ -134,6 +139,96 @@ const CRUDManager = <T,>({
     setForm(item);
   };
 
+  const handleExportCsv = () => {
+    const header = hasRecommendation ? ["Назва", "Рекомендація"] : ["Назва"];
+    const rows = list.map((item) =>
+      hasRecommendation
+        ? [item.name, item.recommendation ?? ""]
+        : [item.name],
+    );
+    downloadCsv(`${apiPath}.csv`, toCsv(header, rows));
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const rawText = await file.text();
+    const text =
+      rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+    const rows = parseCsv(text);
+
+    if (rows.length < 2) {
+      window.alert("Файл порожній або не містить рядків з даними.");
+      return;
+    }
+
+    const [header, ...dataRows] = rows;
+    const nameIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "назва",
+    );
+    const recIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "рекомендація",
+    );
+
+    if (nameIdx === -1) {
+      window.alert('У файлі немає колонки "Назва".');
+      return;
+    }
+
+    const parsed = dataRows
+      .map((cols) => ({
+        name: (cols[nameIdx] ?? "").trim(),
+        recommendation: recIdx >= 0 ? (cols[recIdx] ?? "").trim() : "",
+      }))
+      .filter((row) => row.name);
+
+    if (parsed.length === 0) {
+      window.alert("У файлі немає рядків із заповненою назвою.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      for (const row of parsed) {
+        const existing = list.find(
+          (item) => item.name.trim().toLowerCase() === row.name.toLowerCase(),
+        );
+        const payload = hasRecommendation
+          ? { name: row.name, recommendation: row.recommendation }
+          : { name: row.name };
+
+        if (existing?._id) {
+          await axios.put(
+            `${import.meta.env.VITE_API_URL}/${apiPath}/${existing._id}`,
+            payload,
+          );
+        } else {
+          await axios.post(`${import.meta.env.VITE_API_URL}/${apiPath}`, payload);
+        }
+      }
+      await fetchList();
+      window.alert("Імпорт завершено.");
+    } catch {
+      window.alert(
+        "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const colSpan =
     (hasRecommendation ? 2 : 1) +
     (hasMorningEvening ? 2 : 0) +
@@ -141,7 +236,41 @@ const CRUDManager = <T,>({
 
   return (
     <div className="flex flex-col items-start justify-start">
-      <h2 className="mb-3 text-lg font-semibold text-green-700">{title}</h2>
+      <div className="mb-3 flex w-full flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-green-700">{title}</h2>
+
+        {enableCsvImportExport && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95"
+            >
+              Експортувати в CSV
+            </button>
+
+            {editable && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleImportClick}
+                  disabled={isImporting}
+                  className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95 disabled:opacity-50"
+                >
+                  {isImporting ? "Імпортування..." : "Імпортувати з CSV"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleImportFile}
+                  className="hidden"
+                />
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       <input
         placeholder="Пошук"

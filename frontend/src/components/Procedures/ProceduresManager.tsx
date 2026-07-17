@@ -11,6 +11,7 @@ export default function ProceduresManager({
       apiPath="procedures"
       hasRecommendation
       readOnly={readOnly}
+      enableCsvImportExport
     />
   );
 }
