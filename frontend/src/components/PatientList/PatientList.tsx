@@ -12,6 +12,7 @@ const PatientList: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<IPatient | null>(null);
   const navigate = useNavigate();
   const { canAccessReferencePanel } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +42,14 @@ const PatientList: React.FC = () => {
     fetchPatients();
 
     navigate("/create-report/" + createdPatient._id);
+  };
+
+  const handleUpdatePatient = async (patient: IPatient) => {
+    if (!editingPatient?._id) return;
+
+    await patientsApi.updatePatient(editingPatient._id, patient);
+    setEditingPatient(null);
+    fetchPatients();
   };
 
   return (
@@ -100,7 +109,7 @@ const PatientList: React.FC = () => {
           ) : (
             <ul className="flex flex-col gap-4">
               {patients.map((p) => (
-                <PatientItem key={p._id} patient={p} />
+                <PatientItem key={p._id} patient={p} onEdit={setEditingPatient} />
               ))}
             </ul>
           )}
@@ -134,6 +143,14 @@ const PatientList: React.FC = () => {
         onClose={() => setShowModal(false)}
         onSave={handleAddPatient}
         patient={{ fullName: "" }}
+      />
+
+      <PatientFormModal
+        visible={Boolean(editingPatient)}
+        onClose={() => setEditingPatient(null)}
+        onSave={handleUpdatePatient}
+        patient={editingPatient ?? { fullName: "" }}
+        title="Редагувати дані пацієнта"
       />
     </div>
   );

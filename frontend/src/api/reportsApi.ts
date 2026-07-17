@@ -77,10 +77,3 @@ export const updateReport = async (
   const response = await axios.put<IReport>(`${API_URL}/${id}`, report);
   return response.data;
 };
-
-export const reportsApi = {
-  getAllReports,
-  getReportById,
-  createReport,
-  updateReport,
-};

@@ -2,11 +2,17 @@ import type { IPatient } from "#api/patientsApi";
 import { getReportByPatientId } from "#api/reportsApi";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import { useAuth } from "#hooks/useAuth";
+import { getReportCreatorName } from "#types/getReportCreatorName";
 import { normalizeProcedureStages } from "#types/normalizeProcedureStages";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
+interface Props {
+  patient: IPatient;
+  onEdit: (patient: IPatient) => void;
+}
+
+const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const createdDate = patient.createdAt
@@ -28,7 +34,7 @@ const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
         additionalInfo: report.additionalInfo || "",
         comments: report.comments || "",
         finalNote: report.finalNote || "",
-        doctorName: user?.name || "",
+        doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
       });
     } catch {
       alert("Не вдалося створити PDF — можливо, звіт ще не створено.");
@@ -47,6 +53,13 @@ const PatientItem: React.FC<{ patient: IPatient }> = ({ patient }) => {
       </div>
 
       <div className="flex gap-3 mt-2 justify-end">
+        <button
+          onClick={() => onEdit(patient)}
+          className="px-3 py-1 border border-amber-300 text-amber-700 rounded hover:bg-amber-100"
+        >
+          Редагувати
+        </button>
+
         <button
           onClick={() => navigate(`/create-report/${patient._id}`)}
           className="px-3 py-1 border border-green-300 text-green-700 rounded hover:bg-green-100"

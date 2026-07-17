@@ -6,6 +6,7 @@ interface Props {
   onClose: () => void;
   onSave: (patient: IPatient) => void;
   patient?: IPatient;
+  title?: string;
 }
 
 export const PatientFormModal: React.FC<Props> = ({
@@ -13,6 +14,7 @@ export const PatientFormModal: React.FC<Props> = ({
   onClose,
   onSave,
   patient,
+  title = "Створити карту пацієнта",
 }) => {
   const [form, setForm] = useState<IPatient>(patient || { fullName: "" });
 
@@ -42,7 +44,7 @@ export const PatientFormModal: React.FC<Props> = ({
         </button>
 
         <h2 className="text-2xl font-semibold text-center text-green-800 mb-6">
-          Створити карту пацієнта
+          {title}
         </h2>
 
         <div className="space-y-4">

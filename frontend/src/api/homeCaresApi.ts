@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL + "/home-cares";
+import { createReferenceApi } from "./createReferenceApi";
 
 export interface IHomeCare {
   _id?: string;
@@ -11,40 +10,21 @@ export interface IHomeCare {
   medicationName?: string;
   recommendations?: string;
 }
-export const getAllHomeCares = async (): Promise<IHomeCare[]> => {
-  const { data } = await axios.get(API_URL);
-  return data;
-};
 
-export const searchHomeCaresByName = async (
-  name?: string,
-): Promise<IHomeCare[]> => {
-  const params: Record<string, string> = {};
-  if (name) params.search = name;
-  const { data } = await axios.get<IHomeCare[]>(API_URL, { params });
-  return data;
-};
+const homeCaresApi = createReferenceApi<IHomeCare, Partial<IHomeCare>>(
+  "home-cares",
+  { searchParamName: "search" },
+);
 
-export const createHomeCare = async (
-  homeCare: Partial<IHomeCare>,
-): Promise<IHomeCare> => {
-  const { data } = await axios.post<IHomeCare>(API_URL, homeCare);
-  return data;
-};
-
-export const updateHomeCare = async (
-  id: string,
-  homeCare: Partial<IHomeCare>,
-): Promise<IHomeCare> => {
-  const { data } = await axios.put<IHomeCare>(`${API_URL}/${id}`, homeCare);
-  return data;
-};
-
-export const deleteHomeCare = async (id: string): Promise<void> => {
-  await axios.delete(`${API_URL}/${id}`);
-};
+export const getAllHomeCares = homeCaresApi.getAll;
+export const searchHomeCaresByName = homeCaresApi.searchByName;
+export const createHomeCare = homeCaresApi.create;
+export const updateHomeCare = homeCaresApi.update;
+export const deleteHomeCare = homeCaresApi.remove;
 
 export const reorderHomeCares = async (ids: string[]): Promise<IHomeCare[]> => {
-  const { data } = await axios.put<IHomeCare[]>(`${API_URL}/reorder`, { ids });
+  const { data } = await axios.put<IHomeCare[]>(`${homeCaresApi.apiUrl}/reorder`, {
+    ids,
+  });
   return data;
 };

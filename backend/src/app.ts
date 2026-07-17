@@ -1,13 +1,11 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
+import { MONGODB_URI } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFound } from "./middlewares/notFound";
 import routes from "./routes";
-
-dotenv.config({ path: "./src/config/.env" });
 
 const app = express();
 
@@ -28,7 +26,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 mongoose
-  .connect(process.env.MONGODB_URI || "")
+  .connect(MONGODB_URI)
   .then(() => console.log("Connected to MongoDB"))
   .catch((error) => console.error("MongoDB error:", error));
 

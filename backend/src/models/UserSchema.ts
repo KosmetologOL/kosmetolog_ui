@@ -7,6 +7,8 @@ export interface IUser extends Document {
   name?: string;
   role?: string;
   active?: boolean;
+  failedLoginAttempts?: number;
+  lockUntil?: Date;
   comparePassword: (candidate: string) => Promise<boolean>;
 }
 
@@ -17,6 +19,8 @@ const UserSchema: Schema<IUser> = new Schema(
     name: { type: String },
     role: { type: String, default: "user" },
     active: { type: Boolean, default: true },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
   },
   { timestamps: true }, // 🕒 додає createdAt та updatedAt
 );

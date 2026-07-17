@@ -1,10 +1,8 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { JWT_REFRESH_SECRET, JWT_SECRET } from "../config/env";
 import User, { IUser } from "../models/UserSchema";
 import * as RegistrationRequestsService from "./registrationRequests.service";
-
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "refresh_secret";
 
 const generateTokens = (user: { id: string; email: string; role: string }) => {
   const accessToken = jwt.sign(user, JWT_SECRET, { expiresIn: "15m" });
@@ -13,6 +11,9 @@ const generateTokens = (user: { id: string; email: string; role: string }) => {
   });
   return { accessToken, refreshToken };
 };
+
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
 
 const toSafeUser = (user: IUser) => ({
   id: (user._id as mongoose.Types.ObjectId).toString(),
@@ -61,8 +62,26 @@ export const login = async (
 
   if (user.active === false) throw new Error("Акаунт деактивовано");
 
+  if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
+    throw new Error(
+      "Забагато невдалих спроб входу. Спробуйте пізніше.",
+    );
+  }
+
   const match = await user.comparePassword(password);
-  if (!match) throw new Error("Неправильний email або пароль");
+  if (!match) {
+    user.failedLoginAttempts = (user.failedLoginAttempts ?? 0) + 1;
+    if (user.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+      user.failedLoginAttempts = 0;
+      user.lockUntil = new Date(Date.now() + LOCK_DURATION_MS);
+    }
+    await user.save();
+    throw new Error("Неправильний email або пароль");
+  }
+
+  user.failedLoginAttempts = 0;
+  user.lockUntil = undefined;
+  await user.save();
 
   const safeUser = toSafeUser(user);
   const { accessToken, refreshToken } = generateTokens(safeUser);
