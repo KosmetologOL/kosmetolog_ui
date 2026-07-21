@@ -104,127 +104,111 @@ const SearchHomeCare: React.FC<Props> = ({
   };
 
   if (loadingCares) {
-    return <p className="text-green-700 text-sm">Завантаження категорій...</p>;
+    return <p className="text-sm text-ink-soft">Завантаження категорій...</p>;
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       {allHomeCares.map((care) => {
         const careId = String(care._id || care.name);
 
         return (
-          <div key={careId} className="rounded-lg border border-green-300 p-3">
-            <h3 className="mb-2 font-semibold text-green-700">{care.name}</h3>
+          <div key={careId} className="rounded-xl border border-line bg-surface-2 p-4">
+            <p className="mb-3 text-[15px] font-bold">{care.name}</p>
 
             <input
               type="text"
               placeholder="Пошук засобу..."
               value={searchValues[careId] || ""}
               onChange={(e) => handleSearchChange(careId, e.target.value)}
-              className="w-full rounded-md border border-green-200 px-2 py-1 text-sm focus:ring-1 focus:ring-green-300"
+              className="field-input"
             />
 
             {loading[careId] && (
-              <p className="mb-2 mt-1 text-sm text-green-700">
-                Завантаження...
-              </p>
+              <p className="mt-2 text-sm text-ink-soft">Завантаження...</p>
             )}
 
             {results[careId]?.length > 0 && !loading[careId] && (
-              <div className="mt-2 overflow-x-auto">
-                <table className="min-w-full rounded-md border border-green-200 text-center text-sm">
-                  <thead className="bg-green-100">
-                    <tr>
-                      <th className="px-3 py-1 text-left">Назва</th>
-                      <th className="px-3 py-1 text-left">Рекомендація</th>
-                      <th className="px-3 py-1 text-center">Ранок</th>
-                      <th className="px-3 py-1 text-center">Вечір</th>
-                      <th className="px-3 py-1 text-center">Дії</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results[careId].map((medication, index) => {
-                      const medicationId =
-                        medication._id ||
-                        `${careId}-${medication.name}-${index}`;
+              <div className="mt-3 flex flex-col gap-2">
+                {results[careId].map((medication, index) => {
+                  const medicationId =
+                    medication._id ||
+                    `${careId}-${medication.name}-${index}`;
 
-                      return (
-                        <tr
-                          key={medicationId}
-                          className="border-b border-green-100"
-                        >
-                          <td className="px-3 py-1 text-left">
-                            {medication.name}
-                          </td>
-                          <td className="px-3 py-1 text-left">
-                            {medication.recommendation || "—"}
-                          </td>
+                  return (
+                    <div
+                      key={medicationId}
+                      className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold">
+                          {medication.name}
+                        </div>
+                        {medication.recommendation && (
+                          <div className="text-xs text-ink-soft">
+                            {medication.recommendation}
+                          </div>
+                        )}
+                      </div>
 
-                          <td className="px-3 py-1 text-center">
-                            <input
-                              type="checkbox"
-                              checked={
-                                checkboxes[medicationId]?.morning || false
-                              }
-                              onChange={(e) =>
-                                setCheckboxes((prev) => ({
-                                  ...prev,
-                                  [medicationId]: {
-                                    ...prev[medicationId],
-                                    morning: e.target.checked,
-                                  },
-                                }))
-                              }
-                            />
-                          </td>
+                      <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                        <input
+                          type="checkbox"
+                          checked={checkboxes[medicationId]?.morning || false}
+                          onChange={(e) =>
+                            setCheckboxes((prev) => ({
+                              ...prev,
+                              [medicationId]: {
+                                ...prev[medicationId],
+                                morning: e.target.checked,
+                              },
+                            }))
+                          }
+                        />
+                        Ранок
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                        <input
+                          type="checkbox"
+                          checked={checkboxes[medicationId]?.evening || false}
+                          onChange={(e) =>
+                            setCheckboxes((prev) => ({
+                              ...prev,
+                              [medicationId]: {
+                                ...prev[medicationId],
+                                evening: e.target.checked,
+                              },
+                            }))
+                          }
+                        />
+                        Вечір
+                      </label>
 
-                          <td className="px-3 py-1 text-center">
-                            <input
-                              type="checkbox"
-                              checked={
-                                checkboxes[medicationId]?.evening || false
-                              }
-                              onChange={(e) =>
-                                setCheckboxes((prev) => ({
-                                  ...prev,
-                                  [medicationId]: {
-                                    ...prev[medicationId],
-                                    evening: e.target.checked,
-                                  },
-                                }))
-                              }
-                            />
-                          </td>
-
-                          <td className="px-3 py-1 text-center">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addHomeCare(
-                                  care,
-                                  medication,
-                                  checkboxes[medicationId]?.morning || false,
-                                  checkboxes[medicationId]?.evening || false,
-                                  careId,
-                                )
-                              }
-                              className="font-medium text-green-600 hover:text-green-800"
-                            >
-                              Додати
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addHomeCare(
+                            care,
+                            medication,
+                            checkboxes[medicationId]?.morning || false,
+                            checkboxes[medicationId]?.evening || false,
+                            careId,
+                          )
+                        }
+                        className="btn btn-tint btn-sm"
+                      >
+                        Додати
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {!loading[careId] &&
               (!results[careId] || results[careId].length === 0) &&
               !(searchValues[careId] || "").trim() && (
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-ink-soft">
                   Введіть назву засобу для пошуку.
                 </p>
               )}

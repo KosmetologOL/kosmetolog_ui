@@ -4,7 +4,8 @@ import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF"
 import { useAuth } from "#hooks/useAuth";
 import { getReportCreatorName } from "#types/getReportCreatorName";
 import { normalizeProcedureStages } from "#types/normalizeProcedureStages";
-import React from "react";
+import React, { useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 interface Props {
@@ -12,14 +13,30 @@ interface Props {
   onEdit: (patient: IPatient) => void;
 }
 
+const getInitials = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+};
+
 const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const createdDate = patient.createdAt
-    ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
+  const [isExporting, setIsExporting] = useState(false);
+
+  const visitDate = patient.lastVisitAt || patient.createdAt;
+  const formattedVisitDate = visitDate
+    ? new Date(visitDate).toLocaleDateString("uk-UA", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
     : "";
 
-  const handleExportPDF = async () => {
+  const openChart = () => navigate(`/create-report/${patient._id}`);
+
+  const handleExportPDF = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExporting(true);
     try {
       const report = await getReportByPatientId(patient._id!);
       const procedureStages = normalizeProcedureStages(report);
@@ -37,44 +54,61 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
         doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
       });
     } catch {
-      alert("Не вдалося створити PDF — можливо, звіт ще не створено.");
+      toast.error("Не вдалося створити PDF — можливо, звіт ще не створено.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
   return (
-    <li className="border p-3 rounded-md shadow-sm flex flex-col gap-2">
-      <div>
-        <div className="font-semibold text-lg">{patient.fullName}</div>
-        {createdDate && (
-          <div className="text-sm text-gray-500">
-            Дата створення: {createdDate}
+    <article
+      onClick={openChart}
+      onKeyDown={(e) => e.key === "Enter" && openChart()}
+      role="button"
+      tabIndex={0}
+      className="flex flex-wrap items-center gap-4 px-5 py-4 cursor-pointer transition-colors hover:bg-surface-2 outline-none focus-visible:bg-surface-2 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset"
+    >
+      <span className="flex-none w-11.5 h-11.5 rounded-full bg-sage flex items-center justify-center text-[15px] font-bold tracking-wide">
+        {getInitials(patient.fullName)}
+      </span>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-[17px] font-bold truncate">{patient.fullName}</div>
+        {formattedVisitDate && (
+          <div className="text-sm text-ink-soft mt-0.5">
+            Візит · {formattedVisitDate}
           </div>
         )}
       </div>
 
-      <div className="flex gap-3 mt-2 justify-end">
+      <div className="flex flex-wrap gap-2.5 w-full sm:w-auto sm:flex-none">
         <button
-          onClick={() => onEdit(patient)}
-          className="px-3 py-1 border border-amber-300 text-amber-700 rounded hover:bg-amber-100"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(patient);
+          }}
+          className="btn btn-ghost btn-sm"
         >
           Редагувати
         </button>
-
-        <button
-          onClick={() => navigate(`/create-report/${patient._id}`)}
-          className="px-3 py-1 border border-green-300 text-green-700 rounded hover:bg-green-100"
-        >
-          Карта пацієнта
-        </button>
-
         <button
           onClick={handleExportPDF}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition ml-auto"
+          disabled={isExporting}
+          className="btn btn-ghost btn-sm"
         >
-          Експортувати PDF
+          {isExporting ? "Готуємо…" : "PDF рекомендацій"}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            openChart();
+          }}
+          className="btn btn-tint btn-sm"
+        >
+          Відкрити картку
         </button>
       </div>
-    </li>
+    </article>
   );
 };
 

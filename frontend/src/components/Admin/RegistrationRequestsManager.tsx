@@ -23,8 +23,8 @@ const RegistrationRequestsManager: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold">Запити на реєстрацію</h2>
-      <div className="space-y-2">
+      <p className="section-label">Запити на реєстрацію</p>
+      <div className="flex flex-col gap-2.5">
         {requests.map((r) => {
           const fullName = [r.name, r.firstName, r.lastName]
             .filter(Boolean)
@@ -32,23 +32,17 @@ const RegistrationRequestsManager: React.FC = () => {
             .trim();
 
           return (
-            <div
-              key={r._id}
-              className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <div key={r._id} className="list-row flex-col items-stretch sm:flex-row sm:items-center">
               <div className="min-w-0">
-                <div className="font-medium">
+                <div className="list-row-name">
                   {fullName || r.email || "Користувач без імені"}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="list-row-sub">
                   {fullName ? r.email : "Email не вказано"}
                 </div>
               </div>
-              <div className="flex shrink-0 justify-end">
-                <button
-                  onClick={() => approve(r._id)}
-                  className="rounded bg-green-600 px-3 py-1.5 text-white"
-                >
+              <div className="list-row-actions">
+                <button onClick={() => approve(r._id)} className="btn btn-primary btn-sm">
                   Підтвердити
                 </button>
               </div>

@@ -36,7 +36,7 @@ const ReferencePanel: React.FC = () => {
     );
   };
   const [categories, setCategories] = useState<any[]>([]);
-  const { isAdmin, isDoctor, user, logout } = useAuth();
+  const { isAdmin, isDoctor } = useAuth();
   const readOnly = isDoctor && !isAdmin;
 
   const loadCategories = async () => {
@@ -93,49 +93,24 @@ const ReferencePanel: React.FC = () => {
   const allTabs = [...referenceTabs, ...adminTabs, ...dynamicTabs];
 
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-screen-xl flex-col justify-start px-4 py-6 sm:justify-center sm:px-6 lg:px-8">
-      <button
-        onClick={() => window.history.back()}
-        className="mb-4 w-fit rounded border border-green-300 px-4 py-1.5 text-sm font-medium text-green-700 shadow-sm transition-all duration-200 hover:bg-green-50 active:scale-95"
-      >
-        ← Назад
-      </button>
-
-      <h1 className="mb-2 text-center text-xl font-bold text-green-700 sm:text-left sm:text-2xl lg:text-3xl">
-        Панель довідників
+    <div>
+      <h1 className="mb-5 text-[23px] tracking-[0.22em] uppercase">
+        Довідники
       </h1>
 
-      <div className="mb-4 flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Акаунт: {`${user?.email ?? "-"} (${user?.role ?? "-"})`}
-        </div>
-        <div>
-          <button
-            onClick={() => void logout()}
-            className="rounded border px-3 py-1 text-sm text-green-700 hover:bg-green-50"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-6 flex flex-wrap justify-start gap-2 overflow-x-auto">
+      <div className="mb-5 flex flex-wrap gap-1.5">
         {allTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`whitespace-nowrap rounded-md border px-3 py-2 text-sm font-medium transition-all sm:px-4 sm:text-base ${
-              activeTab === tab.key
-                ? "border-green-700 bg-green-600 text-white shadow-md"
-                : "border-green-300 bg-white text-green-700 hover:bg-green-50"
-            }`}
+            className={`tab-pill ${activeTab === tab.key ? "is-active" : ""}`}
           >
             {tab.label}
           </button>
         ))}
       </div>
 
-      <div className="w-full overflow-visible rounded-lg border bg-white p-4 shadow-sm sm:p-6 md:flex-grow md:overflow-auto">
+      <div className="card">
         {activeTab === "medications" && (
           <MedicationsManager readOnly={readOnly} />
         )}

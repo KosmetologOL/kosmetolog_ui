@@ -55,20 +55,15 @@ const CategoriesManager: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold text-green-700">
-        Категорії довідників
-      </h2>
-      <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+      <p className="section-label">Категорії довідників</p>
+      <div className="mb-5 flex w-full flex-wrap items-center gap-3">
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
+          className="field-input min-w-[200px] flex-1"
           placeholder="Назва категорії"
         />
-        <button
-          onClick={add}
-          className="rounded-md bg-green-600 px-4 py-2 text-white font-medium transition-all hover:bg-green-700 active:scale-95"
-        >
+        <button onClick={add} className="btn btn-primary">
           {editingId ? "Оновити" : "Додати"}
         </button>
         {editingId && (
@@ -77,30 +72,24 @@ const CategoriesManager: React.FC = () => {
               setEditingId(null);
               setName("");
             }}
-            className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+            className="btn btn-ghost"
           >
             Скасувати
           </button>
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2.5">
         {cats.map((c) => (
-          <div
-            key={c._id}
-            className="flex items-center justify-between rounded border border-green-200 bg-green-50 p-3"
-          >
-            <div className="font-medium text-green-700">{c.name}</div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => edit(c)}
-                className="rounded-md bg-amber-500 px-3 py-1.5 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
-              >
+          <div key={c._id} className="list-row">
+            <div className="list-row-name">{c.name}</div>
+            <div className="list-row-actions">
+              <button onClick={() => edit(c)} className="btn btn-ghost btn-sm">
                 Редагувати
               </button>
               <button
                 onClick={() => remove(c._id)}
-                className="rounded-md bg-red-600 px-3 py-1.5 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
+                className="btn btn-ghost btn-sm text-danger"
               >
                 Видалити
               </button>

@@ -40,52 +40,39 @@ const SelectedExamsTable: React.FC<Props> = ({
   };
 
   if (selectedExams.length === 0) {
-    return (
-      <p className="text-green-700 text-sm mb-2 mt-3">Нічого не вибрано</p>
-    );
+    return <p className="mt-3 text-sm text-ink-soft">Нічого не вибрано</p>;
   }
 
   return (
     <>
-      <div className="overflow-x-auto mb-3 mt-3">
-        <table className="min-w-full border border-green-200 rounded-md text-sm">
-          <thead className="bg-green-100">
-            <tr>
-              <th className="px-2 py-1 text-left">Назва обстеження</th>
-              <th className="px-2 py-1 text-left">Рекомендація</th>
-              <th className="px-2 py-1 text-left">Дії</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedExams.map((exam) => (
-              <tr
-                key={exam._id}
-                className="border-b border-green-200 hover:bg-green-50"
-              >
-                <td className="px-2 py-1">{exam.name}</td>
-                <td className="px-2 py-1 whitespace-pre-wrap">
+      <div className="mt-3 flex flex-col gap-2">
+        {selectedExams.map((exam) => (
+          <div key={exam._id} className="chip-row">
+            <div className="min-w-0 flex-1">
+              <div className="chip-name">{exam.name}</div>
+              {exam.recommendation && (
+                <div className="chip-sub whitespace-pre-wrap">
                   {exam.recommendation}
-                </td>
-                <td className="px-2 py-1 align-top space-x-2">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline"
-                    onClick={() => setEditingExam(exam)}
-                  >
-                    Оновити
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleRemove(exam._id!)}
-                  >
-                    Видалити
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setEditingExam(exam)}
+            >
+              Оновити
+            </button>
+            <button
+              type="button"
+              className="chip-remove"
+              aria-label="Видалити"
+              onClick={() => handleRemove(exam._id!)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
 
       <ReferenceItemModal

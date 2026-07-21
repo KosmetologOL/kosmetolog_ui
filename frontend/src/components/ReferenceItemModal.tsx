@@ -60,40 +60,36 @@ export default function ReferenceItemModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 px-4 py-6 backdrop-blur-sm">
-      <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-green-100 bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 py-6 backdrop-blur-sm">
+      <div className="modal-panel relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface shadow-lift">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-xl text-gray-500 shadow-sm transition hover:text-black"
+          aria-label="Закрити"
+          className="absolute right-4 top-4 z-10 text-2xl leading-none text-ink-soft hover:text-ink"
         >
           ×
         </button>
 
-        <div className="border-b border-green-100 bg-gradient-to-r from-green-50 via-white to-emerald-50 px-6 py-5">
-          <h2 className="pr-10 text-xl font-semibold text-green-900 sm:text-2xl">
+        <div className="border-b border-line px-6 py-5">
+          <h2 className="pr-10 text-[17px] tracking-[0.14em] uppercase">
             {title}
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Відредагуйте вміст і збережіть зміни.
-          </p>
         </div>
 
         <div className="space-y-5 overflow-y-auto px-6 py-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Назва</label>
+          <label className="block">
+            <span className="field-label">Назва</span>
             <input
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Назва"
-              className="w-full rounded-xl border border-green-200 bg-white px-4 py-3 text-gray-800 shadow-sm outline-none transition focus:border-green-400 focus:ring-4 focus:ring-green-100"
+              className="field-input"
             />
-          </div>
+          </label>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              {recommendationLabel}
-            </label>
+          <label className="block">
+            <span className="field-label">{recommendationLabel}</span>
             <textarea
               ref={recommendationRef}
               value={form.recommendation ?? ""}
@@ -101,36 +97,28 @@ export default function ReferenceItemModal({
                 setForm({ ...form, recommendation: e.target.value })
               }
               placeholder={recommendationLabel}
-              className="min-h-[280px] w-full rounded-2xl border border-green-200 bg-slate-50 px-4 py-4 text-[15px] leading-7 text-gray-800 shadow-inner outline-none transition focus:border-green-400 focus:bg-white focus:ring-4 focus:ring-green-100 resize-y"
+              className="field-textarea min-h-[180px] w-full resize-y"
             />
-          </div>
+          </label>
 
           {commentLabel && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                {commentLabel}
-              </label>
+            <label className="block">
+              <span className="field-label">{commentLabel}</span>
               <textarea
                 value={form.comment ?? ""}
                 onChange={(e) => setForm({ ...form, comment: e.target.value })}
                 placeholder={commentLabel}
-                className="min-h-[150px] w-full rounded-2xl border border-green-200 bg-slate-50 px-4 py-4 text-[15px] leading-7 text-gray-800 shadow-inner outline-none transition focus:border-green-400 focus:bg-white focus:ring-4 focus:ring-green-100 resize-y"
+                className="field-textarea min-h-[110px] w-full resize-y"
               />
-            </div>
+            </label>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-green-100 bg-white px-6 py-4">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium transition hover:bg-gray-100"
-          >
+        <div className="flex justify-end gap-3 border-t border-line px-6 py-4">
+          <button onClick={onClose} className="btn btn-ghost">
             Скасувати
           </button>
-          <button
-            onClick={handleSave}
-            className="rounded-xl bg-green-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-700"
-          >
+          <button onClick={handleSave} className="btn btn-primary">
             {submitLabel}
           </button>
         </div>

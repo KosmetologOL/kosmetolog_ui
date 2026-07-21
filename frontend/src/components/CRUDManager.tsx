@@ -229,22 +229,17 @@ const CRUDManager = <T,>({
     }
   };
 
-  const colSpan =
-    (hasRecommendation ? 2 : 1) +
-    (hasMorningEvening ? 2 : 0) +
-    (showActions ? 1 : 0);
-
   return (
-    <div className="flex flex-col items-start justify-start">
-      <div className="mb-3 flex w-full flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-green-700">{title}</h2>
+    <div className="flex w-full flex-col items-start">
+      <div className="mb-4 flex w-full flex-wrap items-center justify-between gap-3">
+        <p className="section-label mb-0">{title}</p>
 
         {enableCsvImportExport && (
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleExportCsv}
-              className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95"
+              className="btn btn-ghost btn-sm"
             >
               Експортувати в CSV
             </button>
@@ -255,7 +250,7 @@ const CRUDManager = <T,>({
                   type="button"
                   onClick={handleImportClick}
                   disabled={isImporting}
-                  className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95 disabled:opacity-50"
+                  className="btn btn-ghost btn-sm"
                 >
                   {isImporting ? "Імпортування..." : "Імпортувати з CSV"}
                 </button>
@@ -276,16 +271,16 @@ const CRUDManager = <T,>({
         placeholder="Пошук"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 w-full max-w-md rounded-md border border-green-300 px-3 py-2"
+        className="field-input mb-4 max-w-md"
       />
 
       {editable && (
-        <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+        <div className="ref-add-row mb-5 flex w-full flex-wrap items-start gap-3">
           <input
             placeholder="Назва"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
+            className="field-input min-w-[200px] flex-1"
           />
 
           {hasRecommendation && (
@@ -296,45 +291,37 @@ const CRUDManager = <T,>({
               onChange={(e) =>
                 setForm({ ...form, recommendation: e.target.value })
               }
-              className="min-h-[38px] flex-1 resize-none overflow-hidden rounded-md border border-green-300 px-2 py-[9px] leading-[1.4]"
+              rows={1}
+              className="field-textarea min-w-[200px] flex-1 h-12 resize-none overflow-hidden"
             />
           )}
 
           {hasMorningEvening && (
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1 text-sm">
+            <div className="flex items-center gap-3.5 text-sm text-ink-soft">
+              <label className="flex items-center gap-1.5">
                 <input
                   type="checkbox"
                   checked={form.morning}
                   onChange={(e) =>
                     setForm({ ...form, morning: e.target.checked })
                   }
-                  className="accent-green-600"
                 />
                 Ранок
               </label>
-              <label className="flex items-center gap-1 text-sm">
+              <label className="flex items-center gap-1.5">
                 <input
                   type="checkbox"
                   checked={form.evening}
                   onChange={(e) =>
                     setForm({ ...form, evening: e.target.checked })
                   }
-                  className="accent-green-600"
                 />
                 Вечір
               </label>
             </div>
           )}
 
-          <button
-            onClick={handleSave}
-            className={`h-[38px] rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
-              editingId
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
+          <button onClick={handleSave} className="btn btn-primary">
             {editingId ? "Оновити" : "Додати"}
           </button>
 
@@ -349,7 +336,7 @@ const CRUDManager = <T,>({
                   evening: false,
                 });
               }}
-              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+              className="btn btn-ghost"
             >
               Скасувати
             </button>
@@ -357,97 +344,56 @@ const CRUDManager = <T,>({
         </div>
       )}
 
-      <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-green-300 bg-green-50">
-              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
-                Назва
-              </th>
-              {hasRecommendation && (
-                <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
-                  Рекомендація
-                </th>
-              )}
-              {hasMorningEvening && (
-                <>
-                  <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
-                    Ранок
-                  </th>
-                  <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
-                    Вечір
-                  </th>
-                </>
-              )}
+      {filteredList.length === 0 ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Немає елементів
+        </p>
+      ) : (
+        <div className="ref-list flex w-full flex-col gap-2.5">
+          {filteredList.map((item) => (
+            <div key={item._id} className="list-row">
+              <div className="min-w-0">
+                <div className="list-row-name">{item.name}</div>
+                {hasRecommendation && item.recommendation && (
+                  <div className="list-row-sub whitespace-pre-wrap">
+                    {item.recommendation}
+                  </div>
+                )}
+                {hasMorningEvening && (
+                  <div className="mt-2 flex gap-1.5">
+                    <span className={`pill ${item.morning ? "is-on" : ""}`}>
+                      Ранок
+                    </span>
+                    <span className={`pill ${item.evening ? "is-on" : ""}`}>
+                      Вечір
+                    </span>
+                  </div>
+                )}
+              </div>
               {showActions && (
-                <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700 w-32">
-                  Дії
-                </th>
+                <div className="list-row-actions">
+                  {editable && (
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      Редагувати
+                    </button>
+                  )}
+                  {deletable && (
+                    <button
+                      onClick={() => handleDelete(item._id)}
+                      className="btn btn-ghost btn-sm text-danger"
+                    >
+                      Видалити
+                    </button>
+                  )}
+                </div>
               )}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredList.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={colSpan}
-                  className="border border-green-200 px-4 py-3 text-center text-gray-500"
-                >
-                  Немає елементів
-                </td>
-              </tr>
-            ) : (
-              filteredList.map((item) => (
-                <tr
-                  key={item._id}
-                  className="border-b border-green-200 hover:bg-green-50"
-                >
-                  <td className="border border-green-200 px-4 py-2 text-green-900">
-                    {item.name}
-                  </td>
-                  {hasRecommendation && (
-                    <td className="border border-green-200 px-4 py-2 text-gray-700 whitespace-pre-wrap text-sm max-w-md">
-                      {item.recommendation || "-"}
-                    </td>
-                  )}
-                  {hasMorningEvening && (
-                    <>
-                      <td className="border border-green-200 px-4 py-2 text-center text-green-900">
-                        {item.morning ? "✓" : "–"}
-                      </td>
-                      <td className="border border-green-200 px-4 py-2 text-center text-green-900">
-                        {item.evening ? "✓" : "–"}
-                      </td>
-                    </>
-                  )}
-                  {showActions && (
-                    <td className="border border-green-200 px-4 py-2 text-center">
-                      <div className="flex gap-2 justify-center">
-                        {editable && (
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="rounded bg-amber-500 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
-                          >
-                            Редагувати
-                          </button>
-                        )}
-                        {deletable && (
-                          <button
-                            onClick={() => handleDelete(item._id)}
-                            className="rounded bg-red-600 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
-                          >
-                            Видалити
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

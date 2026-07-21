@@ -1,5 +1,5 @@
 import type { IPatient } from "#api/patientsApi";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface Props {
   visible: boolean;
@@ -14,19 +14,29 @@ export const PatientFormModal: React.FC<Props> = ({
   onClose,
   onSave,
   patient,
-  title = "Створити карту пацієнта",
+  title = "Нова картка пацієнта",
 }) => {
   const [form, setForm] = useState<IPatient>(patient || { fullName: "" });
+  const [invalid, setInvalid] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (patient) setForm(patient);
   }, [patient]);
 
+  useEffect(() => {
+    if (visible) {
+      setInvalid(false);
+      setTimeout(() => inputRef.current?.focus(), 30);
+    }
+  }, [visible]);
+
   if (!visible) return null;
 
   const handleSave = () => {
     if (!form.fullName.trim()) {
-      alert("Введіть ПІБ пацієнта!");
+      setInvalid(true);
+      inputRef.current?.focus();
       return;
     }
     onSave(form);
@@ -34,40 +44,51 @@ export const PatientFormModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm z-50">
-      <div className="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4">
+      <div className="relative bg-surface rounded-2xl p-7 w-full max-w-md shadow-2xl">
         <button
           onClick={onClose}
-          className="absolute top-2 right-3 text-gray-500 hover:text-black text-lg"
+          aria-label="Закрити"
+          className="absolute top-3 right-4 text-2xl leading-none text-ink-soft hover:text-ink"
         >
-          ✕
+          ×
         </button>
 
-        <h2 className="text-2xl font-semibold text-center text-green-800 mb-6">
+        <h2 className="text-[17px] tracking-[0.16em] uppercase mb-6">
           {title}
         </h2>
 
-        <div className="space-y-4">
+        <label className="block">
+          <span className="block text-[14.5px] font-bold mb-1.5">
+            ПІБ пацієнта
+          </span>
           <input
+            ref={inputRef}
             type="text"
             value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            placeholder="ПІБ пацієнта"
-            className="border border-green-300 focus:ring-2 focus:ring-green-200 focus:outline-none p-2 rounded-lg w-full text-gray-800"
+            onChange={(e) => {
+              setForm({ ...form, fullName: e.target.value });
+              setInvalid(false);
+            }}
+            placeholder="Прізвище Імʼя По батькові"
+            className={`w-full h-12 px-3.5 rounded-[0.625rem] border text-[16px] outline-none transition ${
+              invalid
+                ? "border-danger"
+                : "border-line-strong focus:border-brand focus:ring-2 focus:ring-brand/20"
+            }`}
           />
-        </div>
+          {invalid && (
+            <p className="text-danger text-[13.5px] mt-1.5">
+              Вкажіть прізвище та імʼя пацієнта
+            </p>
+          )}
+        </label>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-          >
+        <div className="flex justify-end gap-2.5 mt-7">
+          <button onClick={onClose} className="btn btn-ghost">
             Скасувати
           </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
+          <button onClick={handleSave} className="btn btn-primary">
             Зберегти
           </button>
         </div>

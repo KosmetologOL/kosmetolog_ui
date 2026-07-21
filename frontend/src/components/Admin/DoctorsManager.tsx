@@ -26,8 +26,8 @@ const DoctorsManager: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4 text-lg font-semibold">Керування лікарями</h2>
-      <div className="space-y-2">
+      <p className="section-label">Керування лікарями</p>
+      <div className="flex flex-col gap-2.5">
         {doctors.map((d) => {
           const fullName = [d.firstName, d.lastName, d.name]
             .filter(Boolean)
@@ -35,28 +35,25 @@ const DoctorsManager: React.FC = () => {
             .trim();
 
           return (
-            <div
-              key={d._id}
-              className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <div key={d._id} className="list-row flex-col items-stretch sm:flex-row sm:items-center">
               <div className="min-w-0">
-                <div className="font-medium">
+                <div className="list-row-name">
                   {fullName || d.email || "Лікар без імені"}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="list-row-sub">
                   {fullName ? d.email : "Email не вказано"}
                 </div>
               </div>
-              <div className="flex shrink-0 justify-end gap-2">
+              <div className="list-row-actions">
                 <button
                   onClick={() => toggle(d._id, d.active)}
-                  className={`rounded px-3 py-1 text-sm ${d.active ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                  className={`btn btn-ghost btn-sm ${d.active ? "text-danger" : ""}`}
                 >
                   {d.active ? "Деактивувати" : "Активувати"}
                 </button>
                 <button
                   onClick={() => remove(d._id)}
-                  className="rounded bg-red-600 px-3 py-1 text-sm text-white"
+                  className="btn btn-ghost btn-sm text-danger"
                 >
                   Видалити
                 </button>

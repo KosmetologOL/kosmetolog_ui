@@ -45,6 +45,8 @@ export interface IReport extends Document {
   additionalInfo?: string;
   finalNote?: string;
   editHistory?: IReportEditHistoryItem[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const HomeCareSubSchema = new Schema<IReportHomeCare>(

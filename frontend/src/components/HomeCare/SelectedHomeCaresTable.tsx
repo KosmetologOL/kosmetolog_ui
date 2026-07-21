@@ -49,79 +49,57 @@ const SelectedHomeCaresTable: React.FC<Props> = ({
   };
 
   if (selectedHomeCares.length === 0) {
-    return (
-      <p className="text-green-700 text-sm mb-2 mt-3">Нічого не вибрано</p>
-    );
+    return <p className="mt-3 text-sm text-ink-soft">Нічого не вибрано</p>;
   }
 
   return (
     <>
-      <div className="overflow-x-auto mb-3 mt-3">
-        <table className="min-w-full border border-green-200 rounded-md text-sm">
-          <thead className="bg-green-100">
-            <tr>
-              <th className="px-2 py-1 text-left">Назва</th>
-              <th className="px-2 py-1 text-left">Засіб</th>
-              <th className="px-2 py-1 text-left">Рекомендації</th>
-              <th className="px-2 py-1 text-center">Ранок</th>
-              <th className="px-2 py-1 text-center">Вечір</th>
-              <th className="px-2 py-1 text-center">Дії</th>
-            </tr>
-          </thead>
+      <div className="mt-3 flex flex-col gap-2">
+        {selectedHomeCares.map((h, i) => (
+          <div key={h._id || i} className="chip-row flex-wrap items-center">
+            <div className="min-w-0 flex-1">
+              <div className="chip-name">{h.name}</div>
+              <div className="chip-sub">
+                {h.medicationName && h.medicationName !== ""
+                  ? h.medicationName
+                  : "—"}
+                {h.recommendations && h.recommendations !== "" && (
+                  <span className="whitespace-pre-wrap"> · {h.recommendations}</span>
+                )}
+              </div>
+            </div>
 
-          <tbody>
-            {selectedHomeCares.map((h, i) => (
-              <tr
-                key={h._id || i}
-                className="border-b border-green-200 hover:bg-green-50"
+            {(["morning", "evening"] as (keyof IHomeCare)[]).map((key) => (
+              <label
+                key={key}
+                className="flex items-center gap-1.5 text-xs text-ink-soft"
               >
-                <td className="px-2 py-1">{h.name}</td>
-
-                <td className="px-2 py-1 text-left text-gray-700">
-                  {h.medicationName && h.medicationName !== ""
-                    ? h.medicationName
-                    : "—"}
-                </td>
-
-                <td className="max-w-[240px] px-2 py-1 text-gray-700 whitespace-pre-wrap line-clamp-2">
-                  {h.recommendations && h.recommendations !== "" ? (
-                    h.recommendations
-                  ) : (
-                    <span className="text-gray-400 italic">Немає тексту</span>
-                  )}
-                </td>
-
-                {(["morning", "evening"] as (keyof IHomeCare)[]).map((key) => (
-                  <td key={key} className="text-center p-1">
-                    <input
-                      type="checkbox"
-                      checked={!!h[key]}
-                      onChange={() => toggle(i, key)}
-                      className="accent-blue-600 cursor-pointer"
-                    />
-                  </td>
-                ))}
-
-                <td className="px-2 py-1 text-center whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline mr-2"
-                    onClick={() => setEditingHomeCare(h)}
-                  >
-                    Оновити
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleRemove(h._id)}
-                  >
-                    Видалити
-                  </button>
-                </td>
-              </tr>
+                <input
+                  type="checkbox"
+                  checked={!!h[key]}
+                  onChange={() => toggle(i, key)}
+                />
+                {key === "morning" ? "Ранок" : "Вечір"}
+              </label>
             ))}
-          </tbody>
-        </table>
+
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setEditingHomeCare(h)}
+            >
+              Оновити
+            </button>
+            <button
+              type="button"
+              className="chip-remove"
+              aria-label="Видалити"
+              onClick={() => handleRemove(h._id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
 
       <ReferenceItemModal

@@ -41,47 +41,42 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
   };
 
   return (
-    <>
+    <div className="mb-3">
       <input
         type="text"
         placeholder="Пошук процедури"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-2 py-1 border border-green-200 rounded-md text-sm focus:ring-1 focus:ring-green-300"
+        className="field-input"
       />
-      {loading && (
-        <p className="text-green-700 text-sm mb-2">Завантаження...</p>
-      )}
+      {loading && <p className="mt-1.5 text-sm text-ink-soft">Завантаження...</p>}
       {results.length > 0 && !loading && (
-        <div className="overflow-x-auto mb-3 mt-2">
-          <table className="min-w-full border border-green-200 rounded-md text-sm">
-            <thead className="bg-green-100">
-              <tr>
-                <th className="px-2 py-1 text-left">Назва</th>
-                <th className="px-2 py-1 text-left">Опис</th>
-                <th className="px-2 py-1 text-left">Дії</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((procedure) => (
-                <tr key={procedure._id}>
-                  <td className="px-2 py-1">{procedure.name}</td>
-                  <td className="px-2 py-1">{procedure.recommendation}</td>
-                  <td className="px-2 py-1">
-                    <button
-                      onClick={() => addProcedure(procedure)}
-                      className="text-green-500 hover:text-green-700"
-                    >
-                      Додати
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-2 flex flex-col gap-1.5">
+          {results.map((procedure) => (
+            <button
+              key={procedure._id}
+              type="button"
+              onClick={() => addProcedure(procedure)}
+              className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2.5 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
+            >
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-bold">
+                  {procedure.name}
+                </span>
+                {procedure.recommendation && (
+                  <span className="block truncate text-xs text-ink-soft">
+                    {procedure.recommendation}
+                  </span>
+                )}
+              </span>
+              <span className="flex-none text-xs font-bold text-brand">
+                Додати
+              </span>
+            </button>
+          ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
