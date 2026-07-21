@@ -12,7 +12,6 @@ import { useParams } from "react-router-dom";
 import SearchExam from "#components/Exams/SearchExam";
 import SelectedExamsTable from "#components/Exams/SelectedExamsTable";
 import SearchHomeCare from "#components/HomeCare/SearchHomeCare";
-import SelectedHomeCaresTable from "#components/HomeCare/SelectedHomeCaresTable";
 import SearchSpecialist from "#components/Specialists/SearchSpecialist";
 import SelectedSpecialistsTable from "#components/Specialists/SelectedSpecialistsTable";
 
@@ -75,6 +74,7 @@ const CreateReportForm: React.FC = () => {
   const { user } = useAuth();
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [finalNote, setFinalNote] = useState(DEFAULT_FINAL_NOTE);
   const createdDate = patient?.createdAt
@@ -274,6 +274,7 @@ const CreateReportForm: React.FC = () => {
       finalNote,
     };
 
+    setIsSubmitting(true);
     try {
       let savedReport;
       if (reportId) {
@@ -288,6 +289,8 @@ const CreateReportForm: React.FC = () => {
       }
     } catch {
       toast.error("Не вдалося зберегти звіт. Спробуйте ще раз.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -299,6 +302,7 @@ const CreateReportForm: React.FC = () => {
   return (
     <div>
       <button
+        type="button"
         onClick={() => window.history.back()}
         className="btn btn-ghost btn-sm mb-4"
       >
@@ -381,10 +385,6 @@ const CreateReportForm: React.FC = () => {
 
           <ReportSection title="Домашній догляд">
             <SearchHomeCare
-              selectedHomeCares={selectedHomeCares}
-              setSelectedHomeCares={setSelectedHomeCares}
-            />
-            <SelectedHomeCaresTable
               selectedHomeCares={selectedHomeCares}
               setSelectedHomeCares={setSelectedHomeCares}
             />
@@ -488,7 +488,7 @@ const CreateReportForm: React.FC = () => {
                       }
                       placeholder="Коментар до процедури"
                       rows={2}
-                      className="field-textarea mt-2.5 w-full resize-none text-[13.5px]"
+                      className="field-textarea mt-2.5 w-full min-h-[60px] resize-y text-[13.5px]"
                     />
                   </div>
                 ))}
@@ -529,7 +529,7 @@ const CreateReportForm: React.FC = () => {
               onChange={(e) => setAdditionalInfo(e.target.value)}
               placeholder="Необхідна інформація"
               rows={4}
-              className="field-textarea w-full"
+              className="field-textarea w-full min-h-[90px] resize-y"
             />
           </ReportSection>
 
@@ -541,13 +541,14 @@ const CreateReportForm: React.FC = () => {
               onChange={(e) => setFinalNote(e.target.value)}
               placeholder="Текст, який буде додано в кінець PDF"
               rows={4}
-              className="field-textarea w-full"
+              className="field-textarea w-full min-h-[90px] resize-y"
             />
           </ReportSection>
 
           <ReportActions
             reportId={reportId}
             patient={patient}
+            isSubmitting={isSubmitting}
             onExport={() =>
               generateReportPDF({
                 patient,

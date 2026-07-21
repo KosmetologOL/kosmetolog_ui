@@ -1,6 +1,10 @@
+import ConfirmModal from "#components/ConfirmModal";
+import ExpandableText from "#components/ExpandableText";
+import ReferenceItemModal from "#components/ReferenceItemModal";
 import { downloadCsv, parseCsv, toCsv } from "#types/csv";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface CRUDItem {
   _id?: string;
@@ -39,16 +43,11 @@ const CRUDManager = <T,>({
   const deletable = canDelete ?? !readOnly;
   const showActions = editable || deletable;
   const [list, setList] = useState<CRUDItem[]>([]);
-  const [form, setForm] = useState<CRUDItem>({
-    name: "",
-    recommendation: "",
-    morning: false,
-    evening: false,
-  });
   const [search, setSearch] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<CRUDItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -94,49 +93,44 @@ const CRUDManager = <T,>({
       window.removeEventListener("categoriesUpdated", handler as EventListener);
   }, [fetchList]);
 
-  useEffect(() => {
-    if (textRef.current) {
-      textRef.current.style.height = "auto";
-      textRef.current.style.height = `${textRef.current.scrollHeight}px`;
-    }
-  }, [form.recommendation]);
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
+
+  const handleSave = async (formItem: { name: string; recommendation?: string }) => {
+    if (!formItem.name.trim()) {
       return;
     }
 
-    const payload = mapToApi ? mapToApi(form) : form;
+    const payload = mapToApi ? mapToApi(formItem as CRUDItem) : formItem;
 
-    if (editingId) {
+    if (editingItem?._id) {
       await axios.put(
-        `${import.meta.env.VITE_API_URL}/${apiPath}/${editingId}`,
+        `${import.meta.env.VITE_API_URL}/${apiPath}/${editingItem._id}`,
         payload,
       );
-      setEditingId(null);
     } else {
       await axios.post(`${import.meta.env.VITE_API_URL}/${apiPath}`, payload);
     }
 
-    setForm({ name: "", recommendation: "", morning: false, evening: false });
+    setIsModalOpen(false);
+    setEditingItem(null);
     void fetchList();
   };
 
-  const handleDelete = async (id?: string) => {
-    if (
-      !id ||
-      !window.confirm("Ви впевнені, що хочете видалити цей елемент?")
-    ) {
-      return;
-    }
-
-    await axios.delete(`${import.meta.env.VITE_API_URL}/${apiPath}/${id}`);
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
+    await axios.delete(`${import.meta.env.VITE_API_URL}/${apiPath}/${deletingId}`);
+    setDeletingId(null);
     void fetchList();
   };
 
-  const handleEdit = (item: CRUDItem) => {
-    setEditingId(item._id || null);
-    setForm(item);
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (item: CRUDItem) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
   };
 
   const handleExportCsv = () => {
@@ -162,7 +156,7 @@ const CRUDManager = <T,>({
     const rows = parseCsv(text);
 
     if (rows.length < 2) {
-      window.alert("Файл порожній або не містить рядків з даними.");
+      toast.error("Файл порожній або не містить рядків з даними.");
       return;
     }
 
@@ -175,7 +169,7 @@ const CRUDManager = <T,>({
     );
 
     if (nameIdx === -1) {
-      window.alert('У файлі немає колонки "Назва".');
+      toast.error('У файлі немає колонки "Назва".');
       return;
     }
 
@@ -187,15 +181,7 @@ const CRUDManager = <T,>({
       .filter((row) => row.name);
 
     if (parsed.length === 0) {
-      window.alert("У файлі немає рядків із заповненою назвою.");
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
-      )
-    ) {
+      toast.error("У файлі немає рядків із заповненою назвою.");
       return;
     }
 
@@ -219,11 +205,9 @@ const CRUDManager = <T,>({
         }
       }
       await fetchList();
-      window.alert("Імпорт завершено.");
+      toast.success(`Успішно імпортовано ${parsed.length} записів!`);
     } catch {
-      window.alert(
-        "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
-      );
+      toast.error("Під час імпорту сталася помилка. Частина записів могла не оновитися.");
     } finally {
       setIsImporting(false);
     }
@@ -231,118 +215,106 @@ const CRUDManager = <T,>({
 
   return (
     <div className="flex w-full flex-col items-start">
-      <div className="mb-4 flex w-full flex-wrap items-center justify-between gap-3">
-        <p className="section-label mb-0">{title}</p>
+      {/* Header toolbar */}
+      <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
+            {title}
+          </h1>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            Усього записів: {filteredList.length}
+          </p>
+        </div>
 
-        {enableCsvImportExport && (
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {editable && (
             <button
               type="button"
-              onClick={handleExportCsv}
-              className="btn btn-ghost btn-sm"
+              onClick={handleOpenCreate}
+              className="btn btn-primary btn-sm"
             >
-              Експортувати в CSV
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M8 2v12M2 8h12" />
+              </svg>
+              Додати запис
             </button>
-
-            {editable && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleImportClick}
-                  disabled={isImporting}
-                  className="btn btn-ghost btn-sm"
-                >
-                  {isImporting ? "Імпортування..." : "Імпортувати з CSV"}
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleImportFile}
-                  className="hidden"
-                />
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      <input
-        placeholder="Пошук"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="field-input mb-4 max-w-md"
-      />
-
-      {editable && (
-        <div className="ref-add-row mb-5 flex w-full flex-wrap items-start gap-3">
-          <input
-            placeholder="Назва"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="field-input min-w-[200px] flex-1"
-          />
-
-          {hasRecommendation && (
-            <textarea
-              ref={textRef}
-              placeholder="Рекомендація"
-              value={form.recommendation}
-              onChange={(e) =>
-                setForm({ ...form, recommendation: e.target.value })
-              }
-              rows={1}
-              className="field-textarea min-w-[200px] flex-1 h-12 resize-none overflow-hidden"
-            />
           )}
 
-          {hasMorningEvening && (
-            <div className="flex items-center gap-3.5 text-sm text-ink-soft">
-              <label className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={form.morning}
-                  onChange={(e) =>
-                    setForm({ ...form, morning: e.target.checked })
-                  }
-                />
-                Ранок
-              </label>
-              <label className="flex items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={form.evening}
-                  onChange={(e) =>
-                    setForm({ ...form, evening: e.target.checked })
-                  }
-                />
-                Вечір
-              </label>
-            </div>
-          )}
+          {enableCsvImportExport && (
+            <>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="btn btn-ghost btn-sm"
+              >
+                Експорт CSV
+              </button>
 
-          <button onClick={handleSave} className="btn btn-primary">
-            {editingId ? "Оновити" : "Додати"}
-          </button>
-
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setForm({
-                  name: "",
-                  recommendation: "",
-                  morning: false,
-                  evening: false,
-                });
-              }}
-              className="btn btn-ghost"
-            >
-              Скасувати
-            </button>
+              {editable && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleImportClick}
+                    disabled={isImporting}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    {isImporting ? "Імпорт..." : "Імпорт CSV"}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleImportFile}
+                    className="hidden"
+                  />
+                </>
+              )}
+            </>
           )}
         </div>
-      )}
+      </div>
+
+      {/* Search input bar */}
+      <div className="relative mb-5 w-full max-w-md">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.8-3.8" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Пошук записів..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="field-input pl-10 pr-9 w-full"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Очистити пошук"
+            className="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-ink-soft hover:bg-surface-2 hover:text-ink"
+          >
+            ×
+          </button>
+        )}
+      </div>
 
       {filteredList.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">
@@ -356,7 +328,7 @@ const CRUDManager = <T,>({
                 <div className="list-row-name">{item.name}</div>
                 {hasRecommendation && item.recommendation && (
                   <div className="list-row-sub whitespace-pre-wrap">
-                    {item.recommendation}
+                    <ExpandableText text={item.recommendation} />
                   </div>
                 )}
                 {hasMorningEvening && (
@@ -374,16 +346,28 @@ const CRUDManager = <T,>({
                 <div className="list-row-actions">
                   {editable && (
                     <button
-                      onClick={() => handleEdit(item)}
-                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleOpenEdit(item)}
+                      className="btn btn-ghost btn-sm min-w-[110px] justify-center"
                     >
+                      <svg
+                        className="w-3.5 h-3.5 text-ink-soft"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
                       Редагувати
                     </button>
                   )}
                   {deletable && (
                     <button
-                      onClick={() => handleDelete(item._id)}
-                      className="btn btn-ghost btn-sm text-danger"
+                      onClick={() => setDeletingId(item._id || null)}
+                      className="btn btn-sm min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
                     >
                       Видалити
                     </button>
@@ -394,6 +378,29 @@ const CRUDManager = <T,>({
           ))}
         </div>
       )}
+
+      <ReferenceItemModal
+        visible={isModalOpen}
+        title={editingItem ? `Редагувати — ${title}` : `Новий запис — ${title}`}
+        submitLabel={editingItem ? "Зберегти зміни" : "Додати"}
+        item={{
+          name: editingItem?.name ?? "",
+          recommendation: editingItem?.recommendation ?? "",
+        }}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSave}
+      />
+
+      <ConfirmModal
+        visible={Boolean(deletingId)}
+        title={`Видалити — ${title}`}
+        message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 };

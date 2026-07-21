@@ -73,7 +73,32 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
       </span>
 
       <div className="flex-1 min-w-0">
-        <div className="text-[17px] font-bold truncate">{patient.fullName}</div>
+        <div className="flex items-center gap-1 inline-flex max-w-full">
+          <div className="text-[17px] font-bold truncate">{patient.fullName}</div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(patient);
+            }}
+            title="Редагувати ім'я пацієнта"
+            aria-label="Редагувати ім'я пацієнта"
+            className="flex-none p-1.5 rounded-full text-ink-soft/70 hover:text-brand hover:bg-brand-soft/60 transition-all cursor-pointer active:scale-90"
+          >
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+          </button>
+        </div>
         {formattedVisitDate && (
           <div className="text-sm text-ink-soft mt-0.5">
             Візит · {formattedVisitDate}
@@ -81,21 +106,27 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2.5 w-full sm:w-auto sm:flex-none">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(patient);
-          }}
-          className="btn btn-ghost btn-sm"
-        >
-          Редагувати
-        </button>
+      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-none">
         <button
           onClick={handleExportPDF}
           disabled={isExporting}
-          className="btn btn-ghost btn-sm"
+          className="btn btn-ghost btn-sm flex-1 sm:flex-initial"
         >
+          <svg
+            className="w-4 h-4 text-brand"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
           {isExporting ? "Готуємо…" : "PDF рекомендацій"}
         </button>
         <button
@@ -103,7 +134,7 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
             e.stopPropagation();
             openChart();
           }}
-          className="btn btn-tint btn-sm"
+          className="btn btn-tint btn-sm flex-1 sm:flex-initial"
         >
           Відкрити картку
         </button>

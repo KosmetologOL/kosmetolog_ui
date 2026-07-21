@@ -98,12 +98,12 @@ const ReferencePanel: React.FC = () => {
         Довідники
       </h1>
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
+      <div className="mb-5 flex w-full overflow-x-auto pb-1 gap-1.5 scrollbar-none sm:flex-wrap">
         {allTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`tab-pill ${activeTab === tab.key ? "is-active" : ""}`}
+            className={`tab-pill whitespace-nowrap ${activeTab === tab.key ? "is-active" : ""}`}
           >
             {tab.label}
           </button>

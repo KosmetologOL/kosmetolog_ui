@@ -64,9 +64,7 @@ const SearchSpecialist: React.FC<Props> = ({
               <span className="truncate text-sm font-bold">
                 {specialist.name}
               </span>
-              <span className="flex-none text-xs font-bold text-brand">
-                Додати
-              </span>
+              <span className="btn btn-tint btn-sm flex-none">Додати</span>
             </button>
           ))}
         </div>

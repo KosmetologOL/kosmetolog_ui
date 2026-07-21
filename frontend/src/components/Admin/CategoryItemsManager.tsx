@@ -4,6 +4,9 @@ import {
   listCategoryItems,
   updateCategoryItem,
 } from "#api/referenceApi";
+import ConfirmModal from "#components/ConfirmModal";
+import ExpandableText from "#components/ExpandableText";
+import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
 
 interface Props {
@@ -17,8 +20,9 @@ const CategoryItemsManager: React.FC<Props> = ({
 }) => {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ name: "", recommendation: "" });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = items.filter((item) => {
@@ -41,77 +45,107 @@ const CategoryItemsManager: React.FC<Props> = ({
     void load();
   }, [categoryId]);
 
-  const handleSave = async () => {
+  const handleSave = async (form: { name: string; recommendation?: string }) => {
     if (!form.name.trim()) return;
 
     try {
-      if (editingId) {
-        await updateCategoryItem(editingId, form.name, form.recommendation);
-        setEditingId(null);
+      if (editingItem?._id) {
+        await updateCategoryItem(editingItem._id, form.name, form.recommendation);
       } else {
         await createCategoryItem(categoryId, form.name, form.recommendation);
       }
-      setForm({ name: "", recommendation: "" });
+      setIsModalOpen(false);
+      setEditingItem(null);
       void load();
     } catch (err) {
       console.error("Error saving:", err);
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditingId(item._id);
-    setForm({ name: item.name, recommendation: item.recommendation || "" });
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Ви впевнені, що хочете видалити цей елемент?")) return;
+  const handleOpenEdit = (item: any) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteCategoryItem(id);
+      await deleteCategoryItem(deletingId);
+      setDeletingId(null);
       void load();
     } catch (err) {
       console.error("Error deleting:", err);
     }
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
-    setForm({ name: "", recommendation: "" });
-  };
-
   return (
     <div className="flex w-full flex-col items-start">
-      <p className="section-label">{categoryName}</p>
+      {/* Header toolbar */}
+      <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
+            {categoryName}
+          </h1>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            Усього записів: {filteredList.length}
+          </p>
+        </div>
 
-      <input
-        placeholder="Пошук"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="field-input mb-4 max-w-md"
-      />
-
-      <div className="mb-5 flex w-full flex-wrap items-start gap-3">
-        <input
-          placeholder="Назва"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="field-input min-w-[200px] flex-1"
-        />
-
-        <textarea
-          placeholder="Рекомендація"
-          value={form.recommendation}
-          onChange={(e) => setForm({ ...form, recommendation: e.target.value })}
-          className="field-textarea min-w-[200px] flex-1 h-12 resize-none overflow-hidden"
-          rows={1}
-        />
-
-        <button onClick={handleSave} className="btn btn-primary">
-          {editingId ? "Оновити" : "Додати"}
+        <button
+          type="button"
+          onClick={handleOpenCreate}
+          className="btn btn-primary btn-sm"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M8 2v12M2 8h12" />
+          </svg>
+          Додати запис
         </button>
+      </div>
 
-        {editingId && (
-          <button onClick={handleCancel} className="btn btn-ghost">
-            Скасувати
+      {/* Search input bar */}
+      <div className="relative mb-5 w-full max-w-md">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.8-3.8" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Пошук записів..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="field-input pl-10 pr-9 w-full"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Очистити пошук"
+            className="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-ink-soft hover:bg-surface-2 hover:text-ink"
+          >
+            ×
           </button>
         )}
       </div>
@@ -128,20 +162,32 @@ const CategoryItemsManager: React.FC<Props> = ({
                 <div className="list-row-name">{item.name}</div>
                 {item.recommendation && (
                   <div className="list-row-sub whitespace-pre-wrap">
-                    {item.recommendation}
+                    <ExpandableText text={item.recommendation} />
                   </div>
                 )}
               </div>
               <div className="list-row-actions">
                 <button
-                  onClick={() => handleEdit(item)}
-                  className="btn btn-ghost btn-sm"
+                  onClick={() => handleOpenEdit(item)}
+                  className="btn btn-ghost btn-sm min-w-[110px] justify-center"
                 >
+                  <svg
+                    className="w-3.5 h-3.5 text-ink-soft"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
                   Редагувати
                 </button>
                 <button
-                  onClick={() => handleDelete(item._id)}
-                  className="btn btn-ghost btn-sm text-danger"
+                  onClick={() => setDeletingId(item._id)}
+                  className="btn btn-sm min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
                 >
                   Видалити
                 </button>
@@ -150,6 +196,29 @@ const CategoryItemsManager: React.FC<Props> = ({
           ))}
         </div>
       )}
+
+      <ReferenceItemModal
+        visible={isModalOpen}
+        title={editingItem ? `Редагувати — ${categoryName}` : `Новий запис — ${categoryName}`}
+        submitLabel={editingItem ? "Зберегти зміни" : "Додати"}
+        item={{
+          name: editingItem?.name ?? "",
+          recommendation: editingItem?.recommendation ?? "",
+        }}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSave}
+      />
+
+      <ConfirmModal
+        visible={Boolean(deletingId)}
+        title={`Видалити — ${categoryName}`}
+        message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 };

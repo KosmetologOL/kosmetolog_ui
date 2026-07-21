@@ -1,4 +1,5 @@
 import { searchMedicationsByName, type IMedication } from "#api/medicationsApi";
+import ExpandableText from "#components/ExpandableText";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -64,14 +65,12 @@ const SearchMedication: React.FC<Props> = ({
                   {medication.name}
                 </span>
                 {medication.recommendation && (
-                  <span className="block truncate text-xs text-ink-soft">
-                    {medication.recommendation}
+                  <span className="block text-xs text-ink-soft">
+                    <ExpandableText text={medication.recommendation} limit={100} />
                   </span>
                 )}
               </span>
-              <span className="flex-none text-xs font-bold text-brand">
-                Додати
-              </span>
+              <span className="btn btn-tint btn-sm flex-none">Додати</span>
             </button>
           ))}
         </div>

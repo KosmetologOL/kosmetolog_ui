@@ -1,4 +1,5 @@
 import { searchProceduresByName, type IProcedure } from "#api/proceduresApi";
+import ExpandableText from "#components/ExpandableText";
 import { useEffect, useState } from "react";
 
 interface Props<T extends IProcedure> {
@@ -57,21 +58,19 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
               key={procedure._id}
               type="button"
               onClick={() => addProcedure(procedure)}
-              className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2.5 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
+              className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface px-3 py-2.5 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
             >
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold">
                   {procedure.name}
                 </span>
                 {procedure.recommendation && (
-                  <span className="block truncate text-xs text-ink-soft">
-                    {procedure.recommendation}
+                  <span className="block text-xs text-ink-soft">
+                    <ExpandableText text={procedure.recommendation} limit={100} />
                   </span>
                 )}
               </span>
-              <span className="flex-none text-xs font-bold text-brand">
-                Додати
-              </span>
+              <span className="btn btn-tint btn-sm flex-none">Додати</span>
             </button>
           ))}
         </div>

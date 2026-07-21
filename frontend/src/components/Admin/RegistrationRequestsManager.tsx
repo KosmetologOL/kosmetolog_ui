@@ -22,8 +22,17 @@ const RegistrationRequestsManager: React.FC = () => {
   };
 
   return (
-    <div>
-      <p className="section-label">Запити на реєстрацію</p>
+    <div className="flex w-full flex-col items-start">
+      <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
+            Запити на реєстрацію
+          </h1>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            Очікують підтвердження: {requests.length}
+          </p>
+        </div>
+      </div>
       <div className="flex flex-col gap-2.5">
         {requests.map((r) => {
           const fullName = [r.name, r.firstName, r.lastName]

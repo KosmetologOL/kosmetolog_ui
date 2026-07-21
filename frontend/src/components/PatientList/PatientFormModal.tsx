@@ -49,9 +49,20 @@ export const PatientFormModal: React.FC<Props> = ({
         <button
           onClick={onClose}
           aria-label="Закрити"
-          className="absolute top-3 right-4 text-2xl leading-none text-ink-soft hover:text-ink"
+          className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
         >
-          ×
+          <svg
+            className="h-4.5 w-4.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
         <h2 className="text-[17px] tracking-[0.16em] uppercase mb-6">
@@ -70,7 +81,7 @@ export const PatientFormModal: React.FC<Props> = ({
               setForm({ ...form, fullName: e.target.value });
               setInvalid(false);
             }}
-            placeholder="Прізвище Імʼя По батькові"
+            placeholder="Прізвище імʼя по батькові"
             className={`w-full h-12 px-3.5 rounded-[0.625rem] border text-[16px] outline-none transition ${
               invalid
                 ? "border-danger"

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface ReferenceItemForm {
   name: string;
   recommendation?: string;
   comment?: string;
+  morning?: boolean;
+  evening?: boolean;
 }
 
 interface ReferenceItemModalProps {
@@ -13,6 +16,7 @@ interface ReferenceItemModalProps {
   item: ReferenceItemForm;
   recommendationLabel?: string;
   commentLabel?: string;
+  showTimeOfDayOptions?: boolean;
   onClose: () => void;
   onSave: (item: ReferenceItemForm) => void;
 }
@@ -24,6 +28,7 @@ export default function ReferenceItemModal({
   item,
   recommendationLabel = "Рекомендація",
   commentLabel,
+  showTimeOfDayOptions,
   onClose,
   onSave,
 }: ReferenceItemModalProps) {
@@ -37,8 +42,8 @@ export default function ReferenceItemModal({
   useEffect(() => {
     if (recommendationRef.current) {
       recommendationRef.current.style.height = "auto";
-      recommendationRef.current.style.height =
-        recommendationRef.current.scrollHeight + "px";
+      const newHeight = Math.max(160, recommendationRef.current.scrollHeight);
+      recommendationRef.current.style.height = `${newHeight}px`;
     }
   }, [form.recommendation, visible]);
 
@@ -48,7 +53,7 @@ export default function ReferenceItemModal({
 
   const handleSave = () => {
     if (!form.name.trim()) {
-      window.alert("Введіть назву.");
+      toast.error("Введіть назву.");
       return;
     }
 
@@ -56,27 +61,40 @@ export default function ReferenceItemModal({
       name: form.name.trim(),
       recommendation: form.recommendation?.trim() ?? "",
       comment: form.comment?.trim() ?? "",
+      morning: form.morning,
+      evening: form.evening,
     });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 px-4 py-6 backdrop-blur-sm">
-      <div className="modal-panel relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface shadow-lift">
+      <div className="modal-panel relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-lift">
         <button
           onClick={onClose}
           aria-label="Закрити"
-          className="absolute right-4 top-4 z-10 text-2xl leading-none text-ink-soft hover:text-ink"
+          className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-2 hover:text-ink active:scale-95"
         >
-          ×
+          <svg
+            className="h-4.5 w-4.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
-        <div className="border-b border-line px-6 py-5">
-          <h2 className="pr-10 text-[17px] tracking-[0.14em] uppercase">
+        <div className="border-b border-line px-7 py-5">
+          <h2 className="pr-10 text-[18px] font-bold tracking-[0.1em] uppercase">
             {title}
           </h2>
         </div>
 
-        <div className="space-y-5 overflow-y-auto px-6 py-6">
+        <div className="space-y-6 overflow-y-auto px-7 py-6">
           <label className="block">
             <span className="field-label">Назва</span>
             <input
@@ -97,20 +115,40 @@ export default function ReferenceItemModal({
                 setForm({ ...form, recommendation: e.target.value })
               }
               placeholder={recommendationLabel}
-              className="field-textarea min-h-[180px] w-full resize-y"
+              rows={6}
+              className="field-textarea min-h-[160px] max-h-[45vh] w-full resize-y leading-relaxed text-[15px]"
             />
           </label>
 
-          {commentLabel && (
-            <label className="block">
-              <span className="field-label">{commentLabel}</span>
-              <textarea
-                value={form.comment ?? ""}
-                onChange={(e) => setForm({ ...form, comment: e.target.value })}
-                placeholder={commentLabel}
-                className="field-textarea min-h-[110px] w-full resize-y"
-              />
-            </label>
+          {showTimeOfDayOptions && (
+            <div className="block">
+              <span className="field-label mb-2">Час застосування</span>
+              <div className="flex items-center gap-4 pt-1">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink cursor-pointer select-none bg-surface-2 hover:bg-surface-3 px-3.5 py-2 rounded-xl border border-line transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={!!form.morning}
+                    onChange={(e) =>
+                      setForm({ ...form, morning: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded border-line-strong text-brand focus:ring-brand/20"
+                  />
+                  <span>☀️ Ранок</span>
+                </label>
+
+                <label className="flex items-center gap-2 text-sm font-medium text-ink cursor-pointer select-none bg-surface-2 hover:bg-surface-3 px-3.5 py-2 rounded-xl border border-line transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={!!form.evening}
+                    onChange={(e) =>
+                      setForm({ ...form, evening: e.target.checked })
+                    }
+                    className="w-4 h-4 rounded border-line-strong text-brand focus:ring-brand/20"
+                  />
+                  <span>🌙 Вечір</span>
+                </label>
+              </div>
+            </div>
           )}
         </div>
 

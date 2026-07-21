@@ -12,7 +12,7 @@ const ReportComments: React.FC<Props> = ({ comments, setComments }) => (
       value={comments}
       onChange={(e) => setComments(e.target.value)}
       rows={3}
-      className="field-textarea w-full"
+      className="field-textarea w-full min-h-[80px] resize-y"
     />
   </div>
 );
