@@ -3,10 +3,7 @@ import * as ExamsController from "../controllers/exams.controller";
 import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { validateObjectIdParams } from "../utils/objectId";
-import {
-  nameOnlySchema,
-  nameWithRecommendationSchema,
-} from "../validators/reference.validation";
+import { nameWithRecommendationSchema } from "../validators/reference.validation";
 
 const router = express.Router();
 
@@ -27,7 +24,7 @@ router.put(
   "/:id",
   requireRoles("admin"),
   validateObjectIdParams("id"),
-  validate(nameOnlySchema),
+  validate(nameWithRecommendationSchema),
   ExamsController.updateExam,
 );
 router.delete(

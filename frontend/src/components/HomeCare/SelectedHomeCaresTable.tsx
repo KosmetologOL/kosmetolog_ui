@@ -1,4 +1,5 @@
 import type { IHomeCare } from "#api/homeCaresApi";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -83,12 +84,12 @@ const SelectedHomeCaresTable: React.FC<Props> = ({
                     : "—"}
                 </td>
 
-                <td className="max-w-[240px] px-2 py-1 text-gray-700 whitespace-pre-wrap line-clamp-2">
-                  {h.recommendations && h.recommendations !== "" ? (
-                    h.recommendations
-                  ) : (
-                    <span className="text-gray-400 italic">Немає тексту</span>
-                  )}
+                <td className="max-w-[240px] px-2 py-1 text-gray-700">
+                  <FormattedText
+                    markdown={h.recommendations}
+                    fallback="Немає тексту"
+                    className="line-clamp-2 text-sm"
+                  />
                 </td>
 
                 {(["morning", "evening"] as (keyof IHomeCare)[]).map((key) => (

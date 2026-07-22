@@ -1,4 +1,5 @@
 import { type IExam } from "#api/examsApi";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -63,8 +64,8 @@ const SelectedExamsTable: React.FC<Props> = ({
                 className="border-b border-green-200 hover:bg-green-50"
               >
                 <td className="px-2 py-1">{exam.name}</td>
-                <td className="px-2 py-1 whitespace-pre-wrap">
-                  {exam.recommendation}
+                <td className="px-2 py-1">
+                  <FormattedText markdown={exam.recommendation} />
                 </td>
                 <td className="px-2 py-1 align-top space-x-2">
                   <button

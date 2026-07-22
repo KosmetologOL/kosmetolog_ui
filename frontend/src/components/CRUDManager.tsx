@@ -1,6 +1,8 @@
+import RichTextEditor from "#components/RichTextEditor";
 import { downloadCsv, parseCsv, toCsv } from "#types/csv";
+import { markdownToHtml } from "#types/markdown";
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface CRUDItem {
   _id?: string;
@@ -48,7 +50,6 @@ const CRUDManager = <T,>({
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -94,12 +95,15 @@ const CRUDManager = <T,>({
       window.removeEventListener("categoriesUpdated", handler as EventListener);
   }, [fetchList]);
 
-  useEffect(() => {
-    if (textRef.current) {
-      textRef.current.style.height = "auto";
-      textRef.current.style.height = `${textRef.current.scrollHeight}px`;
+  const recommendationHtmlById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of list) {
+      if (item._id) {
+        map.set(item._id, markdownToHtml(item.recommendation || ""));
+      }
     }
-  }, [form.recommendation]);
+    return map;
+  }, [list]);
 
   const handleSave = async () => {
     if (!form.name.trim()) {
@@ -280,79 +284,78 @@ const CRUDManager = <T,>({
       />
 
       {editable && (
-        <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
-          <input
-            placeholder="Назва"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
-          />
+        <div className="mb-4 flex w-full flex-col gap-2">
+          <div className="flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
+            <input
+              placeholder="Назва"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
+            />
+
+            {hasMorningEvening && (
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.morning}
+                    onChange={(e) =>
+                      setForm({ ...form, morning: e.target.checked })
+                    }
+                    className="accent-green-600"
+                  />
+                  Ранок
+                </label>
+                <label className="flex items-center gap-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.evening}
+                    onChange={(e) =>
+                      setForm({ ...form, evening: e.target.checked })
+                    }
+                    className="accent-green-600"
+                  />
+                  Вечір
+                </label>
+              </div>
+            )}
+
+            <button
+              onClick={handleSave}
+              className={`h-[38px] shrink-0 rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
+                editingId
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
+              {editingId ? "Оновити" : "Додати"}
+            </button>
+
+            {editingId && (
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setForm({
+                    name: "",
+                    recommendation: "",
+                    morning: false,
+                    evening: false,
+                  });
+                }}
+                className="h-[38px] shrink-0 rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+              >
+                Скасувати
+              </button>
+            )}
+          </div>
 
           {hasRecommendation && (
-            <textarea
-              ref={textRef}
-              placeholder="Рекомендація"
-              value={form.recommendation}
-              onChange={(e) =>
-                setForm({ ...form, recommendation: e.target.value })
+            <RichTextEditor
+              value={form.recommendation ?? ""}
+              onChange={(markdown) =>
+                setForm({ ...form, recommendation: markdown })
               }
-              className="min-h-[38px] flex-1 resize-none overflow-hidden rounded-md border border-green-300 px-2 py-[9px] leading-[1.4]"
             />
-          )}
-
-          {hasMorningEvening && (
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.morning}
-                  onChange={(e) =>
-                    setForm({ ...form, morning: e.target.checked })
-                  }
-                  className="accent-green-600"
-                />
-                Ранок
-              </label>
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.evening}
-                  onChange={(e) =>
-                    setForm({ ...form, evening: e.target.checked })
-                  }
-                  className="accent-green-600"
-                />
-                Вечір
-              </label>
-            </div>
-          )}
-
-          <button
-            onClick={handleSave}
-            className={`h-[38px] rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
-              editingId
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            {editingId ? "Оновити" : "Додати"}
-          </button>
-
-          {editingId && (
-            <button
-              onClick={() => {
-                setEditingId(null);
-                setForm({
-                  name: "",
-                  recommendation: "",
-                  morning: false,
-                  evening: false,
-                });
-              }}
-              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
-            >
-              Скасувати
-            </button>
           )}
         </div>
       )}
@@ -406,9 +409,14 @@ const CRUDManager = <T,>({
                     {item.name}
                   </td>
                   {hasRecommendation && (
-                    <td className="border border-green-200 px-4 py-2 text-gray-700 whitespace-pre-wrap text-sm max-w-md">
-                      {item.recommendation || "-"}
-                    </td>
+                    <td
+                      className="rich-content border border-green-200 px-4 py-2 text-gray-700 text-sm max-w-md"
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          (item._id && recommendationHtmlById.get(item._id)) ||
+                          "-",
+                      }}
+                    />
                   )}
                   {hasMorningEvening && (
                     <>
