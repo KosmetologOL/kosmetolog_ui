@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import RichTextEditor from "#components/RichTextEditor";
+
 interface ReferenceItemForm {
   name: string;
   recommendation?: string;
@@ -28,19 +30,19 @@ export default function ReferenceItemModal({
   onSave,
 }: ReferenceItemModalProps) {
   const [form, setForm] = useState<ReferenceItemForm>(item);
-  const recommendationRef = useRef<HTMLTextAreaElement | null>(null);
+  const commentRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setForm(item);
   }, [item]);
 
   useEffect(() => {
-    if (recommendationRef.current) {
-      recommendationRef.current.style.height = "auto";
-      recommendationRef.current.style.height =
-        recommendationRef.current.scrollHeight + "px";
+    if (commentRef.current) {
+      commentRef.current.style.height = "auto";
+      commentRef.current.style.height =
+        commentRef.current.scrollHeight + "px";
     }
-  }, [form.recommendation, visible]);
+  }, [form.comment, visible]);
 
   if (!visible) {
     return null;
@@ -94,14 +96,11 @@ export default function ReferenceItemModal({
             <label className="text-sm font-medium text-gray-700">
               {recommendationLabel}
             </label>
-            <textarea
-              ref={recommendationRef}
+            <RichTextEditor
               value={form.recommendation ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, recommendation: e.target.value })
+              onChange={(markdown) =>
+                setForm({ ...form, recommendation: markdown })
               }
-              placeholder={recommendationLabel}
-              className="min-h-[280px] w-full rounded-2xl border border-green-200 bg-slate-50 px-4 py-4 text-[15px] leading-7 text-gray-800 shadow-inner outline-none transition focus:border-green-400 focus:bg-white focus:ring-4 focus:ring-green-100 resize-y"
             />
           </div>
 
@@ -111,6 +110,7 @@ export default function ReferenceItemModal({
                 {commentLabel}
               </label>
               <textarea
+                ref={commentRef}
                 value={form.comment ?? ""}
                 onChange={(e) => setForm({ ...form, comment: e.target.value })}
                 placeholder={commentLabel}
