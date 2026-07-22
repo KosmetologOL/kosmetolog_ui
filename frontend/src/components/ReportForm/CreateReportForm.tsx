@@ -1,4 +1,4 @@
-import { getPatientById, type IPatient } from "#api/patientsApi";
+import { getPatientById, updatePatient, type IPatient } from "#api/patientsApi";
 import {
   createReport,
   getReportByPatientId,
@@ -27,6 +27,7 @@ import SearchMedication from "#components/Medications/SearchMedication";
 import SelectedMedicationsTable from "#components/Medications/SelectedMedicatonsTable";
 import SearchProcedure from "#components/Procedures/SearchProcedure";
 import FormattedText from "#components/FormattedText";
+import PatientFormModal from "#components/PatientList/PatientFormModal";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import ReportActions from "#components/ReportForm/ReportActions";
@@ -69,6 +70,7 @@ const CreateReportForm: React.FC = () => {
   const [procedureStages, setProcedureStages] = useState<IProcedureStage[]>([]);
   const [editingProcedure, setEditingProcedure] =
     useState<EditingProcedureState | null>(null);
+  const [editingPatientName, setEditingPatientName] = useState(false);
   const [reportHistory, setReportHistory] = useState<IReportEditHistoryItem[]>(
     [],
   );
@@ -229,6 +231,19 @@ const CreateReportForm: React.FC = () => {
     setEditingProcedure(null);
   };
 
+  const handleUpdatePatientName = async (updated: IPatient) => {
+    if (!patient?._id) return;
+
+    try {
+      const savedPatient = await updatePatient(patient._id, updated);
+      setPatient(savedPatient);
+      setEditingPatientName(false);
+      toast.success("Ім'я пацієнта оновлено успішно!");
+    } catch {
+      toast.error("Не вдалося оновити ім'я пацієнта. Спробуйте ще раз.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientId) return toast.error("Пацієнт не вибраний!");
@@ -313,8 +328,15 @@ const CreateReportForm: React.FC = () => {
             onSubmit={handleSubmit}
             className="bg-white shadow rounded-lg p-2 sm:p-3 md:p-4 w-full mb-6 transition-all duration-300"
           >
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-800 border-b pb-1 border-gray-200">
+            <h2 className="flex flex-wrap items-center gap-2 text-lg sm:text-xl md:text-2xl font-bold mb-3 text-gray-800 border-b pb-1 border-gray-200">
               Рекомендаційний лист {patient?.fullName}
+              <button
+                type="button"
+                onClick={() => setEditingPatientName(true)}
+                className="text-sm font-medium text-blue-600 hover:underline"
+              >
+                Редагувати
+              </button>
             </h2>
             <h3 className="text-sm text-gray-500 mb-4">
               Дата створення: {createdDate || "невідомо"}
@@ -552,7 +574,18 @@ const CreateReportForm: React.FC = () => {
 
               <ReportComments comments={comments} setComments={setComments} />
 
-              <ReportSection title="Текст у кінці рекомендаційного листа">
+              <ReportSection
+                title="Текст у кінці рекомендаційного листа"
+                actions={
+                  <button
+                    type="button"
+                    onClick={() => setFinalNote("")}
+                    className="text-xs font-medium text-red-600 hover:underline"
+                  >
+                    Очистити
+                  </button>
+                }
+              >
                 <textarea
                   value={finalNote}
                   onChange={(e) => setFinalNote(e.target.value)}
@@ -598,6 +631,14 @@ const CreateReportForm: React.FC = () => {
             }}
             onClose={() => setEditingProcedure(null)}
             onSave={saveProcedureEditor}
+          />
+
+          <PatientFormModal
+            visible={editingPatientName}
+            title="Редагувати дані пацієнта"
+            patient={patient}
+            onClose={() => setEditingPatientName(false)}
+            onSave={handleUpdatePatientName}
           />
         </div>
       </div>
