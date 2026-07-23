@@ -1,5 +1,5 @@
 import { searchProceduresByName, type IProcedure } from "#api/proceduresApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import { useEffect, useState } from "react";
 
 interface Props<T extends IProcedure> {
@@ -65,9 +65,10 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
                   {procedure.name}
                 </span>
                 {procedure.recommendation && (
-                  <span className="block text-xs text-ink-soft">
-                    <ExpandableText text={procedure.recommendation} limit={100} />
-                  </span>
+                  <FormattedText
+                    markdown={procedure.recommendation}
+                    className="text-xs text-ink-soft"
+                  />
                 )}
               </span>
               <span className="btn btn-tint btn-sm flex-none">Додати</span>

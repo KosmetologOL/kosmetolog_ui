@@ -1,4 +1,4 @@
-import { getPatientById, type IPatient } from "#api/patientsApi";
+import { getPatientById, updatePatient, type IPatient } from "#api/patientsApi";
 import {
   createReport,
   getReportByPatientId,
@@ -25,6 +25,8 @@ import { getReportCreatorName } from "#types/getReportCreatorName";
 import SearchMedication from "#components/Medications/SearchMedication";
 import SelectedMedicationsTable from "#components/Medications/SelectedMedicatonsTable";
 import SearchProcedure from "#components/Procedures/SearchProcedure";
+import FormattedText from "#components/FormattedText";
+import PatientFormModal from "#components/PatientList/PatientFormModal";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import ReportActions from "#components/ReportForm/ReportActions";
@@ -67,6 +69,7 @@ const CreateReportForm: React.FC = () => {
   const [procedureStages, setProcedureStages] = useState<IProcedureStage[]>([]);
   const [editingProcedure, setEditingProcedure] =
     useState<EditingProcedureState | null>(null);
+  const [editingPatientName, setEditingPatientName] = useState(false);
   const [reportHistory, setReportHistory] = useState<IReportEditHistoryItem[]>(
     [],
   );
@@ -228,6 +231,19 @@ const CreateReportForm: React.FC = () => {
     setEditingProcedure(null);
   };
 
+  const handleUpdatePatientName = async (updated: IPatient) => {
+    if (!patient?._id) return;
+
+    try {
+      const savedPatient = await updatePatient(patient._id, updated);
+      setPatient(savedPatient);
+      setEditingPatientName(false);
+      toast.success("Ім'я пацієнта оновлено успішно!");
+    } catch {
+      toast.error("Не вдалося оновити ім'я пацієнта. Спробуйте ще раз.");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientId) return toast.error("Пацієнт не вибраний!");
@@ -310,8 +326,15 @@ const CreateReportForm: React.FC = () => {
       </button>
 
       <div className="mb-5">
-        <h1 className="text-[21px] tracking-[0.08em]">
+        <h1 className="flex flex-wrap items-center gap-2 text-[21px] tracking-[0.08em]">
           Рекомендаційний лист — {patient?.fullName}
+          <button
+            type="button"
+            onClick={() => setEditingPatientName(true)}
+            className="btn btn-ghost btn-sm"
+          >
+            Редагувати
+          </button>
         </h1>
         <p className="mt-1 text-[14.5px] text-ink-soft">
           Дата створення: {createdDate || "невідомо"}
@@ -439,9 +462,11 @@ const CreateReportForm: React.FC = () => {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0">
                         <p className="text-[14.5px] font-bold">{proc.name}</p>
-                        <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-5 text-ink-soft">
-                          {proc.recommendation || "Рекомендація відсутня"}
-                        </p>
+                        <FormattedText
+                          markdown={proc.recommendation}
+                          fallback="Рекомендація відсутня"
+                          className="mt-1 text-[13.5px] leading-5 text-ink-soft"
+                        />
                         {proc.comment &&
                           proc.comment !== DEFAULT_PROCEDURE_COMMENT && (
                             <div className="mt-2 whitespace-pre-wrap rounded-lg bg-brand-soft px-2.5 py-2 text-[13.5px] leading-5">
@@ -516,7 +541,11 @@ const CreateReportForm: React.FC = () => {
                 ].map(([name, rec]) => (
                   <li key={name}>
                     <strong className="text-ink">{name}:</strong>{" "}
-                    {rec || "Рекомендація відсутня"}
+                    <FormattedText
+                      markdown={rec}
+                      fallback="Рекомендація відсутня"
+                      className="inline"
+                    />
                   </li>
                 ))}
               </ul>
@@ -535,7 +564,18 @@ const CreateReportForm: React.FC = () => {
 
           <ReportComments comments={comments} setComments={setComments} />
 
-          <ReportSection title="Текст у кінці рекомендаційного листа">
+          <ReportSection
+            title="Текст у кінці рекомендаційного листа"
+            actions={
+              <button
+                type="button"
+                onClick={() => setFinalNote("")}
+                className="btn btn-ghost btn-sm text-danger"
+              >
+                Очистити
+              </button>
+            }
+          >
             <textarea
               value={finalNote}
               onChange={(e) => setFinalNote(e.target.value)}
@@ -565,6 +605,14 @@ const CreateReportForm: React.FC = () => {
                   getReportCreatorName(reportHistory) || user?.name || "",
               })
             }
+          />
+
+          <PatientFormModal
+            visible={editingPatientName}
+            title="Редагувати дані пацієнта"
+            patient={patient}
+            onClose={() => setEditingPatientName(false)}
+            onSave={handleUpdatePatientName}
           />
         </div>
       </form>

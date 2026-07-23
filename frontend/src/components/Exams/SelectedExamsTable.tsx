@@ -1,5 +1,5 @@
 import { type IExam } from "#api/examsApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -52,9 +52,10 @@ const SelectedExamsTable: React.FC<Props> = ({
             <div className="min-w-0 flex-1">
               <div className="chip-name">{exam.name}</div>
               {exam.recommendation && (
-                <div className="chip-sub whitespace-pre-wrap">
-                  <ExpandableText text={exam.recommendation} limit={130} />
-                </div>
+                <FormattedText
+                  markdown={exam.recommendation}
+                  className="chip-sub"
+                />
               )}
             </div>
             <button

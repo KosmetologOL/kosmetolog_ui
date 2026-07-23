@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
+import RichTextEditor from "#components/RichTextEditor";
+
 interface ReferenceItemForm {
   name: string;
   recommendation?: string;
@@ -33,19 +35,19 @@ export default function ReferenceItemModal({
   onSave,
 }: ReferenceItemModalProps) {
   const [form, setForm] = useState<ReferenceItemForm>(item);
-  const recommendationRef = useRef<HTMLTextAreaElement | null>(null);
+  const commentRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setForm(item);
   }, [item]);
 
   useEffect(() => {
-    if (recommendationRef.current) {
-      recommendationRef.current.style.height = "auto";
-      const newHeight = Math.max(160, recommendationRef.current.scrollHeight);
-      recommendationRef.current.style.height = `${newHeight}px`;
+    if (commentRef.current) {
+      commentRef.current.style.height = "auto";
+      commentRef.current.style.height =
+        commentRef.current.scrollHeight + "px";
     }
-  }, [form.recommendation, visible]);
+  }, [form.comment, visible]);
 
   if (!visible) {
     return null;
@@ -106,19 +108,15 @@ export default function ReferenceItemModal({
             />
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className="field-label">{recommendationLabel}</span>
-            <textarea
-              ref={recommendationRef}
+            <RichTextEditor
               value={form.recommendation ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, recommendation: e.target.value })
+              onChange={(markdown) =>
+                setForm({ ...form, recommendation: markdown })
               }
-              placeholder={recommendationLabel}
-              rows={6}
-              className="field-textarea min-h-[160px] max-h-[45vh] w-full resize-y leading-relaxed text-[15px]"
             />
-          </label>
+          </div>
 
           {showTimeOfDayOptions && (
             <div className="block">
@@ -149,6 +147,20 @@ export default function ReferenceItemModal({
                 </label>
               </div>
             </div>
+          )}
+
+          {commentLabel && (
+            <label className="block">
+              <span className="field-label">{commentLabel}</span>
+              <textarea
+                ref={commentRef}
+                value={form.comment ?? ""}
+                onChange={(e) => setForm({ ...form, comment: e.target.value })}
+                placeholder={commentLabel}
+                rows={4}
+                className="field-textarea min-h-[100px] w-full resize-y leading-relaxed text-[15px]"
+              />
+            </label>
           )}
         </div>
 

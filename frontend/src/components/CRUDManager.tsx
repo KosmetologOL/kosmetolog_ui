@@ -1,5 +1,5 @@
 import ConfirmModal from "#components/ConfirmModal";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { downloadCsv, parseCsv, toCsv } from "#types/csv";
 import axios from "axios";
@@ -92,8 +92,6 @@ const CRUDManager = <T,>({
     return () =>
       window.removeEventListener("categoriesUpdated", handler as EventListener);
   }, [fetchList]);
-
-
 
   const handleSave = async (formItem: { name: string; recommendation?: string }) => {
     if (!formItem.name.trim()) {
@@ -327,8 +325,11 @@ const CRUDManager = <T,>({
               <div className="min-w-0">
                 <div className="list-row-name">{item.name}</div>
                 {hasRecommendation && item.recommendation && (
-                  <div className="list-row-sub whitespace-pre-wrap">
-                    <ExpandableText text={item.recommendation} />
+                  <div className="list-row-sub">
+                    <FormattedText
+                      markdown={item.recommendation}
+                      className="text-[13.5px]"
+                    />
                   </div>
                 )}
                 {hasMorningEvening && (

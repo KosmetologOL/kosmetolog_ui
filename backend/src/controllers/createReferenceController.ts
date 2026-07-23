@@ -56,8 +56,11 @@ export const createReferenceController = <T>(
   const update = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const { name } = req.body;
-      const updated = await service.update(id, { name });
+      const data: Record<string, unknown> = {};
+      for (const field of createFields) {
+        data[field] = req.body[field];
+      }
+      const updated = await service.update(id, data);
       if (!updated) return next(ApiError.notFound("Не знайдено"));
       res.json(updated);
     } catch (err) {

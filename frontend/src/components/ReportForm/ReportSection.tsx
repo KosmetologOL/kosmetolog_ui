@@ -2,12 +2,16 @@ import React from "react";
 
 interface Props {
   title: string;
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }
 
-const ReportSection: React.FC<Props> = ({ title, children }) => (
+const ReportSection: React.FC<Props> = ({ title, actions, children }) => (
   <div className="card">
-    <p className="section-label">{title}</p>
+    <div className="flex items-center justify-between gap-2">
+      <p className="section-label">{title}</p>
+      {actions}
+    </div>
     {children}
   </div>
 );

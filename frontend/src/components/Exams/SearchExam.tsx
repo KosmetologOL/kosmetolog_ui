@@ -1,5 +1,5 @@
 import { searchExamsByName, type IExam } from "#api/examsApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import React, { useEffect, useState } from "react";
 
 interface Props {
@@ -63,9 +63,10 @@ const SearchExam: React.FC<Props> = ({ selectedExams, setSelectedExams }) => {
                   {exam.name}
                 </span>
                 {exam.recommendation && (
-                  <span className="block text-xs text-ink-soft">
-                    <ExpandableText text={exam.recommendation} limit={100} />
-                  </span>
+                  <FormattedText
+                    markdown={exam.recommendation}
+                    className="text-xs text-ink-soft"
+                  />
                 )}
               </span>
               <span className="btn btn-tint btn-sm flex-none">Додати</span>

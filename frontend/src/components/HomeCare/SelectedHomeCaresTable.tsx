@@ -1,5 +1,5 @@
 import type { IHomeCare } from "#api/homeCaresApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -61,12 +61,18 @@ const SelectedHomeCaresTable: React.FC<Props> = ({
             <div className="min-w-0 flex-1">
               <div className="chip-name font-bold text-ink text-[15px]">{h.name}</div>
               {(h.medicationName || h.recommendations) && (
-                <div className="chip-sub mt-0.5 text-xs text-ink-soft whitespace-pre-wrap leading-relaxed">
+                <div className="chip-sub mt-0.5 text-xs text-ink-soft leading-relaxed">
                   {h.medicationName && h.medicationName !== "" && (
-                    <span className="font-semibold text-ink-soft">{h.medicationName}</span>
+                    <span className="font-semibold text-ink-soft">
+                      {h.medicationName}
+                      {h.recommendations ? " · " : ""}
+                    </span>
                   )}
                   {h.recommendations && h.recommendations !== "" && (
-                    <span>{h.medicationName ? " · " : ""}<ExpandableText text={h.recommendations} limit={120} /></span>
+                    <FormattedText
+                      markdown={h.recommendations}
+                      className="inline line-clamp-2"
+                    />
                   )}
                 </div>
               )}

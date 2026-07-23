@@ -1,5 +1,5 @@
 import { searchMedicationsByName, type IMedication } from "#api/medicationsApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -65,9 +65,10 @@ const SearchMedication: React.FC<Props> = ({
                   {medication.name}
                 </span>
                 {medication.recommendation && (
-                  <span className="block text-xs text-ink-soft">
-                    <ExpandableText text={medication.recommendation} limit={100} />
-                  </span>
+                  <FormattedText
+                    markdown={medication.recommendation}
+                    className="text-xs text-ink-soft"
+                  />
                 )}
               </span>
               <span className="btn btn-tint btn-sm flex-none">Додати</span>

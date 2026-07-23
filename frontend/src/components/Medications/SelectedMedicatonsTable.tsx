@@ -1,5 +1,5 @@
 import type { IMedication } from "#api/medicationsApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -53,9 +53,10 @@ const SelectedMedicationsTable: React.FC<Props> = ({
             <div className="min-w-0 flex-1">
               <div className="chip-name">{medication.name}</div>
               {medication.recommendation && (
-                <div className="chip-sub whitespace-pre-wrap">
-                  <ExpandableText text={medication.recommendation} limit={130} />
-                </div>
+                <FormattedText
+                  markdown={medication.recommendation}
+                  className="chip-sub"
+                />
               )}
             </div>
             <button
