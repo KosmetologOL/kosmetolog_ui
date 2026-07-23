@@ -183,12 +183,12 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange }) => {
   }
 
   return (
-    <div className="w-full flex-1 overflow-hidden rounded-md border border-green-300 focus-within:ring-1 focus-within:ring-green-300">
-      <div className="flex flex-wrap items-center gap-1 border-b border-green-200 bg-green-50 p-1.5">
+    <div className="w-full flex-1 overflow-hidden rounded-xl border border-line-strong bg-surface focus-within:ring-1 focus-within:ring-brand">
+      <div className="flex flex-wrap items-center gap-1 border-b border-line bg-surface-2 p-1.5">
         {toolbarButtons.map((button, index) => (
           <span key={button.title} className="flex items-center gap-1">
             {index > 0 && toolbarButtons[index - 1].group !== button.group && (
-              <span className="mx-0.5 h-5 w-px bg-green-200" />
+              <span className="mx-0.5 h-5 w-px bg-line-strong" />
             )}
             <button
               type="button"
@@ -198,8 +198,8 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange }) => {
                 button.className ?? ""
               } ${
                 button.isActive(editor)
-                  ? "border-green-600 bg-green-600 text-white"
-                  : "border-green-300 bg-white text-green-700 hover:bg-green-100"
+                  ? "border-brand bg-brand text-paper"
+                  : "border-line-strong bg-surface text-ink-soft hover:bg-brand-soft"
               }`}
             >
               {button.label}
@@ -207,7 +207,7 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange }) => {
           </span>
         ))}
       </div>
-      <EditorContent editor={editor} className="bg-white" />
+      <EditorContent editor={editor} className="bg-surface text-ink" />
     </div>
   );
 };

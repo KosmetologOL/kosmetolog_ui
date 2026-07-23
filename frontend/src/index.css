@@ -1,12 +1,48 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Noah";
+  src: url("./fonts/Noah-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noah";
+  src: url("./fonts/Noah-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-brand: "Noah", "Avenir Next", "Segoe UI", sans-serif;
+
+  --color-paper: #f4f3ee;
+  --color-surface: #ffffff;
+  --color-surface-2: #eeede5;
+  --color-line: #e2e1d7;
+  --color-line-strong: #c9c8ba;
+  --color-ink: #30331f;
+  --color-ink-soft: #71735f;
+  --color-brand: #3d4025;
+  --color-brand-hover: #2e3119;
+  --color-brand-soft: #e6e8da;
+  --color-brand-soft-hover: #dcdfc9;
+  --color-sage: #d2d7c4;
+  --color-danger: #96412f;
+
+  --shadow-card: 0 1px 2px rgb(48 51 31 / 0.05), 0 8px 24px rgb(48 51 31 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(48 51 31 / 0.08), 0 16px 40px rgb(48 51 31 / 0.14);
+}
+
 @layer base {
   button {
     min-height: 2.375rem;
     border-radius: 0.375rem !important;
     padding: 0.5rem 1rem !important;
     font-size: 0.875rem;
-    font-weight: 500 !important;
     line-height: 1.25rem;
     transition:
       background-color 150ms ease,
@@ -29,13 +65,330 @@
   }
 
   button:focus-visible {
-    outline: 2px solid #16a34a;
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
 
   button:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--color-brand);
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/*
+  Brand button recipes (Олійник редизайн). The base `button` rule above forces
+  its own radius/padding with !important, so these variants must do the same
+  to take effect — kept in one place rather than sprinkling `!` modifiers
+  through every component that uses them.
+*/
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    border-radius: 0.625rem !important;
+    padding: 0 1.125rem !important;
+    font-size: 0.9375rem;
+    font-weight: 700 !important;
+    white-space: nowrap;
+  }
+
+  .btn-sm {
+    height: 2.375rem;
+    padding: 0 0.875rem !important;
+    font-size: 0.875rem;
+  }
+
+  .btn-primary {
+    background: var(--color-brand);
+    color: var(--color-paper);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-hover);
+  }
+
+  .btn-tint {
+    background: var(--color-brand-soft);
+    color: var(--color-ink);
+  }
+  .btn-tint:hover:not(:disabled) {
+    background: var(--color-brand-soft-hover);
+  }
+
+  .btn-ghost {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    color: var(--color-ink);
+    border-color: var(--color-ink);
+  }
+
+  .btn-lg {
+    height: 3.25rem;
+    padding: 0 1.375rem !important;
+    border-radius: 0.75rem !important;
+    font-size: 1rem;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    min-height: 0;
+    padding: 0 !important;
+    border-radius: 0.5rem !important;
+    font-weight: 400 !important;
+    background: transparent;
+  }
+
+  .pager-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    min-height: 0;
+    padding: 0 !important;
+    border-radius: 0.5rem !important;
+    font-weight: 400 !important;
+    background: transparent;
+  }
+  .pager-btn.is-active {
+    background: var(--color-brand);
+    color: var(--color-paper);
+    font-weight: 700 !important;
+  }
+
+  /* Form fields */
+  .field-label {
+    display: block;
+    font-size: 0.90625rem;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+  }
+  .field-input,
+  .field-textarea {
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--color-ink);
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.625rem;
+    padding: 0 0.875rem;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .field-input {
+    height: 3rem;
+  }
+  .field-textarea {
+    padding: 0.75rem 0.875rem;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .field-input:focus,
+  .field-textarea:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 18%, transparent);
+  }
+  .field-input.is-invalid,
+  .field-textarea.is-invalid {
+    border-color: var(--color-danger);
+  }
+  .field-error {
+    color: var(--color-danger);
+    font-size: 0.84375rem;
+    margin-top: 0.375rem;
+  }
+
+  /* Surface cards (report sections, reference panels) */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    padding: 1.375rem;
+  }
+  .section-label {
+    font-size: 0.78125rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+    margin: 0 0 0.75rem;
+  }
+
+  /* Selected-item chips (replaces raw <table> lists — stays mobile-safe) */
+  .chip-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--color-surface-2);
+    border-radius: 0.625rem;
+  }
+  .chip-row + .chip-row {
+    margin-top: 0.5rem;
+  }
+  .chip-name {
+    font-weight: 700;
+    font-size: 0.90625rem;
+  }
+  .chip-sub {
+    font-size: 0.84375rem;
+    color: var(--color-ink-soft);
+    margin-top: 0.125rem;
+  }
+  .chip-remove {
+    flex: none;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: 999px;
+    font-size: 1.0625rem;
+    line-height: 1;
+    color: var(--color-ink-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .chip-remove:hover {
+    background: var(--color-line);
+    color: var(--color-ink);
+  }
+
+  /* Small toggle-like badges (e.g. ранок / вечір) */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 1.625rem;
+    padding: 0 0.625rem;
+    border-radius: 999px;
+    font-size: 0.78125rem;
+    font-weight: 700;
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-ink-soft);
+    background: transparent;
+  }
+  .pill.is-on {
+    background: var(--color-brand-soft);
+    border-color: transparent;
+    color: var(--color-ink);
+  }
+
+  /* Generic list row (reference items, doctors, registration requests) */
+  .list-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .list-row {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+  }
+
+  .list-row-name {
+    font-weight: 700;
+    font-size: 0.9375rem;
+  }
+  .list-row-sub {
+    font-size: 0.84375rem;
+    color: var(--color-ink-soft);
+    margin-top: 0.1875rem;
+    word-break: break-word;
+  }
+  .list-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex: none;
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+  @media (min-width: 640px) {
+    .list-row-actions {
+      width: auto;
+      margin-top: 0;
+    }
+  }
+
+  /* Tab pills (references sub-navigation) */
+  .tab-pill {
+    padding: 0.5625rem 0.9375rem;
+    border-radius: 999px;
+    font-size: 0.90625rem;
+    color: var(--color-ink-soft);
+    border: 1px solid transparent;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .tab-pill:hover:not(:disabled) {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
+  .tab-pill.is-active {
+    background: var(--color-brand-soft);
+    color: var(--color-ink);
+    font-weight: 700 !important;
+  }
+
+  /* Modal entrance */
+  .modal-panel {
+    animation: modal-in 160ms ease;
+  }
+
+  /* Procedure stage grouping (Create Report) */
+  .stage-card {
+    border: 1px solid var(--color-line);
+    border-radius: 0.875rem;
+    padding: 1rem;
+    background: var(--color-surface-2);
+  }
+  .stage-card + .stage-card {
+    margin-top: 0.75rem;
+  }
+  .proc-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    padding: 0.875rem;
+    margin-top: 0.625rem;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
 
@@ -86,15 +439,15 @@
 }
 
 .rich-content blockquote {
-  border-left: 3px solid #d1d5db;
+  border-left: 3px solid var(--color-line-strong);
   padding-left: 0.75em;
   margin: 0.4em 0;
-  color: #4b5563;
+  color: var(--color-ink-soft);
   font-style: italic;
 }
 
 .rich-content code {
-  background: #f3f4f6;
+  background: var(--color-surface-2);
   padding: 0.1em 0.35em;
   border-radius: 0.25em;
   font-family: monospace;
@@ -102,7 +455,7 @@
 }
 
 .rich-content pre {
-  background: #f3f4f6;
+  background: var(--color-surface-2);
   padding: 0.6em;
   border-radius: 0.375em;
   overflow-x: auto;
@@ -116,11 +469,11 @@
 
 .rich-content hr {
   border: none;
-  border-top: 1px solid #d1d5db;
+  border-top: 1px solid var(--color-line-strong);
   margin: 0.75em 0;
 }
 
 .rich-content a {
-  color: #16a34a;
+  color: var(--color-brand);
   text-decoration: underline;
 }

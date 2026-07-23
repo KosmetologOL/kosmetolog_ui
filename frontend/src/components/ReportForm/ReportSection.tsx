@@ -7,9 +7,9 @@ interface Props {
 }
 
 const ReportSection: React.FC<Props> = ({ title, actions, children }) => (
-  <div className="mb-4">
-    <div className="mb-2 flex items-center gap-2">
-      <h3 className="font-semibold">{title}</h3>
+  <div className="card">
+    <div className="flex items-center mb-3 gap-2">
+      <p className="section-label mb-0!">{title}</p>
       {actions}
     </div>
     {children}

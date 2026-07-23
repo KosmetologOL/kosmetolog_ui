@@ -4,6 +4,9 @@ import {
   listCategoryItems,
   updateCategoryItem,
 } from "#api/referenceApi";
+import ConfirmModal from "#components/ConfirmModal";
+import ExpandableText from "#components/ExpandableText";
+import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
 
 interface Props {
@@ -17,8 +20,9 @@ const CategoryItemsManager: React.FC<Props> = ({
 }) => {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ name: "", recommendation: "" });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = items.filter((item) => {
@@ -41,148 +45,180 @@ const CategoryItemsManager: React.FC<Props> = ({
     void load();
   }, [categoryId]);
 
-  const handleSave = async () => {
+  const handleSave = async (form: { name: string; recommendation?: string }) => {
     if (!form.name.trim()) return;
 
     try {
-      if (editingId) {
-        await updateCategoryItem(editingId, form.name, form.recommendation);
-        setEditingId(null);
+      if (editingItem?._id) {
+        await updateCategoryItem(editingItem._id, form.name, form.recommendation);
       } else {
         await createCategoryItem(categoryId, form.name, form.recommendation);
       }
-      setForm({ name: "", recommendation: "" });
+      setIsModalOpen(false);
+      setEditingItem(null);
       void load();
     } catch (err) {
       console.error("Error saving:", err);
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditingId(item._id);
-    setForm({ name: item.name, recommendation: item.recommendation || "" });
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Ви впевнені, що хочете видалити цей елемент?")) return;
+  const handleOpenEdit = (item: any) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
     try {
-      await deleteCategoryItem(id);
+      await deleteCategoryItem(deletingId);
+      setDeletingId(null);
       void load();
     } catch (err) {
       console.error("Error deleting:", err);
     }
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
-    setForm({ name: "", recommendation: "" });
-  };
-
   return (
-    <div className="flex flex-col items-start justify-start">
-      <h2 className="mb-3 text-lg font-semibold text-green-700">
-        {categoryName}
-      </h2>
-
-      <input
-        placeholder="Пошук"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 w-full max-w-md rounded-md border border-green-300 px-3 py-2"
-      />
-
-      <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
-        <input
-          placeholder="Назва"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
-        />
-
-        <textarea
-          placeholder="Рекомендація"
-          value={form.recommendation}
-          onChange={(e) => setForm({ ...form, recommendation: e.target.value })}
-          className="min-h-[38px] flex-1 resize-none overflow-hidden rounded-md border border-green-300 px-2 py-[9px] leading-[1.4]"
-          rows={1}
-        />
+    <div className="flex w-full flex-col items-start">
+      {/* Header toolbar */}
+      <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
+            {categoryName}
+          </h1>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            Усього записів: {filteredList.length}
+          </p>
+        </div>
 
         <button
-          onClick={handleSave}
-          className="whitespace-nowrap rounded-md bg-green-600 px-4 py-2 text-white font-medium transition-all hover:bg-green-700 active:scale-95"
+          type="button"
+          onClick={handleOpenCreate}
+          className="btn btn-primary btn-sm"
         >
-          {editingId ? "Оновити" : "Додати"}
-        </button>
-
-        {editingId && (
-          <button
-            onClick={handleCancel}
-            className="whitespace-nowrap rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
           >
-            Скасувати
+            <path d="M8 2v12M2 8h12" />
+          </svg>
+          Додати запис
+        </button>
+      </div>
+
+      {/* Search input bar */}
+      <div className="relative mb-5 w-full max-w-md">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.8-3.8" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Пошук записів..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="field-input pl-10 pr-9 w-full"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Очистити пошук"
+            className="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-ink-soft hover:bg-surface-2 hover:text-ink"
+          >
+            ×
           </button>
         )}
       </div>
 
-      <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-green-300 bg-green-50">
-              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
-                Назва
-              </th>
-              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
-                Рекомендація
-              </th>
-              <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700 w-32">
-                Дії
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredList.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={3}
-                  className="border border-green-200 px-4 py-3 text-center text-gray-500"
+      {filteredList.length === 0 ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Немає елементів
+        </p>
+      ) : (
+        <div className="flex w-full flex-col gap-2.5">
+          {filteredList.map((item) => (
+            <div key={item._id} className="list-row">
+              <div className="min-w-0">
+                <div className="list-row-name">{item.name}</div>
+                {item.recommendation && (
+                  <div className="list-row-sub whitespace-pre-wrap">
+                    <ExpandableText text={item.recommendation} />
+                  </div>
+                )}
+              </div>
+              <div className="list-row-actions">
+                <button
+                  onClick={() => handleOpenEdit(item)}
+                  className="btn btn-ghost btn-sm min-w-[110px] justify-center"
                 >
-                  Немає елементів
-                </td>
-              </tr>
-            ) : (
-              filteredList.map((item) => (
-                <tr
-                  key={item._id}
-                  className="border-b border-green-200 hover:bg-green-50"
+                  <svg
+                    className="w-3.5 h-3.5 text-ink-soft"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                  Редагувати
+                </button>
+                <button
+                  onClick={() => setDeletingId(item._id)}
+                  className="btn btn-sm min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
                 >
-                  <td className="border border-green-200 px-4 py-2 text-green-900">
-                    {item.name}
-                  </td>
-                  <td className="border border-green-200 px-4 py-2 text-gray-700 whitespace-pre-wrap text-sm max-w-md">
-                    {item.recommendation || "-"}
-                  </td>
-                  <td className="border border-green-200 px-4 py-2 text-center">
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="rounded bg-amber-500 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
-                      >
-                        Редагувати
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item._id)}
-                        className="rounded bg-red-600 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
-                      >
-                        Видалити
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  Видалити
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ReferenceItemModal
+        visible={isModalOpen}
+        title={editingItem ? `Редагувати — ${categoryName}` : `Новий запис — ${categoryName}`}
+        submitLabel={editingItem ? "Зберегти зміни" : "Додати"}
+        item={{
+          name: editingItem?.name ?? "",
+          recommendation: editingItem?.recommendation ?? "",
+        }}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSave}
+      />
+
+      <ConfirmModal
+        visible={Boolean(deletingId)}
+        title={`Видалити — ${categoryName}`}
+        message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   );
 };

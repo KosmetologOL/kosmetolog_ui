@@ -106,6 +106,17 @@ export const getById = async (id: string) => Report.findById(id);
 export const getByPatientId = async (patientId: string) =>
   Report.findOne({ patient: patientId });
 
+export const getLastVisitMap = async (
+  patientIds: (string | mongoose.Types.ObjectId)[],
+): Promise<Map<string, Date>> => {
+  const reports = await Report.find(
+    { patient: { $in: patientIds } },
+    { patient: 1, updatedAt: 1 },
+  );
+
+  return new Map(reports.map((r) => [r.patient.toString(), r.updatedAt]));
+};
+
 export const update = async (
   id: string,
   data: Partial<IReport>,

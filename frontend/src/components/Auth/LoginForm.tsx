@@ -1,9 +1,8 @@
 import { loginUser, registerUser } from "#api/authApi";
-import greenLogo from "#assets/green.json";
+import logoMark from "#assets/logo-mark.png";
 import AuthButton from "#components/Auth/AuthButton";
 import AuthInput from "#components/Auth/AuthInput";
 import { AuthContext } from "#context/AuthContext";
-import Lottie from "lottie-react";
 import React, { useContext, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -71,88 +70,103 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-green-50 md:flex md:items-center md:justify-center">
-      <div className="flex h-full w-full flex-col bg-white shadow-2xl md:h-[90dvh] md:max-w-[1200px] md:flex-row md:overflow-hidden md:rounded-2xl">
-        <div className="flex h-[25dvh] min-h-36 flex-none items-center justify-center bg-green-100 p-4 md:h-auto md:flex-[2] md:p-12">
-          <div className="h-40 w-40 sm:h-48 sm:w-48 md:h-[400px] md:w-[400px] xl:h-[500px] xl:w-[500px]">
-            <Lottie animationData={greenLogo} loop={false} autoplay={true} />
+    <div className="min-h-dvh flex flex-col sm:grid sm:grid-cols-[2fr_3fr] bg-paper font-brand text-ink">
+      <div className="flex flex-none flex-col items-center justify-center gap-5 bg-brand px-8 py-10 text-paper sm:py-16">
+        <span
+          aria-hidden="true"
+          className="h-14 w-16 bg-current sm:h-19 sm:w-22"
+          style={{
+            WebkitMaskImage: `url(${logoMark})`,
+            maskImage: `url(${logoMark})`,
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+          }}
+        />
+        <div className="text-center">
+          <div className="text-xl tracking-[0.3em] sm:text-2xl">ОЛІЙНИК</div>
+          <div className="mt-1.5 text-[11px] tracking-[0.22em] opacity-75 sm:text-xs">
+            косметологія
           </div>
         </div>
+        <p className="hidden max-w-[26ch] text-center text-[14.5px] leading-relaxed opacity-80 sm:block">
+          Кабінет лікаря: картки пацієнтів, рекомендаційні листи та довідники в
+          одному місці.
+        </p>
+      </div>
 
-        <div className="flex flex-1 items-start justify-center px-4 pt-16 sm:px-6 sm:pt-20 md:flex-[1] md:items-center md:p-12 bg-white">
-          <div className="w-full max-w-sm">
-            <h2 className="mb-4 text-center text-2xl font-semibold text-green-900 md:mb-8 md:text-4xl">
-              {isRegister ? "Реєстрація" : "Вхід"}
-            </h2>
+      <div className="flex flex-1 items-center justify-center px-6 py-10 sm:py-16">
+        <div className="w-full max-w-sm">
+          <h1 className="mb-7 text-center text-[22px] tracking-[0.12em] uppercase">
+            {isRegister ? "Реєстрація" : "Вхід"}
+          </h1>
 
-            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-5">
-              <AuthInput
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <AuthInput
-                type="password"
-                placeholder="Пароль"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <AuthInput
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <AuthInput
+              type="password"
+              placeholder="Пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-              {isRegister && (
-                <div className="space-y-2 md:space-y-3">
-                  <label className="flex items-center text-sm text-gray-600 md:text-base">
-                    <input
-                      type="checkbox"
-                      checked={registerAsDoctor}
-                      onChange={(e) => setRegisterAsDoctor(e.target.checked)}
-                      className="mr-2 accent-green-600"
-                    />
-                    Реєструвати як лікаря
-                  </label>
-
-                  {registerAsDoctor && (
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                      <AuthInput
-                        type="text"
-                        placeholder="Ім'я"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                      />
-                      <AuthInput
-                        type="text"
-                        placeholder="Прізвище"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center text-gray-600">
+            {isRegister && (
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm text-ink-soft">
                   <input
                     type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="mr-2 accent-green-600"
+                    checked={registerAsDoctor}
+                    onChange={(e) => setRegisterAsDoctor(e.target.checked)}
                   />
-                  Запам’ятати мене
+                  Реєструвати як лікаря
                 </label>
+
+                {registerAsDoctor && (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <AuthInput
+                      type="text"
+                      placeholder="Ім'я"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <AuthInput
+                      type="text"
+                      placeholder="Прізвище"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
+            )}
 
-              <AuthButton text={isRegister ? "Реєстрація" : "Увійти"} />
-            </form>
+            <label className="flex items-center gap-2 text-sm text-ink-soft">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              Запам&rsquo;ятати мене
+            </label>
 
-            <div className="mt-2 text-center text-sm md:mt-4">
-              <button
-                onClick={() => setIsRegister(!isRegister)}
-                className="text-green-700 hover:underline"
-              >
-                {isRegister ? "Повернутися до входу" : "Зареєструватись"}
-              </button>
-            </div>
+            <AuthButton text={isRegister ? "Реєстрація" : "Увійти"} />
+          </form>
+
+          <div className="mt-5 text-center text-[14.5px]">
+            <button
+              onClick={() => setIsRegister(!isRegister)}
+              className="font-bold text-brand hover:underline"
+            >
+              {isRegister ? "Повернутися до входу" : "Зареєструватись"}
+            </button>
           </div>
         </div>
       </div>
