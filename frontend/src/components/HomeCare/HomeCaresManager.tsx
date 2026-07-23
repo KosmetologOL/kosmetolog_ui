@@ -196,6 +196,14 @@ export default function HomeCaresManager({
       return;
     }
 
+    if (
+      !window.confirm(
+        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
+      )
+    ) {
+      return;
+    }
+
     setIsImporting(true);
 
     try {

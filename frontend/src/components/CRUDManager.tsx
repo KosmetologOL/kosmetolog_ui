@@ -183,6 +183,14 @@ const CRUDManager = <T,>({
       return;
     }
 
+    if (
+      !window.confirm(
+        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
+      )
+    ) {
+      return;
+    }
+
     setIsImporting(true);
     try {
       for (const row of parsed) {
