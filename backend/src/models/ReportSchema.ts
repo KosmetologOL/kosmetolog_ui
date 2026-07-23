@@ -9,6 +9,14 @@ export interface IReportHomeCare {
   recommendations?: string;
 }
 
+export interface IReportCategoryItem {
+  _id?: string;
+  categoryId?: string;
+  categoryName: string;
+  itemName: string;
+  recommendation?: string;
+}
+
 export interface IReportEditHistoryItem {
   action: "create" | "update";
   editedAt: Date;
@@ -41,6 +49,7 @@ export interface IReport extends Document {
   exams: { name: string; recommendation: string }[];
   specialists: { name: string; query?: string }[];
   homeCares?: IReportHomeCare[];
+  categories?: IReportCategoryItem[];
   comments?: string;
   additionalInfo?: string;
   finalNote?: string;
@@ -60,6 +69,20 @@ const HomeCareSubSchema = new Schema<IReportHomeCare>(
     evening: { type: Boolean, default: false },
     medicationName: { type: String, default: "" },
     recommendations: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
+const CategoryItemSubSchema = new Schema<IReportCategoryItem>(
+  {
+    _id: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
+    categoryId: { type: String, default: "" },
+    categoryName: { type: String, required: true },
+    itemName: { type: String, required: true },
+    recommendation: { type: String, default: "" },
   },
   { _id: false },
 );
@@ -99,6 +122,7 @@ const ReportSchema = new Schema<IReport>(
     exams: [{ name: String, recommendation: String }],
     specialists: [{ name: String, query: String }],
     homeCares: [HomeCareSubSchema],
+    categories: [CategoryItemSubSchema],
     comments: String,
     additionalInfo: String,
     finalNote: String,

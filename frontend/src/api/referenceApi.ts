@@ -30,7 +30,19 @@ export const approveRegistration = async (id: string) => {
   return data;
 };
 
-export const getCategories = async () => {
+export interface ICategory {
+  _id: string;
+  name: string;
+}
+
+export interface ICategoryItem {
+  _id: string;
+  category: string;
+  name: string;
+  recommendation?: string;
+}
+
+export const getCategories = async (): Promise<ICategory[]> => {
   const { data } = await axios.get(`${BASE_URL}/categories`);
   return data.categories;
 };
@@ -50,7 +62,9 @@ export const deleteCategory = async (id: string) => {
   return data;
 };
 
-export const listCategoryItems = async (categoryId: string) => {
+export const listCategoryItems = async (
+  categoryId: string,
+): Promise<ICategoryItem[]> => {
   const { data } = await axios.get(`${BASE_URL}/categories/${categoryId}/items`);
   return data.items;
 };

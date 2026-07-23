@@ -38,6 +38,13 @@ export interface IReport {
     medicationName?: string;
     recommendations?: string;
   }[];
+  categories?: {
+    _id?: string;
+    categoryId?: string;
+    categoryName: string;
+    itemName: string;
+    recommendation?: string;
+  }[];
   additionalInfo?: string;
   finalNote?: string;
   comments?: string;
