@@ -2,6 +2,7 @@ import { getPatientById, updatePatient, type IPatient } from "#api/patientsApi";
 import {
   createReport,
   getReportByPatientId,
+  type IReport,
   type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
@@ -9,6 +10,9 @@ import { useAuth } from "#hooks/useAuth";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import SearchCategories, {
+  type IReportCategoryItem,
+} from "#components/Categories/SearchCategories";
 import SearchExam from "#components/Exams/SearchExam";
 import SelectedExamsTable from "#components/Exams/SelectedExamsTable";
 import SearchHomeCare from "#components/HomeCare/SearchHomeCare";
@@ -32,6 +36,7 @@ import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF"
 import ReportActions from "#components/ReportForm/ReportActions";
 import ReportComments from "#components/ReportForm/ReportComments";
 import ReportSection from "#components/ReportForm/ReportSection";
+import { ensureReportsDirectoryHandle } from "../../lib/pdfSaveLocation";
 import toast from "react-hot-toast";
 
 interface IProcedureStage {
@@ -66,6 +71,9 @@ const CreateReportForm: React.FC = () => {
     [],
   );
   const [selectedHomeCares, setSelectedHomeCares] = useState<IHomeCare[]>([]);
+  const [selectedCategoryItems, setSelectedCategoryItems] = useState<
+    IReportCategoryItem[]
+  >([]);
   const [procedureStages, setProcedureStages] = useState<IProcedureStage[]>([]);
   const [editingProcedure, setEditingProcedure] =
     useState<EditingProcedureState | null>(null);
@@ -100,6 +108,15 @@ const CreateReportForm: React.FC = () => {
           setSelectedMedications(reportData.medications ?? []);
           setSelectedSpecialists(reportData.specialists ?? []);
           setSelectedHomeCares(reportData.homeCares ?? []);
+          setSelectedCategoryItems(
+            (reportData.categories ?? []).map((c) => ({
+              _id: c._id ?? crypto.randomUUID(),
+              categoryId: c.categoryId,
+              categoryName: c.categoryName,
+              itemName: c.itemName,
+              recommendation: c.recommendation,
+            })),
+          );
           setAdditionalInfo(reportData.additionalInfo ?? "");
           setFinalNote(reportData.finalNote?.trim() || DEFAULT_FINAL_NOTE);
           setComments(reportData.comments ?? "");
@@ -244,9 +261,11 @@ const CreateReportForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!patientId) return toast.error("Пацієнт не вибраний!");
+  const saveReport = async (): Promise<IReport | null> => {
+    if (!patientId) {
+      toast.error("Пацієнт не вибраний!");
+      return null;
+    }
 
     const payload = {
       patient: patientId,
@@ -268,6 +287,12 @@ const CreateReportForm: React.FC = () => {
         evening: h.evening,
         medicationName: h.medicationName || "Засіб",
         recommendations: h.recommendations || "",
+      })),
+      categories: selectedCategoryItems.map((c) => ({
+        categoryId: c.categoryId,
+        categoryName: c.categoryName,
+        itemName: c.itemName,
+        recommendation: c.recommendation || "",
       })),
       procedureStages: procedureStages.map((s) => ({
         stage: s.title,
@@ -292,22 +317,56 @@ const CreateReportForm: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      let savedReport;
+      let savedReport: IReport;
       if (reportId) {
         savedReport = await updateReport(reportId, payload);
-        setReportHistory(savedReport.editHistory ?? []);
         toast.success("Звіт оновлено успішно!");
       } else {
         savedReport = await createReport(payload);
         toast.success("Звіт створено успішно!");
         setReportId(savedReport?._id ?? null);
-        setReportHistory(savedReport.editHistory ?? []);
       }
+      setReportHistory(savedReport.editHistory ?? []);
+      return savedReport;
     } catch {
       toast.error("Не вдалося зберегти звіт. Спробуйте ще раз.");
+      return null;
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await saveReport();
+  };
+
+  const handleExport = async () => {
+    if (!patient) return;
+
+    const directoryHandle = await ensureReportsDirectoryHandle();
+
+    const savedReport = await saveReport();
+    if (!savedReport) return;
+
+    await generateReportPDF({
+      patient,
+      exams: selectedExams,
+      medications: selectedMedications,
+      procedures: procedureStages.flatMap((s) => s.procedures),
+      procedureStages,
+      specialists: selectedSpecialists,
+      homeCares: selectedHomeCares,
+      categoryItems: selectedCategoryItems,
+      comments,
+      additionalInfo,
+      finalNote,
+      doctorName:
+        getReportCreatorName(savedReport.editHistory ?? []) ||
+        user?.name ||
+        "",
+      directoryHandle,
+    });
   };
 
   if (loading)
@@ -410,6 +469,13 @@ const CreateReportForm: React.FC = () => {
             <SearchHomeCare
               selectedHomeCares={selectedHomeCares}
               setSelectedHomeCares={setSelectedHomeCares}
+            />
+          </ReportSection>
+
+          <ReportSection title="Категорії">
+            <SearchCategories
+              selectedCategoryItems={selectedCategoryItems}
+              setSelectedCategoryItems={setSelectedCategoryItems}
             />
           </ReportSection>
 
@@ -589,22 +655,7 @@ const CreateReportForm: React.FC = () => {
             reportId={reportId}
             patient={patient}
             isSubmitting={isSubmitting}
-            onExport={() =>
-              generateReportPDF({
-                patient,
-                exams: selectedExams,
-                medications: selectedMedications,
-                procedures: procedureStages.flatMap((s) => s.procedures),
-                procedureStages,
-                specialists: selectedSpecialists,
-                homeCares: selectedHomeCares,
-                comments,
-                additionalInfo,
-                finalNote,
-                doctorName:
-                  getReportCreatorName(reportHistory) || user?.name || "",
-              })
-            }
+            onExport={handleExport}
           />
 
           <PatientFormModal

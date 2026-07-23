@@ -28,6 +28,14 @@ const homeCareItemSchema = Joi.object({
   recommendations: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
 }).messages(commonMessages);
 
+const categoryReportItemSchema = Joi.object({
+  _id: Joi.string().optional(),
+  categoryId: Joi.string().trim().allow("").optional(),
+  categoryName: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  itemName: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+}).messages(commonMessages);
+
 const procedureStageItemSchema = Joi.object({
   _id: Joi.string().optional(),
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
@@ -60,6 +68,10 @@ export const reportSchema = Joi.object({
     .max(MAX_ITEMS)
     .default([]),
   homeCares: Joi.array().items(homeCareItemSchema).max(MAX_ITEMS).default([]),
+  categories: Joi.array()
+    .items(categoryReportItemSchema)
+    .max(MAX_ITEMS)
+    .default([]),
   additionalInfo: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   finalNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   comments: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
