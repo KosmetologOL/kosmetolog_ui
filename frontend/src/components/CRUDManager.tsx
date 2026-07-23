@@ -48,6 +48,9 @@ const CRUDManager = <T,>({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<
+    { name: string; recommendation: string }[] | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -183,17 +186,15 @@ const CRUDManager = <T,>({
       return;
     }
 
-    if (
-      !window.confirm(
-        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
-      )
-    ) {
-      return;
-    }
+    setPendingImport(parsed);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
 
     setIsImporting(true);
     try {
-      for (const row of parsed) {
+      for (const row of pendingImport) {
         const existing = list.find(
           (item) => item.name.trim().toLowerCase() === row.name.toLowerCase(),
         );
@@ -211,11 +212,12 @@ const CRUDManager = <T,>({
         }
       }
       await fetchList();
-      toast.success(`Успішно імпортовано ${parsed.length} записів!`);
+      toast.success(`Успішно імпортовано ${pendingImport.length} записів!`);
     } catch {
       toast.error("Під час імпорту сталася помилка. Частина записів могла не оновитися.");
     } finally {
       setIsImporting(false);
+      setPendingImport(null);
     }
   };
 
@@ -409,6 +411,16 @@ const CRUDManager = <T,>({
         message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
+      />
+
+      <ConfirmModal
+        visible={Boolean(pendingImport)}
+        title="Імпорт CSV"
+        message={`Імпортувати ${pendingImport?.length ?? 0} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`}
+        confirmLabel="Імпортувати"
+        isDanger={false}
+        onConfirm={handleConfirmImport}
+        onCancel={() => setPendingImport(null)}
       />
     </div>
   );

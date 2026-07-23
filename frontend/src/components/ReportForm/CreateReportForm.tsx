@@ -570,7 +570,7 @@ const CreateReportForm: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFinalNote("")}
-                className="btn btn-ghost btn-sm text-danger"
+                className="min-h-0! p-0! text-sm font-medium text-danger hover:underline"
               >
                 Очистити
               </button>

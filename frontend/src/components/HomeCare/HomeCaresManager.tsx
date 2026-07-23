@@ -43,6 +43,9 @@ export default function HomeCaresManager({
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<
+    { name: string; morning: boolean; evening: boolean }[] | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchList = async () => {
@@ -196,18 +199,16 @@ export default function HomeCaresManager({
       return;
     }
 
-    if (
-      !window.confirm(
-        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
-      )
-    ) {
-      return;
-    }
+    setPendingImport(parsed);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
 
     setIsImporting(true);
 
     try {
-      for (const item of parsed) {
+      for (const item of pendingImport) {
         const existing = list.find(
           (current) =>
             current.name.trim().toLowerCase() === item.name.toLowerCase(),
@@ -221,13 +222,14 @@ export default function HomeCaresManager({
       }
 
       await fetchList();
-      toast.success(`Успішно імпортовано ${parsed.length} записів!`);
+      toast.success(`Успішно імпортовано ${pendingImport.length} записів!`);
     } catch {
       toast.error(
         "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
       );
     } finally {
       setIsImporting(false);
+      setPendingImport(null);
     }
   };
 
@@ -438,6 +440,16 @@ export default function HomeCaresManager({
         message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
+      />
+
+      <ConfirmModal
+        visible={Boolean(pendingImport)}
+        title="Імпорт CSV"
+        message={`Імпортувати ${pendingImport?.length ?? 0} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`}
+        confirmLabel="Імпортувати"
+        isDanger={false}
+        onConfirm={handleConfirmImport}
+        onCancel={() => setPendingImport(null)}
       />
     </div>
   );
