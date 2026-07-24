@@ -41,6 +41,10 @@ const SearchMedication: React.FC<Props> = ({
     }
   };
 
+  const availableResults = results.filter(
+    (medication) => !selectedMedications.some((m) => m._id === medication._id),
+  );
+
   return (
     <div className="mb-3">
       <input
@@ -51,9 +55,9 @@ const SearchMedication: React.FC<Props> = ({
         className="field-input"
       />
       {loading && <p className="mt-1.5 text-sm text-ink-soft">Завантаження...</p>}
-      {results.length > 0 && !loading && (
+      {availableResults.length > 0 && !loading && (
         <div className="mt-2 flex flex-col gap-1.5">
-          {results.map((medication) => (
+          {availableResults.map((medication) => (
             <button
               key={medication._id}
               type="button"

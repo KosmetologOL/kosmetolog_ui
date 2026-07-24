@@ -41,6 +41,10 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
     }
   };
 
+  const availableResults = results.filter(
+    (procedure) => !selectedProcedures.some((p) => p._id === procedure._id),
+  );
+
   return (
     <div className="mb-3">
       <input
@@ -51,9 +55,9 @@ const SearchProcedure: React.FC<Props<IProcedure>> = ({
         className="field-input"
       />
       {loading && <p className="mt-1.5 text-sm text-ink-soft">Завантаження...</p>}
-      {results.length > 0 && !loading && (
+      {availableResults.length > 0 && !loading && (
         <div className="mt-2 flex flex-col gap-1.5">
-          {results.map((procedure) => (
+          {availableResults.map((procedure) => (
             <button
               key={procedure._id}
               type="button"
