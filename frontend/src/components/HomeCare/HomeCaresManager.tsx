@@ -6,8 +6,11 @@ import {
   reorderHomeCares,
   updateHomeCare,
 } from "#api/homeCaresApi";
+import ConfirmModal from "#components/ConfirmModal";
+import ReferenceItemModal from "#components/ReferenceItemModal";
 import { downloadCsv, parseCsv, toCsv } from "#types/csv";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
 const parseCsvBoolean = (value: string) => {
   const normalized = value.trim().toLowerCase();
@@ -32,17 +35,17 @@ export default function HomeCaresManager({
   readOnly?: boolean;
 }) {
   const [list, setList] = useState<IHomeCare[]>([]);
-  const [form, setForm] = useState({
-    name: "",
-    morning: false,
-    evening: false,
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<IHomeCare | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [pendingImport, setPendingImport] = useState<
+    { name: string; morning: boolean; evening: boolean }[] | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchList = async () => {
@@ -59,50 +62,47 @@ export default function HomeCaresManager({
     item.name.toLowerCase().includes(normalizedSearch),
   );
 
-  const resetForm = () => {
-    setEditingId(null);
-    setForm({
-      name: "",
-      morning: false,
-      evening: false,
-    });
-  };
+  const handleSaveModal = async (form: {
+    name: string;
+    recommendation?: string;
+    morning?: boolean;
+    evening?: boolean;
+  }) => {
+    if (!form.name.trim()) return;
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      return;
-    }
-
-    if (editingId) {
-      await updateHomeCare(editingId, form);
+    if (editingItem?._id) {
+      await updateHomeCare(editingItem._id, {
+        name: form.name,
+        morning: form.morning,
+        evening: form.evening,
+      });
     } else {
-      await createHomeCare(form);
+      await createHomeCare({
+        name: form.name,
+        morning: form.morning,
+        evening: form.evening,
+      });
     }
 
-    resetForm();
+    setIsModalOpen(false);
+    setEditingItem(null);
     void fetchList();
   };
 
-  const handleEdit = (item: IHomeCare) => {
-    setEditingId(item._id ?? null);
-    setForm({
-      name: item.name,
-      morning: item.morning,
-      evening: item.evening,
-    });
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Ви впевнені, що хочете видалити цей елемент?")) {
-      return;
-    }
+  const handleOpenEdit = (item: IHomeCare) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
+  };
 
-    await deleteHomeCare(id);
-
-    if (editingId === id) {
-      resetForm();
-    }
-
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return;
+    await deleteHomeCare(deletingId);
+    setDeletingId(null);
     void fetchList();
   };
 
@@ -122,139 +122,160 @@ export default function HomeCaresManager({
       return;
     }
 
-    const previousList = list;
     const nextList = moveItem(list, fromIndex, toIndex);
-
     setList(nextList);
     setDraggedId(null);
     setDragOverId(null);
     setIsSavingOrder(true);
 
     try {
-      const reordered = await reorderHomeCares(
-        nextList.map((item) => item._id).filter(Boolean) as string[],
-      );
-      setList(reordered);
+      const ids = nextList
+        .map((item) => item._id)
+        .filter((id): id is string => Boolean(id));
+
+      await reorderHomeCares(ids);
     } catch {
-      setList(previousList);
-      window.alert("Не вдалося зберегти новий порядок.");
+      void fetchList();
     } finally {
       setIsSavingOrder(false);
     }
   };
 
   const handleExportCsv = () => {
-    const header = ["Назва", "Ранок", "Вечір", "Засіб", "Рекомендації"];
+    const header = ["Назва", "Ранок", "Вечір"];
     const rows = list.map((item) => [
       item.name,
-      item.morning ? "так" : "ні",
-      item.evening ? "так" : "ні",
-      item.medicationName ?? "",
-      item.recommendations ?? "",
+      item.morning ? "Так" : "Ні",
+      item.evening ? "Так" : "Ні",
     ]);
-    downloadCsv("home-cares.csv", toCsv(header, rows));
+
+    downloadCsv("домашній-догляд.csv", toCsv(header, rows));
   };
 
-  const handleImportClick = () => fileInputRef.current?.click();
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    const rawText = await file.text();
-    const text =
-      rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+    e.target.value = "";
+    const text = await file.text();
     const rows = parseCsv(text);
 
-    if (rows.length < 2) {
-      window.alert("Файл порожній або не містить рядків з даними.");
+    if (rows.length === 0) {
+      toast.error("Файл порожній або має некоректний формат.");
       return;
     }
 
-    const [header, ...dataRows] = rows;
-    const nameIdx = header.findIndex((h) => h.trim().toLowerCase() === "назва");
-    const morningIdx = header.findIndex(
-      (h) => h.trim().toLowerCase() === "ранок",
-    );
-    const eveningIdx = header.findIndex(
-      (h) => h.trim().toLowerCase() === "вечір",
-    );
-    const medicationIdx = header.findIndex(
-      (h) => h.trim().toLowerCase() === "засіб",
-    );
-    const recIdx = header.findIndex(
-      (h) => h.trim().toLowerCase() === "рекомендації",
-    );
+    const firstRow = rows[0]?.map((col) => col.toLowerCase());
+    const hasHeader =
+      firstRow?.includes("назва") ||
+      firstRow?.includes("ранок") ||
+      firstRow?.includes("вечір");
+    const dataRows = hasHeader ? rows.slice(1) : rows;
 
-    if (nameIdx === -1) {
-      window.alert('У файлі немає колонки "Назва".');
-      return;
+    const parsed: { name: string; morning: boolean; evening: boolean }[] = [];
+
+    for (const row of dataRows) {
+      const name = row[0]?.trim();
+
+      if (!name) {
+        continue;
+      }
+
+      parsed.push({
+        name,
+        morning: parseCsvBoolean(row[1] || ""),
+        evening: parseCsvBoolean(row[2] || ""),
+      });
     }
-
-    const parsed = dataRows
-      .map((cols) => ({
-        name: (cols[nameIdx] ?? "").trim(),
-        morning: morningIdx >= 0 ? parseCsvBoolean(cols[morningIdx] ?? "") : false,
-        evening: eveningIdx >= 0 ? parseCsvBoolean(cols[eveningIdx] ?? "") : false,
-        medicationName:
-          medicationIdx >= 0 ? (cols[medicationIdx] ?? "").trim() : "",
-        recommendations: recIdx >= 0 ? (cols[recIdx] ?? "").trim() : "",
-      }))
-      .filter((row) => row.name);
 
     if (parsed.length === 0) {
-      window.alert("У файлі немає рядків із заповненою назвою.");
+      toast.error("У файлі немає рядків із заповненою назвою.");
       return;
     }
 
-    if (
-      !window.confirm(
-        `Імпортувати ${parsed.length} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`,
-      )
-    ) {
-      return;
-    }
+    setPendingImport(parsed);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
 
     setIsImporting(true);
+
     try {
-      for (const row of parsed) {
+      for (const item of pendingImport) {
         const existing = list.find(
-          (item) => item.name.trim().toLowerCase() === row.name.toLowerCase(),
+          (current) =>
+            current.name.trim().toLowerCase() === item.name.toLowerCase(),
         );
+
         if (existing?._id) {
-          await updateHomeCare(existing._id, row);
+          await updateHomeCare(existing._id, item);
         } else {
-          await createHomeCare(row);
+          await createHomeCare(item);
         }
       }
+
       await fetchList();
-      window.alert("Імпорт завершено.");
+      toast.success(`Успішно імпортовано ${pendingImport.length} записів!`);
     } catch {
-      window.alert(
+      toast.error(
         "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
       );
     } finally {
       setIsImporting(false);
+      setPendingImport(null);
     }
   };
 
   const dragDisabled = readOnly || Boolean(normalizedSearch) || isSavingOrder;
 
   return (
-    <div className="flex w-full flex-col items-start justify-start">
-      <div className="mb-3 flex w-full flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-green-700">
-          Домашній догляд
-        </h2>
+    <div className="flex w-full flex-col items-start">
+      <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
+            Домашній догляд
+          </h1>
+          <p className="mt-0.5 text-xs text-ink-soft">
+            Усього записів: {filteredList.length}
+          </p>
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="btn btn-primary btn-sm"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M8 2v12M2 8h12" />
+              </svg>
+              Додати запис
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleExportCsv}
-            className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95"
+            className="btn btn-ghost btn-sm"
           >
-            Експортувати в CSV
+            Експорт CSV
           </button>
 
           {!readOnly && (
@@ -263,9 +284,9 @@ export default function HomeCaresManager({
                 type="button"
                 onClick={handleImportClick}
                 disabled={isImporting}
-                className="rounded-md border border-green-300 px-3 py-2 text-sm font-medium text-green-700 transition-all hover:bg-green-50 active:scale-95 disabled:opacity-50"
+                className="btn btn-ghost btn-sm"
               >
-                {isImporting ? "Імпортування..." : "Імпортувати з CSV"}
+                {isImporting ? "Імпорт..." : "Імпорт CSV"}
               </button>
               <input
                 ref={fileInputRef}
@@ -279,173 +300,157 @@ export default function HomeCaresManager({
         </div>
       </div>
 
-      <input
-        placeholder="Пошук"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="mb-4 w-full max-w-md rounded-md border border-green-300 px-3 py-2"
-      />
-
-      {!readOnly && (
-        <div className="mb-4 flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center">
-          <input
-            placeholder="Назва"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="min-h-[38px] flex-1 rounded-md border border-green-300 px-2 py-[9px]"
-          />
-
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={form.morning}
-                onChange={(e) =>
-                  setForm({ ...form, morning: e.target.checked })
-                }
-                className="accent-green-600"
-              />
-              Ранок
-            </label>
-            <label className="flex items-center gap-1 text-sm">
-              <input
-                type="checkbox"
-                checked={form.evening}
-                onChange={(e) =>
-                  setForm({ ...form, evening: e.target.checked })
-                }
-                className="accent-green-600"
-              />
-              Вечір
-            </label>
-          </div>
-
+      <div className="relative mb-4 w-full max-w-md">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.8-3.8" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Пошук записів..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="field-input pl-10 pr-9 w-full"
+        />
+        {search && (
           <button
-            onClick={handleSave}
-            className={`h-[38px] rounded-md px-4 py-2 text-white font-medium transition-all active:scale-95 ${
-              editingId
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
+            type="button"
+            onClick={() => setSearch("")}
+            aria-label="Очистити пошук"
+            className="icon-btn absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-ink-soft hover:bg-surface-2 hover:text-ink"
           >
-            {editingId ? "Оновити" : "Додати"}
+            ×
           </button>
+        )}
+      </div>
 
-          {editingId && (
-            <button
-              onClick={resetForm}
-              className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 font-medium transition-all hover:bg-gray-50 active:scale-95"
-            >
-              Скасувати
-            </button>
-          )}
+      <p className="mb-4 text-xs text-ink-soft">
+        {dragDisabled
+          ? "Перетягування вимкнене під час пошуку або збереження порядку."
+          : "Перетягуйте картки, щоб змінювати порядок у списку."}
+      </p>
+
+      {filteredList.length === 0 ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Немає елементів
+        </p>
+      ) : (
+        <div className="flex w-full flex-col gap-2.5">
+          {filteredList.map((item) => {
+            const isDragging = draggedId === item._id;
+            const isDragOver = dragOverId === item._id;
+
+            return (
+              <div
+                key={item._id}
+                draggable={!dragDisabled}
+                onDragStart={() => setDraggedId(item._id ?? null)}
+                onDragOver={(e) => {
+                  if (dragDisabled) return;
+                  e.preventDefault();
+                  setDragOverId(item._id ?? null);
+                }}
+                onDragLeave={() => {
+                  if (dragOverId === item._id) {
+                    setDragOverId(null);
+                  }
+                }}
+                onDrop={() => item._id && void handleDrop(item._id)}
+                className={`list-row transition-all ${
+                  isDragging ? "opacity-40" : ""
+                } ${isDragOver ? "border-brand bg-brand-soft/20" : ""}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="list-row-name text-[15.5px] font-bold text-ink">
+                      {item.name}
+                    </span>
+                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                      <span className={`pill ${item.morning ? "is-on" : ""}`}>
+                        Ранок
+                      </span>
+                      <span className={`pill ${item.evening ? "is-on" : ""}`}>
+                        Вечір
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {!readOnly && (
+                  <div className="list-row-actions mt-3 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-line/60">
+                    <button
+                      onClick={() => handleOpenEdit(item)}
+                      className="btn btn-ghost btn-sm flex-1 sm:flex-initial sm:min-w-[110px] justify-center"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5 text-ink-soft"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                      Редагувати
+                    </button>
+                    <button
+                      onClick={() => item._id && setDeletingId(item._id)}
+                      className="btn btn-sm flex-1 sm:flex-initial sm:min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
+                    >
+                      Видалити
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <p className="mb-4 text-sm text-gray-500">
-        {dragDisabled
-          ? "Перетягування вимкнене під час пошуку, read-only режиму або збереження порядку."
-          : "Перетягуйте рядки, щоб змінювати порядок у списку."}
-      </p>
+      <ReferenceItemModal
+        visible={isModalOpen}
+        title={editingItem ? "Редагувати — Домашній догляд" : "Новий запис — Домашній догляд"}
+        submitLabel={editingItem ? "Зберегти зміни" : "Додати"}
+        showTimeOfDayOptions={true}
+        item={{
+          name: editingItem?.name ?? "",
+          morning: editingItem?.morning ?? false,
+          evening: editingItem?.evening ?? false,
+        }}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSaveModal}
+      />
 
-      <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b-2 border-green-300 bg-green-50">
-              <th className="border border-green-200 px-4 py-2 text-left font-semibold text-green-700">
-                Назва
-              </th>
-              <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
-                Ранок
-              </th>
-              <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700">
-                Вечір
-              </th>
-              {!readOnly && (
-                <th className="border border-green-200 px-4 py-2 text-center font-semibold text-green-700 w-32">
-                  Дії
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredList.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={readOnly ? 3 : 4}
-                  className="border border-green-200 px-4 py-3 text-center text-gray-500"
-                >
-                  Немає елементів
-                </td>
-              </tr>
-            ) : (
-              filteredList.map((item) => {
-                const isDragged = draggedId === item._id;
-                const isDropTarget = dragOverId === item._id;
+      <ConfirmModal
+        visible={Boolean(deletingId)}
+        title="Видалити домашній догляд"
+        message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
 
-                return (
-                  <tr
-                    key={item._id || item.name}
-                    draggable={!dragDisabled}
-                    onDragStart={() => setDraggedId(item._id ?? null)}
-                    onDragEnd={() => {
-                      setDraggedId(null);
-                      setDragOverId(null);
-                    }}
-                    onDragOver={(e) => {
-                      if (dragDisabled) {
-                        return;
-                      }
-
-                      e.preventDefault();
-                      setDragOverId(item._id ?? null);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (item._id) {
-                        void handleDrop(item._id);
-                      }
-                    }}
-                    className={`border-b border-green-200 hover:bg-green-50 ${
-                      isDragged ? "opacity-50" : ""
-                    } ${isDropTarget ? "bg-green-100" : ""} ${
-                      dragDisabled ? "" : "cursor-grab active:cursor-grabbing"
-                    }`}
-                  >
-                    <td className="border border-green-200 px-4 py-2 text-green-900">
-                      {item.name}
-                    </td>
-                    <td className="border border-green-200 px-4 py-2 text-center text-green-900">
-                      {item.morning ? "✓" : "–"}
-                    </td>
-                    <td className="border border-green-200 px-4 py-2 text-center text-green-900">
-                      {item.evening ? "✓" : "–"}
-                    </td>
-                    {!readOnly && (
-                      <td className="border border-green-200 px-4 py-2 text-center">
-                        <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="rounded bg-amber-500 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-amber-600 active:scale-95"
-                          >
-                            Редагувати
-                          </button>
-                          <button
-                            onClick={() => item._id && handleDelete(item._id)}
-                            className="rounded bg-red-600 px-3 py-1 text-white text-sm font-medium transition-all hover:bg-red-700 active:scale-95"
-                          >
-                            Видалити
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <ConfirmModal
+        visible={Boolean(pendingImport)}
+        title="Імпорт CSV"
+        message={`Імпортувати ${pendingImport?.length ?? 0} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`}
+        confirmLabel="Імпортувати"
+        isDanger={false}
+        onConfirm={handleConfirmImport}
+        onCancel={() => setPendingImport(null)}
+      />
     </div>
   );
 }

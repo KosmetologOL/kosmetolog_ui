@@ -11,7 +11,34 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <AuthProvider>
           <AppRouter />
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: "var(--color-surface)",
+                color: "var(--color-ink)",
+                border: "1px solid var(--color-line-strong)",
+                borderRadius: "0.75rem",
+                padding: "0.75rem 1rem",
+                fontSize: "0.9375rem",
+                fontWeight: 500,
+                boxShadow: "var(--shadow-lift)",
+              },
+              success: {
+                iconTheme: {
+                  primary: "var(--color-brand)",
+                  secondary: "var(--color-paper)",
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: "var(--color-danger)",
+                  secondary: "var(--color-paper)",
+                },
+              },
+            }}
+          />
         </AuthProvider>
       </ErrorBoundary>
     </BrowserRouter>

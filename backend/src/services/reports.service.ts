@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Report, {
   type IReport,
+  type IReportCategoryItem,
   type IReportEditHistoryItem,
   type IReportHomeCare,
 } from "../models/ReportSchema";
@@ -45,6 +46,17 @@ const normalizeHomeCares = (items: IReportHomeCare[] = []): IReportHomeCare[] =>
     recommendations: item.recommendations?.trim() || "",
   }));
 
+const normalizeCategories = (
+  items: IReportCategoryItem[] = [],
+): IReportCategoryItem[] =>
+  items.map((item) => ({
+    _id: item._id || new mongoose.Types.ObjectId().toString(),
+    categoryId: item.categoryId || "",
+    categoryName: item.categoryName?.trim() || "",
+    itemName: item.itemName?.trim() || "",
+    recommendation: item.recommendation?.trim() || "",
+  }));
+
 const normalizeProcedureStages = (stages: IReport["procedureStages"] = []) =>
   stages.map((stage) => ({
     stage: stage.stage?.trim() || "",
@@ -87,6 +99,7 @@ const buildReportPayload = (data: Partial<IReport>) => ({
   })),
   specialists: normalizeSpecialists(data.specialists),
   homeCares: normalizeHomeCares(data.homeCares),
+  categories: normalizeCategories(data.categories),
   additionalInfo: data.additionalInfo?.trim() || "",
   finalNote: data.finalNote?.trim() || "",
   comments: data.comments?.trim() || "",
@@ -105,6 +118,17 @@ export const getAll = async () => Report.find();
 export const getById = async (id: string) => Report.findById(id);
 export const getByPatientId = async (patientId: string) =>
   Report.findOne({ patient: patientId });
+
+export const getLastVisitMap = async (
+  patientIds: (string | mongoose.Types.ObjectId)[],
+): Promise<Map<string, Date>> => {
+  const reports = await Report.find(
+    { patient: { $in: patientIds } },
+    { patient: 1, updatedAt: 1 },
+  );
+
+  return new Map(reports.map((r) => [r.patient.toString(), r.updatedAt]));
+};
 
 export const update = async (
   id: string,

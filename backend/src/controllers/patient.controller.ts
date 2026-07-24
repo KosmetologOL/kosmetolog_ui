@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import * as PatientService from "../services/patient.service";
+import * as ReportService from "../services/reports.service";
 import ApiError from "../utils/ApiError";
 import { escapeRegex } from "../utils/regex";
 
@@ -23,8 +24,16 @@ export const getAllPatients = async (
       .skip((page - 1) * limit)
       .limit(limit);
 
+    const lastVisitMap = await ReportService.getLastVisitMap(
+      patients.map((p) => String(p._id)),
+    );
+    const patientsWithVisit = patients.map((p) => ({
+      ...p.toObject(),
+      lastVisitAt: lastVisitMap.get(String(p._id)) ?? p.createdAt,
+    }));
+
     res.json({
-      patients,
+      patients: patientsWithVisit,
       total,
       page,
       limit,

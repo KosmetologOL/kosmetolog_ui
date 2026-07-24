@@ -2,28 +2,32 @@ import type { IPatient } from "#api/patientsApi";
 import * as patientsApi from "#api/patientsApi";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import PatientItem from "#components/PatientList/PatientItem";
-import { useAuth } from "#hooks/useAuth";
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const PAGE_SIZE = 10;
+
 const PatientList: React.FC = () => {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<IPatient[]>([]);
+  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [query, setQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<IPatient | null>(null);
-  const navigate = useNavigate();
-  const { canAccessReferencePanel } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-
-  const limit = 5;
 
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await patientsApi.getAllPatients(page, limit, query);
+      const response = await patientsApi.getAllPatients(
+        page,
+        PAGE_SIZE,
+        query,
+      );
       setPatients(response.patients);
+      setTotal(response.total);
       setTotalPages(response.totalPages);
     } finally {
       setIsLoading(false);
@@ -37,36 +41,47 @@ const PatientList: React.FC = () => {
 
   const handleAddPatient = async (patient: IPatient) => {
     const createdPatient = await patientsApi.createPatient(patient);
-
     setShowModal(false);
-    fetchPatients();
-
-    navigate("/create-report/" + createdPatient._id);
+    navigate(`/create-report/${createdPatient._id}`);
   };
 
   const handleUpdatePatient = async (patient: IPatient) => {
     if (!editingPatient?._id) return;
-
     await patientsApi.updatePatient(editingPatient._id, patient);
     setEditingPatient(null);
     fetchPatients();
   };
 
+  const trimmedQuery = query.trim();
+  const pageStart = (page - 1) * PAGE_SIZE;
+
   return (
-    <div
-      className="min-h-[100dvh] w-full flex flex-col items-center justify-start bg-gray-50 
-      px-3 py-6 sm:px-6 md:px-8 lg:px-12 xl:px-16"
-    >
-      <div
-        className="
-          w-full flex flex-col bg-white shadow-lg rounded-2xl 
-          p-5 sm:p-6 md:p-8
-          transition-all duration-300
-          max-w-[1200px] xl:max-w-[1400px]
-          md:w-[90%] xl:w-[75%] 2xl:w-[65%]
-        "
-      >
-        <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center justify-between">
+    <>
+      <div className="mb-5">
+        <h1 className="text-[23px] tracking-[0.22em] uppercase">Пацієнти</h1>
+        <p className="text-ink-soft text-[15px] mt-1.5">
+          {isLoading
+            ? "Завантаження реєстру…"
+            : trimmedQuery
+              ? `Знайдено: ${total} із загальної кількості`
+              : `${total} ${total === 1 ? "картка" : "карток"} у реєстрі`}
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-[19px] h-[19px] text-ink-soft pointer-events-none"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.8-3.8" />
+          </svg>
           <input
             type="text"
             value={query}
@@ -74,75 +89,140 @@ const PatientList: React.FC = () => {
               setQuery(e.target.value);
               setPage(1);
             }}
-            className="border p-3 rounded-lg w-full sm:flex-1 focus:ring-2 focus:ring-blue-500 outline-none transition"
-            placeholder="Пошук пацієнта..."
+            placeholder="Пошук за прізвищем…"
+            className="w-full h-13 pl-12 pr-11 rounded-xl border border-line-strong text-[16.5px] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
           />
-
-          <div className="flex gap-3 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
+          {query && (
             <button
-              onClick={() => setShowModal(true)}
-              className="px-5 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:scale-95 transition"
+              onClick={() => {
+                setQuery("");
+                setPage(1);
+              }}
+              aria-label="Очистити пошук"
+              className="icon-btn absolute right-2 top-1/2 -translate-y-1/2 text-xl text-ink-soft hover:bg-surface-2 hover:text-ink"
             >
-              Створити карту пацієнта
+              ×
             </button>
-
-            {canAccessReferencePanel && (
-              <button
-                onClick={() => navigate("/references")}
-                className="px-5 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:scale-95 transition"
-              >
-                Панель довідників
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1">
-          {isLoading && patients.length === 0 ? (
-            <p className="text-gray-500 text-center py-8 text-lg">
-              Завантаження карток пацієнтів...
-            </p>
-          ) : patients.length === 0 ? (
-            <p className="text-gray-500 text-center py-8 text-lg">
-              Пацієнтів не знайдено
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-4">
-              {patients.map((p) => (
-                <PatientItem key={p._id} patient={p} onEdit={setEditingPatient} />
-              ))}
-            </ul>
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center gap-3 mt-6 justify-center text-sm sm:text-base">
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn btn-primary btn-lg flex-none"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M8 2v12M2 8h12" />
+          </svg>
+          Новий пацієнт
+        </button>
+      </div>
+
+      <div className="bg-surface border border-line rounded-2xl shadow-sm overflow-hidden">
+        {isLoading ? (
+          <ul>
+            {Array.from({ length: 5 }, (_, i) => (
+              <li
+                key={i}
+                className={`flex items-center gap-4 px-5 py-4 animate-pulse ${
+                  i > 0 ? "border-t border-line" : ""
+                }`}
+              >
+                <span className="w-11.5 h-11.5 rounded-full bg-surface-2 flex-none" />
+                <span className="flex-1">
+                  <span className="block h-4 w-2/5 rounded bg-surface-2" />
+                  <span className="block h-3 w-1/4 rounded bg-surface-2 mt-2" />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : patients.length === 0 ? (
+          <div className="text-center py-14 px-6">
+            <p className="text-lg font-bold mb-1.5">
+              {trimmedQuery
+                ? `Нічого не знайдено за запитом «${trimmedQuery}»`
+                : "У реєстрі поки немає карток"}
+            </p>
+            <p className="text-ink-soft max-w-[40ch] mx-auto mb-5">
+              {trimmedQuery
+                ? "Перевірте написання — або одразу створіть нову картку з цим імʼям."
+                : "Створіть першу картку пацієнта — це займає менш ніж хвилину."}
+            </p>
             <button
-              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-              disabled={page === 1}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100 transition"
+              onClick={() => setShowModal(true)}
+              className="btn btn-primary"
             >
-              Назад
-            </button>
-            <span className="text-gray-700 font-medium">
-              Сторінка {page} з {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={page === totalPages}
-              className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100 transition"
-            >
-              Далі
+              {trimmedQuery
+                ? `Створити картку «${trimmedQuery}»`
+                : "Новий пацієнт"}
             </button>
           </div>
+        ) : (
+          <ul>
+            {patients.map((p, i) => (
+              <li key={p._id} className={i > 0 ? "border-t border-line" : ""}>
+                <PatientItem patient={p} onEdit={setEditingPatient} />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
+
+      {!isLoading && patients.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+          <span className="text-ink-soft text-[14.5px] tabular-nums">
+            Показано {pageStart + 1}–{pageStart + patients.length} із {total}
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                aria-label="Попередня сторінка"
+                className="pager-btn text-ink-soft hover:bg-surface-2 hover:text-ink disabled:opacity-40"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={`pager-btn text-[15px] tabular-nums ${
+                    n === page
+                      ? "is-active"
+                      : "text-ink-soft hover:bg-surface-2 hover:text-ink"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page === totalPages}
+                aria-label="Наступна сторінка"
+                className="pager-btn text-ink-soft hover:bg-surface-2 hover:text-ink disabled:opacity-40"
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <PatientFormModal
         visible={showModal}
         onClose={() => setShowModal(false)}
         onSave={handleAddPatient}
-        patient={{ fullName: "" }}
+        patient={{ fullName: trimmedQuery && patients.length === 0 ? query : "" }}
       />
 
       <PatientFormModal
@@ -152,7 +232,7 @@ const PatientList: React.FC = () => {
         patient={editingPatient ?? { fullName: "" }}
         title="Редагувати дані пацієнта"
       />
-    </div>
+    </>
   );
 };
 

@@ -1,14 +1,28 @@
+import logoMark from "#assets/logo-mark.png";
 import React from "react";
 import { Link } from "react-router-dom";
 
 const NotFoundPage: React.FC = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-green-50 text-center">
-    <h1 className="text-6xl font-bold text-green-700 mb-4">404</h1>
-    <p className="text-lg text-gray-700 mb-6">Сторінку не знайдено </p>
-    <Link
-      to="/"
-      className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition"
-    >
+  <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-paper px-6 text-center font-brand text-ink">
+    <span
+      aria-hidden="true"
+      className="h-10 w-11 bg-ink"
+      style={{
+        WebkitMaskImage: `url(${logoMark})`,
+        maskImage: `url(${logoMark})`,
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+    />
+    <div>
+      <h1 className="text-[15px] tracking-[0.3em] text-ink-soft">404</h1>
+      <p className="mt-2 text-lg">Сторінку не знайдено</p>
+    </div>
+    <Link to="/" className="btn btn-primary">
       На головну
     </Link>
   </div>

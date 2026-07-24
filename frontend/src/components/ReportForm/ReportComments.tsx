@@ -6,12 +6,13 @@ interface Props {
 }
 
 const ReportComments: React.FC<Props> = ({ comments, setComments }) => (
-  <div className="mb-4">
-    <label className="block font-medium mb-1">Додаткова інформація:</label>
+  <div className="card">
+    <p className="section-label">Додаткова інформація</p>
     <textarea
       value={comments}
       onChange={(e) => setComments(e.target.value)}
-      className="w-full px-2 py-1 border border-green-200 rounded-md text-sm mb-2 focus:ring-1 focus:ring-green-300"
+      rows={3}
+      className="field-textarea w-full min-h-[80px] resize-y"
     />
   </div>
 );

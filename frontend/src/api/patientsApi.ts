@@ -4,10 +4,12 @@ export interface IPatient {
   _id?: string;
   fullName: string;
   createdAt?: string;
+  lastVisitAt?: string;
 }
 
 interface ApiResponse {
   patients: IPatient[];
+  total: number;
   totalPages: number;
 }
 
@@ -19,7 +21,7 @@ export const getAllPatients = async (
   query: string
 ) => {
   const { data } = await axios.get<ApiResponse>(
-    `${API_URL}?page=${page}&limit=${limit}&query=${query}`
+    `${API_URL}?page=${page}&limit=${limit}&query=${encodeURIComponent(query)}`
   );
   return data;
 };

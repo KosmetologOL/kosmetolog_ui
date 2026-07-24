@@ -1,4 +1,5 @@
 import type { IMedication } from "#api/medicationsApi";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useState } from "react";
 
@@ -41,52 +42,53 @@ const SelectedMedicationsTable: React.FC<Props> = ({
   };
 
   if (selectedMedications.length === 0) {
-    return (
-      <p className="text-green-700 text-sm mb-2 mt-3">Нічого не вибрано</p>
-    );
+    return <p className="mt-3 text-sm text-ink-soft">Нічого не вибрано</p>;
   }
 
   return (
     <>
-      <div className="overflow-x-auto mb-3 mt-3">
-        <table className="min-w-full border border-green-200 rounded-md text-sm">
-          <thead className="bg-green-100">
-            <tr>
-              <th className="px-2 py-1 text-left">Назва</th>
-              <th className="px-2 py-1 text-left">Рекомендація</th>
-              <th className="px-2 py-1 text-left">Дії</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedMedications.map((medication) => (
-              <tr
-                key={medication._id}
-                className="border-b border-green-200 hover:bg-green-50"
+      <div className="mt-3 flex flex-col gap-2">
+        {selectedMedications.map((medication) => (
+          <div key={medication._id} className="chip-row">
+            <div className="min-w-0 flex-1">
+              <div className="chip-name">{medication.name}</div>
+              {medication.recommendation && (
+                <FormattedText
+                  markdown={medication.recommendation}
+                  className="chip-sub"
+                />
+              )}
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm px-2.5"
+              title="Редагувати засіб"
+              aria-label="Редагувати засіб"
+              onClick={() => setEditingMedication(medication)}
+            >
+              <svg
+                className="w-3.5 h-3.5 text-ink-soft"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <td className="px-2 py-1">{medication.name}</td>
-                <td className="px-2 py-1 whitespace-pre-wrap">
-                  {medication.recommendation}
-                </td>
-                <td className="px-2 py-1 align-top space-x-2">
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline"
-                    onClick={() => setEditingMedication(medication)}
-                  >
-                    Оновити
-                  </button>
-                  <button
-                    type="button"
-                    className="text-red-600 hover:underline"
-                    onClick={() => handleRemove(medication._id!)}
-                  >
-                    Видалити
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="chip-remove"
+              aria-label="Видалити"
+              onClick={() => handleRemove(medication._id!)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
       </div>
 
       <ReferenceItemModal

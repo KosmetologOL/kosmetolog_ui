@@ -5,6 +5,7 @@ import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
 import type { ISpecialist } from "#api/specialistsApi";
+import type { IReportCategoryItem } from "#components/Categories/SearchCategories";
 import logoUrl from "#assets/logo.png";
 import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
 import NoahBoldItalicTTFUrl from "#fonts/Noah-BoldItalic.ttf";
@@ -12,6 +13,7 @@ import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
 import NoahRegularItalicTTFUrl from "#fonts/Noah-RegularItalic.ttf";
 import { jsPDF } from "jspdf";
 import { toast } from "react-hot-toast/headless";
+import { savePdfBlob } from "../../../lib/pdfSaveLocation";
 
 interface IProcedureStage {
   title: string;
@@ -26,10 +28,12 @@ interface GenerateReportPDFParams {
   procedureStages?: IProcedureStage[];
   specialists: ISpecialist[];
   homeCares: IHomeCare[];
+  categoryItems?: IReportCategoryItem[];
   additionalInfo: string;
   comments: string;
   finalNote?: string;
   doctorName?: string;
+  directoryHandle?: FileSystemDirectoryHandle | null;
 }
 
 export const generateReportPDF = async ({
@@ -39,10 +43,12 @@ export const generateReportPDF = async ({
   procedureStages = [],
   specialists,
   homeCares,
+  categoryItems = [],
   additionalInfo,
   comments,
   finalNote,
   doctorName,
+  directoryHandle,
 }: GenerateReportPDFParams) => {
   const pdf = new jsPDF({
     orientation: "portrait",
@@ -266,6 +272,26 @@ export const generateReportPDF = async ({
     }
   }
 
+  if (categoryItems.length > 0) {
+    const categoryNames = Array.from(
+      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
+    );
+
+    for (const categoryName of categoryNames) {
+      const items = categoryItems.filter(
+        (c) => c.categoryName === categoryName,
+      );
+      if (items.length === 0) continue;
+
+      addSection(
+        categoryName,
+        items.map((c) =>
+          c.recommendation ? `${c.itemName}\n· ${c.recommendation}` : c.itemName,
+        ),
+      );
+    }
+  }
+
   if (procedureStages && procedureStages.length > 0) {
     pdf.setFont("Noah", "bold");
     pdf.setFontSize(12);
@@ -395,9 +421,22 @@ export const generateReportPDF = async ({
       pdf.text(name, textX, textY);
     }
   }
-  pdf.save(
-    `Рекомендаційний_лист_${
-      patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
-    }.pdf`,
-  );
+  const fileName = `Рекомендаційний_лист_${
+    patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
+  }.pdf`;
+
+  const blob = pdf.output("blob");
+  const result = await savePdfBlob(fileName, blob, directoryHandle);
+
+  if (result.status === "saved-to-folder") {
+    toast.success("PDF збережено у обрану папку.");
+  } else if (result.reason === "write-failed") {
+    toast.error(
+      "Не вдалося записати PDF у вибрану папку (можливо, файл із такою назвою зараз відкритий в іншій програмі). Файл завантажено звичайним способом.",
+    );
+  } else if (result.reason === "permission-denied") {
+    toast.error(
+      "Немає дозволу на запис у вибрану папку. Файл завантажено звичайним способом.",
+    );
+  }
 };
