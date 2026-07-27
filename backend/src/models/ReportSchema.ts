@@ -28,11 +28,17 @@ export interface IReportEditHistoryItem {
 
 export interface IReportProcedureStage {
   stage: string;
+  workWithEnabled?: boolean;
+  workWith?: string;
   procedures: {
     _id?: string;
     name: string;
     comment?: string;
     recommendation?: string;
+    zoneEnabled?: boolean;
+    zone?: string;
+    intervalEnabled?: boolean;
+    interval?: string;
   }[];
 }
 
@@ -109,12 +115,18 @@ const ReportSchema = new Schema<IReport>(
     procedureStages: [
       {
         stage: String,
+        workWithEnabled: { type: Boolean, default: false },
+        workWith: { type: String, default: "" },
         procedures: [
           {
             _id: String,
             name: String,
             comment: String,
             recommendation: String,
+            zoneEnabled: { type: Boolean, default: false },
+            zone: { type: String, default: "" },
+            intervalEnabled: { type: Boolean, default: false },
+            interval: { type: String, default: "" },
           },
         ],
       },

@@ -32,17 +32,33 @@ import SearchProcedure from "#components/Procedures/SearchProcedure";
 import FormattedText from "#components/FormattedText";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import ReferenceItemModal from "#components/ReferenceItemModal";
+import Select from "#components/Select";
 import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
 import ReportActions from "#components/ReportForm/ReportActions";
 import ReportComments from "#components/ReportForm/ReportComments";
 import ReportSection from "#components/ReportForm/ReportSection";
+import {
+  INTERVAL_OPTIONS,
+  WORK_WITH_OPTIONS,
+  ZONE_OPTIONS,
+} from "#components/ReportForm/procedureStageOptions";
 import { ensureReportsDirectoryHandle } from "../../lib/pdfSaveLocation";
 import toast from "react-hot-toast";
+
+type StageProcedure = IProcedure & {
+  comment?: string;
+  zoneEnabled?: boolean;
+  zone?: string;
+  intervalEnabled?: boolean;
+  interval?: string;
+};
 
 interface IProcedureStage {
   id: string;
   title: string;
-  procedures: (IProcedure & { comment?: string })[];
+  workWithEnabled?: boolean;
+  workWith?: string;
+  procedures: StageProcedure[];
 }
 
 interface EditingProcedureState {
@@ -128,10 +144,16 @@ const CreateReportForm: React.FC = () => {
             recommendation?: string;
             comment?: string;
             stage?: string;
+            zoneEnabled?: boolean;
+            zone?: string;
+            intervalEnabled?: boolean;
+            interval?: string;
           }
 
           interface ReportProcedureStage {
             stage: string;
+            workWithEnabled?: boolean;
+            workWith?: string;
             procedures: ReportProcedure[];
           }
           if (
@@ -143,9 +165,9 @@ const CreateReportForm: React.FC = () => {
             ).map((s) => ({
               id: crypto.randomUUID(),
               title: s.stage,
-              procedures: (s.procedures ?? []) as (IProcedure & {
-                comment?: string;
-              })[],
+              workWithEnabled: s.workWithEnabled ?? false,
+              workWith: s.workWith ?? "",
+              procedures: (s.procedures ?? []) as StageProcedure[],
             }));
             setProcedureStages(stages);
           } else if (
@@ -166,7 +188,9 @@ const CreateReportForm: React.FC = () => {
               ([stageName, procs]) => ({
                 id: crypto.randomUUID(),
                 title: stageName,
-                procedures: procs as (IProcedure & { comment?: string })[],
+                workWithEnabled: false,
+                workWith: "",
+                procedures: procs as StageProcedure[],
               }),
             );
 
@@ -190,6 +214,8 @@ const CreateReportForm: React.FC = () => {
       {
         id: crypto.randomUUID(),
         title: `Етап ${prev.length + 1}`,
+        workWithEnabled: false,
+        workWith: "",
         procedures: [],
       },
     ]);
@@ -296,10 +322,16 @@ const CreateReportForm: React.FC = () => {
       })),
       procedureStages: procedureStages.map((s) => ({
         stage: s.title,
+        workWithEnabled: s.workWithEnabled ?? false,
+        workWith: s.workWith ?? "",
         procedures: s.procedures.map((p) => ({
           name: p.name,
           comment: p.comment,
           recommendation: p.recommendation,
+          zoneEnabled: p.zoneEnabled ?? false,
+          zone: p.zone ?? "",
+          intervalEnabled: p.intervalEnabled ?? false,
+          interval: p.interval ?? "",
         })),
       })),
       procedures: procedureStages.flatMap((s) =>
@@ -480,111 +512,241 @@ const CreateReportForm: React.FC = () => {
           </ReportSection>
 
           <ReportSection title="Процедури">
-            {procedureStages.map((stage) => (
-              <div key={stage.id} className="stage-card">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <input
-                    type="text"
-                    value={stage.title}
-                    onChange={(e) =>
-                      updateStage(stage.id, {
-                        ...stage,
-                        title: e.target.value,
-                      })
-                    }
-                    className="field-input h-10 max-w-[260px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeStage(stage.id)}
-                    className="btn btn-ghost btn-sm text-danger"
-                  >
-                    Видалити етап
-                  </button>
-                </div>
+            {procedureStages.map((stage) => {
+              const stageRecommendations = [
+                ...new Map(
+                  stage.procedures.map((p) => [p.name, p.recommendation]),
+                ).entries(),
+              ];
 
-                <SearchProcedure
-                  selectedProcedures={stage.procedures as IProcedure[]}
-                  setSelectedProcedures={(updated) => {
-                    const newProcedures =
-                      typeof updated === "function"
-                        ? updated(stage.procedures as IProcedure[])
-                        : updated;
+              return (
+                <div key={stage.id} className="stage-card">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <input
+                        type="text"
+                        value={stage.title}
+                        onChange={(e) =>
+                          updateStage(stage.id, {
+                            ...stage,
+                            title: e.target.value,
+                          })
+                        }
+                        className="field-input h-10 w-[220px] flex-none"
+                      />
 
-                    updateStage(stage.id, {
-                      ...stage,
-                      procedures: newProcedures.map((p) => ({
-                        ...p,
-                        comment:
-                          stage.procedures.find((sp) => sp._id === p._id)
-                            ?.comment || DEFAULT_PROCEDURE_COMMENT,
-                      })),
-                    });
-                  }}
-                />
-
-                {stage.procedures.map((proc) => (
-                  <div key={proc._id} className="proc-card">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-[14.5px] font-bold">{proc.name}</p>
-                        <FormattedText
-                          markdown={proc.recommendation}
-                          fallback="Рекомендація відсутня"
-                          className="mt-1 text-[13.5px] leading-5 text-ink-soft"
-                        />
-                        {proc.comment &&
-                          proc.comment !== DEFAULT_PROCEDURE_COMMENT && (
-                            <div className="mt-2 whitespace-pre-wrap rounded-lg bg-brand-soft px-2.5 py-2 text-[13.5px] leading-5">
-                              {proc.comment}
-                            </div>
-                          )}
-                      </div>
-                      <div className="flex flex-none gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openProcedureEditor(stage.id, proc)}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Оновити
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
+                      <label className="flex h-9 flex-none items-center gap-1.5 text-sm font-medium text-ink-soft cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={!!stage.workWithEnabled}
+                          onChange={(e) =>
                             updateStage(stage.id, {
                               ...stage,
-                              procedures: stage.procedures.filter(
-                                (p) => p._id !== proc._id,
+                              workWithEnabled: e.target.checked,
+                            })
+                          }
+                          className="rounded border-line-strong text-brand focus:ring-brand/20"
+                        />
+                        Робота з
+                      </label>
+                      <Select
+                        value={stage.workWith || ""}
+                        disabled={!stage.workWithEnabled}
+                        onValueChange={(value) =>
+                          updateStage(stage.id, {
+                            ...stage,
+                            workWith: value,
+                          })
+                        }
+                        options={WORK_WITH_OPTIONS}
+                        className="h-9 w-[200px] flex-none"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeStage(stage.id)}
+                      className="btn btn-ghost btn-sm text-danger"
+                    >
+                      Видалити етап
+                    </button>
+                  </div>
+
+                  <SearchProcedure
+                    selectedProcedures={stage.procedures as IProcedure[]}
+                    setSelectedProcedures={(updated) => {
+                      const newProcedures =
+                        typeof updated === "function"
+                          ? updated(stage.procedures as IProcedure[])
+                          : updated;
+
+                      updateStage(stage.id, {
+                        ...stage,
+                        procedures: newProcedures.map((p) => ({
+                          ...p,
+                          comment:
+                            stage.procedures.find((sp) => sp._id === p._id)
+                              ?.comment || DEFAULT_PROCEDURE_COMMENT,
+                        })),
+                      });
+                    }}
+                  />
+
+                  {stage.procedures.map((proc) => (
+                    <div key={proc._id} className="proc-card">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-[14.5px] font-bold">{proc.name}</p>
+                        </div>
+                        <div className="flex flex-none gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openProcedureEditor(stage.id, proc)}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Оновити
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.filter(
+                                  (p) => p._id !== proc._id,
+                                ),
+                              })
+                            }
+                            className="chip-remove"
+                            aria-label="Видалити процедуру"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <label className="flex h-9 flex-none items-center gap-1.5 text-sm font-medium text-ink-soft cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={!!proc.zoneEnabled}
+                            onChange={(e) =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.map((p) =>
+                                  p._id === proc._id
+                                    ? { ...p, zoneEnabled: e.target.checked }
+                                    : p,
+                                ),
+                              })
+                            }
+                            className="rounded border-line-strong text-brand focus:ring-brand/20"
+                          />
+                          Зона
+                        </label>
+                        <Select
+                          value={proc.zone || ""}
+                          disabled={!proc.zoneEnabled}
+                          onValueChange={(value) =>
+                            updateStage(stage.id, {
+                              ...stage,
+                              procedures: stage.procedures.map((p) =>
+                                p._id === proc._id
+                                  ? { ...p, zone: value }
+                                  : p,
                               ),
                             })
                           }
-                          className="chip-remove"
-                          aria-label="Видалити процедуру"
-                        >
-                          ×
-                        </button>
+                          options={ZONE_OPTIONS}
+                          className="h-9 w-[160px] flex-none"
+                        />
+
+                        <label className="flex h-9 flex-none items-center gap-1.5 text-sm font-medium text-ink-soft cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={!!proc.intervalEnabled}
+                            onChange={(e) =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.map((p) =>
+                                  p._id === proc._id
+                                    ? {
+                                        ...p,
+                                        intervalEnabled: e.target.checked,
+                                      }
+                                    : p,
+                                ),
+                              })
+                            }
+                            className="rounded border-line-strong text-brand focus:ring-brand/20"
+                          />
+                          Інтервал
+                        </label>
+                        <Select
+                          value={proc.interval || ""}
+                          disabled={!proc.intervalEnabled}
+                          onValueChange={(value) =>
+                            updateStage(stage.id, {
+                              ...stage,
+                              procedures: stage.procedures.map((p) =>
+                                p._id === proc._id
+                                  ? { ...p, interval: value }
+                                  : p,
+                              ),
+                            })
+                          }
+                          options={INTERVAL_OPTIONS}
+                          className="h-9 w-[160px] flex-none"
+                        />
                       </div>
                     </div>
-                    <textarea
-                      value={proc.comment || ""}
-                      onChange={(e) =>
-                        updateStage(stage.id, {
-                          ...stage,
-                          procedures: stage.procedures.map((p) =>
-                            p._id === proc._id
-                              ? { ...p, comment: e.target.value }
-                              : p,
-                          ),
-                        })
-                      }
-                      placeholder="Коментар до процедури"
-                      rows={2}
-                      className="field-textarea mt-2.5 w-full min-h-[60px] resize-y text-[13.5px]"
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+                  ))}
+
+                  {stageRecommendations.length > 0 && (
+                    <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                        Рекомендації щодо процедур
+                      </p>
+                      <ul className="flex flex-col gap-1.5 text-sm text-ink-soft">
+                        {stageRecommendations.map(([name, rec]) => (
+                          <li key={name}>
+                            <strong className="text-ink">{name}:</strong>{" "}
+                            <FormattedText
+                              markdown={rec}
+                              fallback="Рекомендація відсутня"
+                              className="inline"
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {stage.procedures.map((proc, index) => (
+                    <div key={proc._id} className="mt-3">
+                      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                        {index + 1} процедура
+                      </p>
+                      <textarea
+                        value={proc.comment || ""}
+                        onChange={(e) =>
+                          updateStage(stage.id, {
+                            ...stage,
+                            procedures: stage.procedures.map((p) =>
+                              p._id === proc._id
+                                ? { ...p, comment: e.target.value }
+                                : p,
+                            ),
+                          })
+                        }
+                        placeholder="Пам'ятка до процедури"
+                        rows={2}
+                        className="field-textarea w-full min-h-[60px] resize-y text-[13.5px]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
 
             <button
               type="button"
@@ -594,29 +756,6 @@ const CreateReportForm: React.FC = () => {
               + Додати етап
             </button>
           </ReportSection>
-
-          {procedureStages.some((s) => s.procedures.length > 0) && (
-            <ReportSection title="Рекомендації щодо процедур">
-              <ul className="flex flex-col gap-1.5 text-sm text-ink-soft">
-                {[
-                  ...new Map(
-                    procedureStages
-                      .flatMap((s) => s.procedures)
-                      .map((p) => [p.name, p.recommendation]),
-                  ).entries(),
-                ].map(([name, rec]) => (
-                  <li key={name}>
-                    <strong className="text-ink">{name}:</strong>{" "}
-                    <FormattedText
-                      markdown={rec}
-                      fallback="Рекомендація відсутня"
-                      className="inline"
-                    />
-                  </li>
-                ))}
-              </ul>
-            </ReportSection>
-          )}
 
           <ReportSection title="Все, що необхідно знати про ваш стан">
             <textarea

@@ -24,6 +24,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
   };
 
+  const clearLocalSession = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    delete axios.defaults.headers.common.Authorization;
+  };
+
   const logout = async () => {
     try {
       await logoutUser();
@@ -31,11 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn("Logout error:", err);
     }
 
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    delete axios.defaults.headers.common.Authorization;
+    clearLocalSession();
   };
 
   useEffect(() => {
@@ -76,7 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const { user } = await getCurrentUser();
           login(accessToken, user);
         } catch {
-          await logout();
+          // No valid session to refresh — nothing to invalidate server-side,
+          // so just clear local state instead of calling /auth/logout.
+          clearLocalSession();
         }
       };
 

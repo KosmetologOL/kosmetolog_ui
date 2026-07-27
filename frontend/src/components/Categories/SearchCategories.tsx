@@ -119,12 +119,17 @@ const SearchCategories: React.FC<Props> = ({
       {categories.map((category) => {
         const items = itemsByCategory[category._id] || [];
         const search = (searchValues[category._id] || "").trim().toLowerCase();
-        const filteredItems = search
+        const matchingItems = search
           ? items.filter((item) => item.name.toLowerCase().includes(search))
           : items;
 
         const currentSelected = selectedCategoryItems.filter(
           (i) => i.categoryId === category._id,
+        );
+
+        const filteredItems = matchingItems.filter(
+          (item) =>
+            !currentSelected.some((selected) => selected.itemName === item.name),
         );
 
         return (
