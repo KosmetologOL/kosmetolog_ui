@@ -41,10 +41,16 @@ const procedureStageItemSchema = Joi.object({
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   comment: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
   recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+  zoneEnabled: Joi.boolean().default(false),
+  zone: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  intervalEnabled: Joi.boolean().default(false),
+  interval: Joi.string().trim().max(NAME_MAX).allow("").optional(),
 }).messages(commonMessages);
 
 const procedureStageSchema = Joi.object({
   stage: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  workWithEnabled: Joi.boolean().default(false),
+  workWith: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   procedures: Joi.array()
     .items(procedureStageItemSchema)
     .max(MAX_ITEMS)
