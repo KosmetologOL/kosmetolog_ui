@@ -33,7 +33,7 @@ import FormattedText from "#components/FormattedText";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import Select from "#components/Select";
-import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
+import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml";
 import ReportActions from "#components/ReportForm/ReportActions";
 import ReportComments from "#components/ReportForm/ReportComments";
 import ReportSection from "#components/ReportForm/ReportSection";
@@ -373,7 +373,7 @@ const CreateReportForm: React.FC = () => {
     await saveReport();
   };
 
-  const handleExport = async () => {
+  const handleExportHtml = async () => {
     if (!patient) return;
 
     const directoryHandle = await ensureReportsDirectoryHandle();
@@ -381,7 +381,7 @@ const CreateReportForm: React.FC = () => {
     const savedReport = await saveReport();
     if (!savedReport) return;
 
-    await generateReportPDF({
+    await generateReportHtml({
       patient,
       exams: selectedExams,
       medications: selectedMedications,
@@ -794,7 +794,7 @@ const CreateReportForm: React.FC = () => {
             reportId={reportId}
             patient={patient}
             isSubmitting={isSubmitting}
-            onExport={handleExport}
+            onExportHtml={handleExportHtml}
           />
 
           <PatientFormModal

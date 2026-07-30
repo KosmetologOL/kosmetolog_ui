@@ -4,11 +4,15 @@ import React from "react";
 interface Props {
   reportId: string | null;
   patient: IPatient;
-  onExport: () => void;
+  onExportHtml: () => void;
   isSubmitting?: boolean;
 }
 
-const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = false }) => (
+const ReportActions: React.FC<Props> = ({
+  reportId,
+  onExportHtml,
+  isSubmitting = false,
+}) => (
   <div className="flex flex-wrap gap-3">
     <button type="submit" disabled={isSubmitting} className="btn btn-primary min-w-[140px]">
       {isSubmitting ? (
@@ -41,7 +45,7 @@ const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = fal
         "Створити звіт"
       )}
     </button>
-    <button type="button" onClick={onExport} disabled={isSubmitting} className="btn btn-ghost">
+    <button type="button" onClick={onExportHtml} disabled={isSubmitting} className="btn btn-ghost">
       <svg
         className="w-4 h-4 text-brand"
         viewBox="0 0 24 24"
@@ -57,7 +61,7 @@ const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = fal
         <line x1="16" y1="17" x2="8" y2="17" />
         <polyline points="10 9 9 9 8 9" />
       </svg>
-      Експортувати PDF
+      Експортувати HTML
     </button>
     <button
       type="button"

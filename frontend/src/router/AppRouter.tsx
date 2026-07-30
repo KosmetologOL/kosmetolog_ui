@@ -4,7 +4,7 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
 // Lazy-loaded per page (not via the #pages/index barrel) so each route ships
-// its own chunk instead of bundling jsPDF/Tiptap/reference managers into the
+// its own chunk instead of bundling Tiptap/reference managers into the
 // login page's initial download.
 const LoginPage = lazy(() => import("#pages/LoginPage"));
 const PatientListPage = lazy(() => import("#pages/PatientListPage"));
