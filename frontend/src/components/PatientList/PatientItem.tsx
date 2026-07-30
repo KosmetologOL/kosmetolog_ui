@@ -1,6 +1,6 @@
 import type { IPatient } from "#api/patientsApi";
 import { getReportByPatientId } from "#api/reportsApi";
-import { generateReportPDF } from "#components/ReportForm/pdf/generateReportPDF";
+import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml";
 import { useAuth } from "#hooks/useAuth";
 import { getReportCreatorName } from "#types/getReportCreatorName";
 import { normalizeProcedureStages } from "#types/normalizeProcedureStages";
@@ -21,7 +21,7 @@ const getInitials = (fullName: string) => {
 const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingHtml, setIsExportingHtml] = useState(false);
 
   const visitDate = patient.lastVisitAt || patient.createdAt;
   const formattedVisitDate = visitDate
@@ -34,13 +34,13 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
 
   const openChart = () => navigate(`/create-report/${patient._id}`);
 
-  const handleExportPDF = async (e: React.MouseEvent) => {
+  const handleExportHtml = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsExporting(true);
+    setIsExportingHtml(true);
     try {
       const report = await getReportByPatientId(patient._id!);
       const procedureStages = normalizeProcedureStages(report);
-      await generateReportPDF({
+      await generateReportHtml({
         patient,
         exams: report.exams || [],
         medications: report.medications || [],
@@ -54,9 +54,9 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
         doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
       });
     } catch {
-      toast.error("Не вдалося створити PDF — можливо, звіт ще не створено.");
+      toast.error("Не вдалося створити HTML — можливо, звіт ще не створено.");
     } finally {
-      setIsExporting(false);
+      setIsExportingHtml(false);
     }
   };
 
@@ -108,8 +108,8 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
 
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:flex-none">
         <button
-          onClick={handleExportPDF}
-          disabled={isExporting}
+          onClick={handleExportHtml}
+          disabled={isExportingHtml}
           className="btn btn-ghost btn-sm flex-1 sm:flex-initial"
         >
           <svg
@@ -127,7 +127,7 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
             <line x1="16" y1="17" x2="8" y2="17" />
             <polyline points="10 9 9 9 8 9" />
           </svg>
-          {isExporting ? "Готуємо…" : "PDF рекомендацій"}
+          {isExportingHtml ? "Готуємо…" : "HTML рекомендацій"}
         </button>
         <button
           onClick={(e) => {

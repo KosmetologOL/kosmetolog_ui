@@ -60,11 +60,17 @@ const normalizeCategories = (
 const normalizeProcedureStages = (stages: IReport["procedureStages"] = []) =>
   stages.map((stage) => ({
     stage: stage.stage?.trim() || "",
+    workWithEnabled: Boolean(stage.workWithEnabled),
+    workWith: stage.workWith?.trim() || "",
     procedures: (stage.procedures || []).map((procedure) => ({
       _id: procedure._id || new mongoose.Types.ObjectId().toString(),
       name: procedure.name?.trim() || "",
       comment: procedure.comment?.trim() || "",
       recommendation: procedure.recommendation?.trim() || "",
+      zoneEnabled: Boolean(procedure.zoneEnabled),
+      zone: procedure.zone?.trim() || "",
+      intervalEnabled: Boolean(procedure.intervalEnabled),
+      interval: procedure.interval?.trim() || "",
     })),
   }));
 
