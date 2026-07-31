@@ -755,10 +755,10 @@ const CreateReportForm: React.FC = () => {
                     </div>
                   )}
 
-                  {stage.procedures.map((proc, index) => (
+                  {stage.procedures.map((proc) => (
                     <div key={proc._id} className="mt-3">
                       <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
-                        {index + 1} процедура
+                        {proc.name}
                       </p>
                       <textarea
                         value={proc.comment || ""}
