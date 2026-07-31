@@ -19,6 +19,7 @@ const CategoryItemsManager: React.FC<Props> = ({
   categoryName,
 }) => {
   const [items, setItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -33,11 +34,14 @@ const CategoryItemsManager: React.FC<Props> = ({
   });
 
   const load = async () => {
+    setIsLoading(true);
     try {
       const list = await listCategoryItems(categoryId);
       setItems(list || []);
     } catch (err) {
       console.error("Failed to load category items:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -150,7 +154,11 @@ const CategoryItemsManager: React.FC<Props> = ({
         )}
       </div>
 
-      {filteredList.length === 0 ? (
+      {isLoading ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Завантаження...
+        </p>
+      ) : filteredList.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">
           Немає елементів
         </p>

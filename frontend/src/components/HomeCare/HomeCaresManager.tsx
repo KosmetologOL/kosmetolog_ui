@@ -35,6 +35,7 @@ export default function HomeCaresManager({
   readOnly?: boolean;
 }) {
   const [list, setList] = useState<IHomeCare[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<IHomeCare | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,8 +50,13 @@ export default function HomeCaresManager({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchList = async () => {
-    const data = await getAllHomeCares();
-    setList(data);
+    setIsLoading(true);
+    try {
+      const data = await getAllHomeCares();
+      setList(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -338,7 +344,11 @@ export default function HomeCaresManager({
           : "Перетягуйте картки, щоб змінювати порядок у списку."}
       </p>
 
-      {filteredList.length === 0 ? (
+      {isLoading ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Завантаження...
+        </p>
+      ) : filteredList.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">
           Немає елементів
         </p>

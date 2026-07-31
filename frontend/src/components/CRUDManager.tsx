@@ -66,6 +66,7 @@ const CRUDManager = <T,>({
   const deletable = canDelete ?? !readOnly;
   const showActions = editable || deletable;
   const [list, setList] = useState<CRUDItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<CRUDItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -91,22 +92,27 @@ const CRUDManager = <T,>({
   });
 
   const fetchList = useCallback(async () => {
-    const { data } = await axios.get<T[]>(
-      `${import.meta.env.VITE_API_URL}/${apiPath}`,
-    );
-
-    let raw = data;
-
-    if (!Array.isArray(raw)) {
-      const foundArray = Object.values(raw).find((value) =>
-        Array.isArray(value),
+    setIsLoading(true);
+    try {
+      const { data } = await axios.get<T[]>(
+        `${import.meta.env.VITE_API_URL}/${apiPath}`,
       );
-      if (foundArray) {
-        raw = foundArray as T[];
-      }
-    }
 
-    setList(mapItem ? (raw as T[]).map(mapItem) : (raw as CRUDItem[]));
+      let raw = data;
+
+      if (!Array.isArray(raw)) {
+        const foundArray = Object.values(raw).find((value) =>
+          Array.isArray(value),
+        );
+        if (foundArray) {
+          raw = foundArray as T[];
+        }
+      }
+
+      setList(mapItem ? (raw as T[]).map(mapItem) : (raw as CRUDItem[]));
+    } finally {
+      setIsLoading(false);
+    }
   }, [apiPath, mapItem]);
 
   useEffect(() => {
@@ -400,7 +406,11 @@ const CRUDManager = <T,>({
         )}
       </div>
 
-      {filteredList.length === 0 ? (
+      {isLoading ? (
+        <p className="w-full py-8 text-center text-ink-soft">
+          Завантаження...
+        </p>
+      ) : filteredList.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">
           Немає елементів
         </p>
