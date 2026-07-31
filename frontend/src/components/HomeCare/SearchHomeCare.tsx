@@ -77,6 +77,7 @@ const SearchHomeCare: React.FC<Props> = ({
   ) => {
     const medicationId =
       medication._id || `${careId}-${medication.name}-${Math.random()}`;
+    const checkboxKey = `${careId}:${medicationId}`;
 
     const isDuplicate = selectedHomeCares.some(
       (item) =>
@@ -102,7 +103,7 @@ const SearchHomeCare: React.FC<Props> = ({
     setResults((prev) => ({ ...prev, [careId]: [] }));
     setCheckboxes((prev) => ({
       ...prev,
-      [medicationId]: { morning: false, evening: false },
+      [checkboxKey]: { morning: false, evening: false },
     }));
   };
 
@@ -114,6 +115,15 @@ const SearchHomeCare: React.FC<Props> = ({
     <div className="flex flex-col gap-3">
       {allHomeCares.map((care) => {
         const careId = String(care._id || care.name);
+
+        const availableResults = (results[careId] || []).filter(
+          (medication) =>
+            !selectedHomeCares.some(
+              (item) =>
+                item.name === care.name &&
+                item.medicationName === medication.name,
+            ),
+        );
 
         return (
           <div key={careId} className="rounded-xl border border-line bg-surface-2 p-4">
@@ -131,12 +141,13 @@ const SearchHomeCare: React.FC<Props> = ({
               <p className="mt-2 text-sm text-ink-soft">Завантаження...</p>
             )}
 
-            {results[careId]?.length > 0 && !loading[careId] && (
+            {availableResults.length > 0 && !loading[careId] && (
               <div className="mt-3 flex flex-col gap-2">
-                {results[careId].map((medication, index) => {
+                {availableResults.map((medication, index) => {
                   const medicationId =
                     medication._id ||
                     `${careId}-${medication.name}-${index}`;
+                  const checkboxKey = `${careId}:${medicationId}`;
 
                   return (
                     <div
@@ -159,12 +170,12 @@ const SearchHomeCare: React.FC<Props> = ({
                           <label className="flex items-center gap-1.5 text-xs font-medium text-ink-soft cursor-pointer select-none">
                             <input
                               type="checkbox"
-                              checked={checkboxes[medicationId]?.morning || false}
+                              checked={checkboxes[checkboxKey]?.morning ?? care.morning}
                               onChange={(e) =>
                                 setCheckboxes((prev) => ({
                                   ...prev,
-                                  [medicationId]: {
-                                    ...prev[medicationId],
+                                  [checkboxKey]: {
+                                    ...prev[checkboxKey],
                                     morning: e.target.checked,
                                   },
                                 }))
@@ -176,12 +187,12 @@ const SearchHomeCare: React.FC<Props> = ({
                           <label className="flex items-center gap-1.5 text-xs font-medium text-ink-soft cursor-pointer select-none">
                             <input
                               type="checkbox"
-                              checked={checkboxes[medicationId]?.evening || false}
+                              checked={checkboxes[checkboxKey]?.evening ?? care.evening}
                               onChange={(e) =>
                                 setCheckboxes((prev) => ({
                                   ...prev,
-                                  [medicationId]: {
-                                    ...prev[medicationId],
+                                  [checkboxKey]: {
+                                    ...prev[checkboxKey],
                                     evening: e.target.checked,
                                   },
                                 }))
@@ -198,8 +209,8 @@ const SearchHomeCare: React.FC<Props> = ({
                             addHomeCare(
                               care,
                               medication,
-                              checkboxes[medicationId]?.morning || false,
-                              checkboxes[medicationId]?.evening || false,
+                              checkboxes[checkboxKey]?.morning ?? care.morning,
+                              checkboxes[checkboxKey]?.evening ?? care.evening,
                               careId,
                             )
                           }

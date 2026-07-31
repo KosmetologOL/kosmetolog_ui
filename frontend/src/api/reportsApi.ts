@@ -15,10 +15,16 @@ export interface IReportProcedure {
   recommendation: string;
   comment?: string;
   stage?: string;
+  zoneEnabled?: boolean;
+  zone?: string;
+  intervalEnabled?: boolean;
+  interval?: string;
 }
 
 export interface IReportProcedureStage {
   stage: string;
+  workWithEnabled?: boolean;
+  workWith?: string;
   procedures: IReportProcedure[];
 }
 

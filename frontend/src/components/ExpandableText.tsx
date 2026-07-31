@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { markdownToHtml } from "#types/markdown";
 
 interface ExpandableTextProps {
   text: string;
@@ -12,16 +13,25 @@ export const ExpandableText: React.FC<ExpandableTextProps> = ({
   className = "",
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const html = useMemo(() => markdownToHtml(text || ""), [text]);
 
-  if (!text || text.length <= limit) {
-    return <div className={className}>{text}</div>;
+  if (!text) return null;
+
+  if (text.length <= limit) {
+    return (
+      <div
+        className={`rich-content ${className}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
   }
-
-  const displayText = isExpanded ? text : `${text.slice(0, limit).trim()}...`;
 
   return (
     <div className={`flex flex-col items-start gap-1.5 ${className}`}>
-      <div className="leading-relaxed">{displayText}</div>
+      <div
+        className={`rich-content leading-relaxed ${isExpanded ? "" : "line-clamp-3"}`}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
       <button
         type="button"
         onClick={(e) => {

@@ -357,6 +357,9 @@
   .modal-panel {
     animation: modal-in 160ms ease;
   }
+  .select-content {
+    animation: modal-in 120ms ease;
+  }
 
   /* Procedure stage grouping (Create Report) */
   .stage-card {

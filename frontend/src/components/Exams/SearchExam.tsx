@@ -39,6 +39,10 @@ const SearchExam: React.FC<Props> = ({ selectedExams, setSelectedExams }) => {
     }
   };
 
+  const availableResults = results.filter(
+    (exam) => !selectedExams.some((e) => e._id === exam._id),
+  );
+
   return (
     <div className="mb-3">
       <input
@@ -49,9 +53,9 @@ const SearchExam: React.FC<Props> = ({ selectedExams, setSelectedExams }) => {
         className="field-input"
       />
       {loading && <p className="mt-1.5 text-sm text-ink-soft">Пошук...</p>}
-      {!loading && results.length > 0 && (
+      {!loading && availableResults.length > 0 && (
         <div className="mt-2 flex flex-col gap-1.5">
-          {results.map((exam) => (
+          {availableResults.map((exam) => (
             <button
               key={exam._id}
               type="button"

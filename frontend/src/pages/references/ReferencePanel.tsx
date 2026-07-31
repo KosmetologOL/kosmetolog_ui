@@ -132,6 +132,7 @@ const ReferencePanel: React.FC = () => {
 
         {activeTab.startsWith("cat-") && (
           <CategoryItemsManager
+            key={activeTab}
             categoryId={activeTab.replace("cat-", "")}
             categoryName={
               categories.find((c) => `cat-${c._id}` === activeTab)?.name ||

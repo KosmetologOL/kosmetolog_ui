@@ -55,4 +55,23 @@ declare global {
       options?: DirectoryPickerOptions,
     ): Promise<FileSystemDirectoryHandle>;
   }
+
+  interface FilePickerAcceptType {
+    description?: string;
+    accept: Record<string, string | string[]>;
+  }
+
+  interface OpenFilePickerOptions {
+    id?: string;
+    types?: FilePickerAcceptType[];
+    excludeAcceptAllOption?: boolean;
+    multiple?: boolean;
+    startIn?: string;
+  }
+
+  interface Window {
+    showOpenFilePicker(
+      options?: OpenFilePickerOptions,
+    ): Promise<FileSystemFileHandle[]>;
+  }
 }

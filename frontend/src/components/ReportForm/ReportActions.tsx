@@ -4,11 +4,21 @@ import React from "react";
 interface Props {
   reportId: string | null;
   patient: IPatient;
-  onExport: () => void;
+  onExportHtml: () => void;
+  onAppendToDocx: () => void;
   isSubmitting?: boolean;
+  isAppendingToDocx?: boolean;
+  isDocxSupported: boolean;
 }
 
-const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = false }) => (
+const ReportActions: React.FC<Props> = ({
+  reportId,
+  onExportHtml,
+  onAppendToDocx,
+  isSubmitting = false,
+  isAppendingToDocx = false,
+  isDocxSupported,
+}) => (
   <div className="flex flex-wrap gap-3">
     <button type="submit" disabled={isSubmitting} className="btn btn-primary min-w-[140px]">
       {isSubmitting ? (
@@ -41,7 +51,7 @@ const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = fal
         "Створити звіт"
       )}
     </button>
-    <button type="button" onClick={onExport} disabled={isSubmitting} className="btn btn-ghost">
+    <button type="button" onClick={onExportHtml} disabled={isSubmitting} className="btn btn-ghost">
       <svg
         className="w-4 h-4 text-brand"
         viewBox="0 0 24 24"
@@ -57,7 +67,34 @@ const ReportActions: React.FC<Props> = ({ reportId, onExport, isSubmitting = fal
         <line x1="16" y1="17" x2="8" y2="17" />
         <polyline points="10 9 9 9 8 9" />
       </svg>
-      Експортувати PDF
+      Експортувати HTML
+    </button>
+    <button
+      type="button"
+      onClick={onAppendToDocx}
+      disabled={isSubmitting || isAppendingToDocx || !isDocxSupported}
+      title={
+        isDocxSupported
+          ? undefined
+          : "Автоматичне додавання в картку доступне лише в Chrome або Edge."
+      }
+      className="btn btn-ghost"
+    >
+      <svg
+        className="w-4 h-4 text-brand"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <line x1="9" y1="15" x2="15" y2="15" />
+      </svg>
+      {isAppendingToDocx ? "Додаємо…" : "Додати в картку (.docx)"}
     </button>
     <button
       type="button"

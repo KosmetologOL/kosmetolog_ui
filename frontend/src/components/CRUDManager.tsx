@@ -14,6 +14,29 @@ interface CRUDItem {
   evening?: boolean;
 }
 
+const IMPORT_BATCH_SIZE = 15;
+
+// Виконує worker для кожного item пачками по IMPORT_BATCH_SIZE замість
+// повністю послідовно — на сотнях записів це в рази швидше, а onProgress
+// все одно оновлюється по кожному завершеному item, а не по пачці.
+const runInBatches = async <T,>(
+  items: T[],
+  worker: (item: T) => Promise<void>,
+  onProgress: (done: number) => void,
+): Promise<void> => {
+  let done = 0;
+  for (let i = 0; i < items.length; i += IMPORT_BATCH_SIZE) {
+    const batch = items.slice(i, i + IMPORT_BATCH_SIZE);
+    await Promise.all(
+      batch.map(async (item) => {
+        await worker(item);
+        done += 1;
+        onProgress(done);
+      }),
+    );
+  }
+};
+
 interface Props<T> {
   title: string;
   apiPath: string;
@@ -48,6 +71,9 @@ const CRUDManager = <T,>({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<
+    { phase: "deleting" | "creating"; done: number; total: number } | null
+  >(null);
   const [pendingImport, setPendingImport] = useState<
     { name: string; recommendation: string }[] | null
   >(null);
@@ -179,11 +205,25 @@ const CRUDManager = <T,>({
         name: (cols[nameIdx] ?? "").trim(),
         recommendation: recIdx >= 0 ? (cols[recIdx] ?? "").trim() : "",
       }))
-      .filter((row) => row.name);
+      .filter((row) => row.name && (!hasRecommendation || row.recommendation));
 
     if (parsed.length === 0) {
-      toast.error("У файлі немає рядків із заповненою назвою.");
+      toast.error(
+        hasRecommendation
+          ? "У файлі немає рядків із заповненими назвою та рекомендацією."
+          : "У файлі немає рядків із заповненою назвою.",
+      );
       return;
+    }
+
+    const skipped = dataRows.length - parsed.length;
+    if (skipped > 0) {
+      toast(
+        `Пропущено ${skipped} ${
+          skipped === 1 ? "рядок" : "рядків"
+        } із порожньою назвою або рекомендацією.`,
+        { icon: "⚠️" },
+      );
     }
 
     setPendingImport(parsed);
@@ -192,31 +232,67 @@ const CRUDManager = <T,>({
   const handleConfirmImport = async () => {
     if (!pendingImport) return;
 
+    // Спочатку видаляємо всі старі записи, потім створюємо нові з файлу.
+    // Порядок навмисний: назва має unique-індекс у базі (див. *Schema.ts),
+    // а після редагування в Excel назви майже завжди лишаються тими самими,
+    // тож створення нового запису до видалення старого впаде на дублікаті.
+    const oldItemsWithId = list.filter((item) => item._id);
+
     setIsImporting(true);
     try {
-      for (const row of pendingImport) {
-        const existing = list.find(
-          (item) => item.name.trim().toLowerCase() === row.name.toLowerCase(),
-        );
-        const payload = hasRecommendation
-          ? { name: row.name, recommendation: row.recommendation }
-          : { name: row.name };
-
-        if (existing?._id) {
-          await axios.put(
-            `${import.meta.env.VITE_API_URL}/${apiPath}/${existing._id}`,
-            payload,
+      setImportProgress({
+        phase: "deleting",
+        done: 0,
+        total: oldItemsWithId.length,
+      });
+      await runInBatches(
+        oldItemsWithId,
+        async (item) => {
+          await axios.delete(
+            `${import.meta.env.VITE_API_URL}/${apiPath}/${item._id}`,
           );
-        } else {
+        },
+        (done) =>
+          setImportProgress({
+            phase: "deleting",
+            done,
+            total: oldItemsWithId.length,
+          }),
+      );
+
+      setImportProgress({
+        phase: "creating",
+        done: 0,
+        total: pendingImport.length,
+      });
+      await runInBatches(
+        pendingImport,
+        async (row) => {
+          const payload = hasRecommendation
+            ? { name: row.name, recommendation: row.recommendation }
+            : { name: row.name };
           await axios.post(`${import.meta.env.VITE_API_URL}/${apiPath}`, payload);
-        }
-      }
+        },
+        (done) =>
+          setImportProgress({
+            phase: "creating",
+            done,
+            total: pendingImport.length,
+          }),
+      );
+
       await fetchList();
-      toast.success(`Успішно імпортовано ${pendingImport.length} записів!`);
+      toast.success(
+        `Попередні записи видалено, імпортовано ${pendingImport.length} нових.`,
+      );
     } catch {
-      toast.error("Під час імпорту сталася помилка. Частина записів могла не оновитися.");
+      await fetchList();
+      toast.error(
+        "Під час імпорту сталася помилка. Старі записи вже видалено — перевірте список і за потреби довантажте файл ще раз.",
+      );
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
       setPendingImport(null);
     }
   };
@@ -416,9 +492,17 @@ const CRUDManager = <T,>({
       <ConfirmModal
         visible={Boolean(pendingImport)}
         title="Імпорт CSV"
-        message={`Імпортувати ${pendingImport?.length ?? 0} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`}
-        confirmLabel="Імпортувати"
-        isDanger={false}
+        message={`Усі поточні записи (${list.length}) буде видалено і замінено на ${pendingImport?.length ?? 0} записів із файлу. Цю дію неможливо скасувати.`}
+        confirmLabel="Замінити записи"
+        isDanger={true}
+        isLoading={isImporting}
+        loadingLabel={
+          importProgress
+            ? importProgress.phase === "deleting"
+              ? `Видалення старих... ${importProgress.done}/${importProgress.total}`
+              : `Завантаження нових... ${importProgress.done}/${importProgress.total}`
+            : "Обробка..."
+        }
         onConfirm={handleConfirmImport}
         onCancel={() => setPendingImport(null)}
       />

@@ -4,8 +4,8 @@ import { objectId } from "../utils/objectId";
 
 const MAX_ITEMS = 200;
 const NAME_MAX = 200;
-const TEXT_MAX = 2000;
-const FREE_TEXT_MAX = 5000;
+const TEXT_MAX = 10000;
+const FREE_TEXT_MAX = 20000;
 
 const namedItemSchema = Joi.object({
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
@@ -41,10 +41,16 @@ const procedureStageItemSchema = Joi.object({
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   comment: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
   recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+  zoneEnabled: Joi.boolean().default(false),
+  zone: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  intervalEnabled: Joi.boolean().default(false),
+  interval: Joi.string().trim().max(NAME_MAX).allow("").optional(),
 }).messages(commonMessages);
 
 const procedureStageSchema = Joi.object({
   stage: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  workWithEnabled: Joi.boolean().default(false),
+  workWith: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   procedures: Joi.array()
     .items(procedureStageItemSchema)
     .max(MAX_ITEMS)

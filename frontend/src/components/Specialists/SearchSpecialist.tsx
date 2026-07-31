@@ -40,6 +40,10 @@ const SearchSpecialist: React.FC<Props> = ({
     }
   };
 
+  const availableResults = results.filter(
+    (specialist) => !selectedSpecialists.some((s) => s._id === specialist._id),
+  );
+
   return (
     <div className="mb-3">
       <input
@@ -52,9 +56,9 @@ const SearchSpecialist: React.FC<Props> = ({
 
       {loading && <p className="mt-1.5 text-sm text-ink-soft">Завантаження...</p>}
 
-      {results.length > 0 && !loading && (
+      {availableResults.length > 0 && !loading && (
         <div className="mt-2 flex flex-col gap-1.5">
-          {results.map((specialist) => (
+          {availableResults.map((specialist) => (
             <button
               key={specialist._id}
               type="button"
