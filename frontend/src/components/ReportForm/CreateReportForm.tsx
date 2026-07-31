@@ -593,7 +593,7 @@ const CreateReportForm: React.FC = () => {
                           })
                         }
                         options={WORK_WITH_OPTIONS}
-                        className="h-9 w-[200px] flex-none"
+                        className="h-9 w-[320px] flex-none"
                       />
                     </div>
 

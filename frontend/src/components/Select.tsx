@@ -26,7 +26,9 @@ export default function Select({
       <SelectPrimitive.Trigger
         className={`field-input inline-flex items-center justify-between gap-2 [-webkit-tap-highlight-color:transparent] disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       >
-        <SelectPrimitive.Value placeholder={placeholder} />
+        <span className="truncate">
+          <SelectPrimitive.Value placeholder={placeholder} />
+        </span>
         <SelectPrimitive.Icon className="text-ink-soft">
           <svg
             width="13"
