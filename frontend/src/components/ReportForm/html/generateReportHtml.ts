@@ -16,7 +16,7 @@ import {
   type StructuredContent,
 } from "./structuredContent";
 
-interface IProcedureStage {
+export interface IProcedureStage {
   title: string;
   workWithEnabled?: boolean;
   workWith?: string;
@@ -30,7 +30,7 @@ interface IProcedureStage {
   })[];
 }
 
-interface GenerateReportHtmlParams {
+export interface GenerateReportHtmlParams {
   patient: IPatient;
   exams: IExam[];
   medications: IMedication[];

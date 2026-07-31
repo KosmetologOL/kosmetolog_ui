@@ -1,5 +1,6 @@
 import type { IPatient } from "#api/patientsApi";
 import { getReportByPatientId } from "#api/reportsApi";
+import { appendReportToDocx } from "#components/ReportForm/docx/appendReportToDocx";
 import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml";
 import { useAuth } from "#hooks/useAuth";
 import { getReportCreatorName } from "#types/getReportCreatorName";
@@ -7,6 +8,7 @@ import { normalizeProcedureStages } from "#types/normalizeProcedureStages";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { isDocxLinkingSupported } from "../../lib/docxCardLink";
 
 interface Props {
   patient: IPatient;
@@ -22,6 +24,8 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isExportingHtml, setIsExportingHtml] = useState(false);
+  const [isAppendingToDocx, setIsAppendingToDocx] = useState(false);
+  const isDocxSupported = isDocxLinkingSupported();
 
   const visitDate = patient.lastVisitAt || patient.createdAt;
   const formattedVisitDate = visitDate
@@ -57,6 +61,32 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
       toast.error("Не вдалося створити HTML — можливо, звіт ще не створено.");
     } finally {
       setIsExportingHtml(false);
+    }
+  };
+
+  const handleAppendToDocx = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsAppendingToDocx(true);
+    try {
+      const report = await getReportByPatientId(patient._id!);
+      const procedureStages = normalizeProcedureStages(report);
+      await appendReportToDocx({
+        patient,
+        exams: report.exams || [],
+        medications: report.medications || [],
+        procedures: report.procedures || [],
+        procedureStages: procedureStages,
+        specialists: report.specialists || [],
+        homeCares: report.homeCares || [],
+        additionalInfo: report.additionalInfo || "",
+        comments: report.comments || "",
+        finalNote: report.finalNote || "",
+        doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
+      });
+    } catch {
+      toast.error("Не вдалося додати в картку — можливо, звіт ще не створено.");
+    } finally {
+      setIsAppendingToDocx(false);
     }
   };
 
@@ -128,6 +158,32 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
             <polyline points="10 9 9 9 8 9" />
           </svg>
           {isExportingHtml ? "Готуємо…" : "HTML рекомендацій"}
+        </button>
+        <button
+          onClick={handleAppendToDocx}
+          disabled={isAppendingToDocx || !isDocxSupported}
+          title={
+            isDocxSupported
+              ? undefined
+              : "Автоматичне додавання в картку доступне лише в Chrome або Edge."
+          }
+          className="btn btn-ghost btn-sm flex-1 sm:flex-initial"
+        >
+          <svg
+            className="w-4 h-4 text-brand"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+          {isAppendingToDocx ? "Додаємо…" : "Додати в картку"}
         </button>
         <button
           onClick={(e) => {

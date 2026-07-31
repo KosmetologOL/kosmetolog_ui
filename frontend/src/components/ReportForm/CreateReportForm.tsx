@@ -33,6 +33,7 @@ import FormattedText from "#components/FormattedText";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import Select from "#components/Select";
+import { appendReportToDocx } from "#components/ReportForm/docx/appendReportToDocx";
 import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml";
 import ReportActions from "#components/ReportForm/ReportActions";
 import ReportComments from "#components/ReportForm/ReportComments";
@@ -42,6 +43,7 @@ import {
   WORK_WITH_OPTIONS,
   ZONE_OPTIONS,
 } from "#components/ReportForm/procedureStageOptions";
+import { isDocxLinkingSupported } from "../../lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "../../lib/pdfSaveLocation";
 import toast from "react-hot-toast";
 
@@ -102,6 +104,8 @@ const CreateReportForm: React.FC = () => {
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAppendingToDocx, setIsAppendingToDocx] = useState(false);
+  const isDocxSupported = isDocxLinkingSupported();
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [finalNote, setFinalNote] = useState(DEFAULT_FINAL_NOTE);
   const createdDate = patient?.createdAt
@@ -401,6 +405,36 @@ const CreateReportForm: React.FC = () => {
     });
   };
 
+  const handleAppendToDocx = async () => {
+    if (!patient?._id) return;
+
+    setIsAppendingToDocx(true);
+    try {
+      const savedReport = await saveReport();
+      if (!savedReport) return;
+
+      await appendReportToDocx({
+        patient,
+        exams: selectedExams,
+        medications: selectedMedications,
+        procedures: procedureStages.flatMap((s) => s.procedures),
+        procedureStages,
+        specialists: selectedSpecialists,
+        homeCares: selectedHomeCares,
+        categoryItems: selectedCategoryItems,
+        comments,
+        additionalInfo,
+        finalNote,
+        doctorName:
+          getReportCreatorName(savedReport.editHistory ?? []) ||
+          user?.name ||
+          "",
+      });
+    } finally {
+      setIsAppendingToDocx(false);
+    }
+  };
+
   if (loading)
     return <p className="py-12 text-center text-ink-soft">Завантаження даних...</p>;
   if (!patient)
@@ -559,7 +593,7 @@ const CreateReportForm: React.FC = () => {
                           })
                         }
                         options={WORK_WITH_OPTIONS}
-                        className="h-9 w-[200px] flex-none"
+                        className="h-9 w-[320px] flex-none"
                       />
                     </div>
 
@@ -795,6 +829,9 @@ const CreateReportForm: React.FC = () => {
             patient={patient}
             isSubmitting={isSubmitting}
             onExportHtml={handleExportHtml}
+            onAppendToDocx={handleAppendToDocx}
+            isAppendingToDocx={isAppendingToDocx}
+            isDocxSupported={isDocxSupported}
           />
 
           <PatientFormModal

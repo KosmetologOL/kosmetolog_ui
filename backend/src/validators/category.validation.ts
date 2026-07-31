@@ -9,7 +9,7 @@ export const categoryItemSchema = Joi.object({
   name: Joi.string().trim().min(1).max(200).required().messages(commonMessages),
   recommendation: Joi.string()
     .trim()
-    .max(2000)
+    .max(10000)
     .allow("")
     .optional()
     .messages(commonMessages),
