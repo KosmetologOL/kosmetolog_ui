@@ -4,8 +4,8 @@ import { objectId } from "../utils/objectId";
 
 const MAX_ITEMS = 200;
 const NAME_MAX = 200;
-const TEXT_MAX = 10000;
-const FREE_TEXT_MAX = 20000;
+const TEXT_MAX = 100000;
+const FREE_TEXT_MAX = 200000;
 
 const namedItemSchema = Joi.object({
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),

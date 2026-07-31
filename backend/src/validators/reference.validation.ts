@@ -10,7 +10,7 @@ export const nameWithRecommendationSchema = Joi.object({
   recommendation: Joi.string()
     .trim()
     .min(1)
-    .max(10000)
+    .max(100000)
     .required()
     .messages(commonMessages),
 });
