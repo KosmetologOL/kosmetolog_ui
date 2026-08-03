@@ -4,8 +4,8 @@ import { objectId } from "../utils/objectId";
 
 const MAX_ITEMS = 200;
 const NAME_MAX = 200;
-const TEXT_MAX = 10000;
-const FREE_TEXT_MAX = 20000;
+const TEXT_MAX = 100000;
+const FREE_TEXT_MAX = 200000;
 
 const namedItemSchema = Joi.object({
   name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
@@ -45,6 +45,8 @@ const procedureStageItemSchema = Joi.object({
   zone: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   intervalEnabled: Joi.boolean().default(false),
   interval: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  visitCountEnabled: Joi.boolean().default(false),
+  visitCount: Joi.number().integer().min(0).allow(null).optional(),
 }).messages(commonMessages);
 
 const procedureStageSchema = Joi.object({
@@ -81,4 +83,8 @@ export const reportSchema = Joi.object({
   additionalInfo: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   finalNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   comments: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  medicationsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  homeCareNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  examsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  proceduresNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
 }).messages(commonMessages);

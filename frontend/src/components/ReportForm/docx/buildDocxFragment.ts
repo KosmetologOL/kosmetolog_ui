@@ -63,6 +63,12 @@ export const dividerParagraph = (text: string): string =>
 
 export const emptyParagraph = (): string => "<w:p/>";
 
+const importantParagraph = (note?: string): string => {
+  const trimmed = note?.trim();
+  if (!trimmed) return "";
+  return paragraph(run("Важливо: ", { bold: true }) + run(trimmed));
+};
+
 const nodeToRuns = (node: ChildNode, inherited: RunOptions = {}): string => {
   if (node.nodeType === Node.TEXT_NODE) {
     return run(node.textContent || "", inherited);
@@ -172,6 +178,7 @@ export const buildAppendParagraphsXml = async (
 ): Promise<string> => {
   const {
     exams,
+    medications,
     procedures,
     procedureStages = [],
     specialists,
@@ -180,20 +187,17 @@ export const buildAppendParagraphsXml = async (
     additionalInfo,
     comments,
     finalNote,
-    doctorName,
+    medicationsNote,
+    homeCareNote,
+    examsNote,
+    proceduresNote,
   } = params;
 
   const today = new Date().toLocaleDateString("uk-UA");
   const parts: string[] = [];
 
   parts.push(emptyParagraph());
-  parts.push(
-    dividerParagraph(
-      `Рекомендаційний лист · ${today} · Лікар: ${
-        doctorName?.trim() || "—"
-      }`,
-    ),
-  );
+  parts.push(dividerParagraph(`Рекомендаційний лист · ${today}`));
 
   if (specialists.length > 0) {
     parts.push(headingParagraph("Суміжні спеціалісти"));
@@ -205,6 +209,12 @@ export const buildAppendParagraphsXml = async (
     exams.forEach((e) =>
       parts.push(itemParagraphs(e.name, parseStructuredContent(e.recommendation))),
     );
+    parts.push(importantParagraph(examsNote));
+  }
+
+  if (medications.length > 0 && medicationsNote?.trim()) {
+    parts.push(headingParagraph("Засоби"));
+    parts.push(importantParagraph(medicationsNote));
   }
 
   const activeStages = procedureStages.filter((s) => s.procedures.length > 0);
@@ -231,9 +241,14 @@ export const buildAppendParagraphsXml = async (
         const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
         const interval =
           proc.intervalEnabled && proc.interval ? proc.interval : "";
+        const visitCount =
+          proc.visitCountEnabled && proc.visitCount != null
+            ? String(proc.visitCount)
+            : "";
         const tags = [
           zone ? `Зона: ${zone}` : "",
           interval ? `Інтервал: ${interval}` : "",
+          visitCount ? `Кількість візитів: ${visitCount}` : "",
         ]
           .filter(Boolean)
           .join(" · ");
@@ -248,6 +263,7 @@ export const buildAppendParagraphsXml = async (
         }
       });
     });
+    parts.push(importantParagraph(proceduresNote));
   }
 
   if (homeCares.length > 0) {
@@ -280,6 +296,7 @@ export const buildAppendParagraphsXml = async (
         );
       });
     });
+    parts.push(importantParagraph(homeCareNote));
   }
 
   if (categoryItems.length > 0) {

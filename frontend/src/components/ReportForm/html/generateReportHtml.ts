@@ -27,6 +27,8 @@ export interface IProcedureStage {
     zone?: string;
     intervalEnabled?: boolean;
     interval?: string;
+    visitCountEnabled?: boolean;
+    visitCount?: number;
   })[];
 }
 
@@ -42,6 +44,10 @@ export interface GenerateReportHtmlParams {
   additionalInfo: string;
   comments: string;
   finalNote?: string;
+  medicationsNote?: string;
+  homeCareNote?: string;
+  examsNote?: string;
+  proceduresNote?: string;
   doctorName?: string;
   directoryHandle?: FileSystemDirectoryHandle | null;
 }
@@ -64,6 +70,16 @@ const escapeHtml = (text: string): string =>
 
 const plainTextToHtml = (text: string): string =>
   `<p class="plain">${escapeHtml(text).replace(/\n/g, "<br />")}</p>`;
+
+const importantBlock = (note?: string): string => {
+  const trimmed = note?.trim();
+  if (!trimmed) return "";
+  return `
+    <div class="important">
+      <span class="mark">!</span>
+      ${plainTextToHtml(trimmed)}
+    </div>`;
+};
 
 const renderStructuredBody = (
   content: StructuredContent,
@@ -157,6 +173,7 @@ const fetchAsDataUrl = async (url: string): Promise<string> => {
 export const generateReportHtml = async ({
   patient,
   exams,
+  medications,
   procedures,
   procedureStages = [],
   specialists,
@@ -165,6 +182,10 @@ export const generateReportHtml = async ({
   additionalInfo,
   comments,
   finalNote,
+  medicationsNote,
+  homeCareNote,
+  examsNote,
+  proceduresNote,
   doctorName,
   directoryHandle,
 }: GenerateReportHtmlParams) => {
@@ -200,7 +221,17 @@ export const generateReportHtml = async ({
           </div>`;
       })
       .join("");
-    sectionBodies.push({ title: "Обстеження", html: cards });
+    sectionBodies.push({
+      title: "Обстеження",
+      html: cards + importantBlock(examsNote),
+    });
+  }
+
+  if (medications.length > 0 && medicationsNote?.trim()) {
+    sectionBodies.push({
+      title: "Засоби",
+      html: importantBlock(medicationsNote),
+    });
   }
 
   if (procedureStages.some((s) => s.procedures.length > 0)) {
@@ -213,6 +244,10 @@ export const generateReportHtml = async ({
             const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
             const interval =
               proc.intervalEnabled && proc.interval ? proc.interval : "";
+            const visitCount =
+              proc.visitCountEnabled && proc.visitCount != null
+                ? String(proc.visitCount)
+                : "";
 
             return `
               <div class="proc-card">
@@ -221,10 +256,11 @@ export const generateReportHtml = async ({
                   <span class="proc-price"><span class="pl">Орієнтовна вартість</span><span class="line"></span></span>
                 </div>
                 ${
-                  zone || interval
+                  zone || interval || visitCount
                     ? `<div class="proc-tags">
                         ${zone ? `<span class="tag">Зона · ${escapeHtml(zone)}</span>` : ""}
                         ${interval ? `<span class="tag">Інтервал · <b>${escapeHtml(interval)}</b></span>` : ""}
+                        ${visitCount ? `<span class="tag">Кількість візитів · <b>${escapeHtml(visitCount)}</b></span>` : ""}
                       </div>`
                     : ""
                 }
@@ -250,7 +286,10 @@ export const generateReportHtml = async ({
       })
       .join("");
 
-    sectionBodies.push({ title: "Протокол процедур", html: stagesHtml });
+    sectionBodies.push({
+      title: "Протокол процедур",
+      html: stagesHtml + importantBlock(proceduresNote),
+    });
   }
 
   if (homeCares.length > 0) {
@@ -300,7 +339,10 @@ export const generateReportHtml = async ({
       })
       .join("");
 
-    sectionBodies.push({ title: "Домашній догляд", html: groups });
+    sectionBodies.push({
+      title: "Домашній догляд",
+      html: groups + importantBlock(homeCareNote),
+    });
   }
 
   if (categoryItems.length > 0) {
@@ -746,7 +788,6 @@ export const generateReportHtml = async ({
 
   <div class="meta">
     <div class="cell"><span class="k">Пацієнт</span><span class="v">${escapeHtml(patient.fullName || "")}</span></div>
-    <div class="cell"><span class="k">Лікар</span><span class="v">${escapeHtml(doctorName?.trim() || "—")}</span></div>
     <div class="cell"><span class="k">Дата</span><span class="v">${today}</span></div>
   </div>
 

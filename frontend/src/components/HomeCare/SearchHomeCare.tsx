@@ -1,6 +1,6 @@
 import { getAllHomeCares, type IHomeCare } from "#api/homeCaresApi";
 import { searchMedicationsByName, type IMedication } from "#api/medicationsApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -160,7 +160,7 @@ const SearchHomeCare: React.FC<Props> = ({
                         </div>
                         {medication.recommendation && (
                           <div className="text-xs text-ink-soft mt-1 leading-relaxed whitespace-pre-wrap">
-                            <ExpandableText text={medication.recommendation} limit={120} />
+                            <FormattedText markdown={medication.recommendation} />
                           </div>
                         )}
                       </div>
@@ -254,7 +254,7 @@ const SearchHomeCare: React.FC<Props> = ({
                           </div>
                           {h.recommendations && (
                             <div className="chip-sub mt-0.5 text-xs text-ink-soft whitespace-pre-wrap leading-relaxed">
-                              <ExpandableText text={h.recommendations} limit={120} />
+                              <FormattedText markdown={h.recommendations} />
                             </div>
                           )}
                         </div>

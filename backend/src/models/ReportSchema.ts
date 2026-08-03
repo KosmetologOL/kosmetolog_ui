@@ -39,6 +39,8 @@ export interface IReportProcedureStage {
     zone?: string;
     intervalEnabled?: boolean;
     interval?: string;
+    visitCountEnabled?: boolean;
+    visitCount?: number;
   }[];
 }
 
@@ -59,6 +61,10 @@ export interface IReport extends Document {
   comments?: string;
   additionalInfo?: string;
   finalNote?: string;
+  medicationsNote?: string;
+  homeCareNote?: string;
+  examsNote?: string;
+  proceduresNote?: string;
   editHistory?: IReportEditHistoryItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -127,6 +133,8 @@ const ReportSchema = new Schema<IReport>(
             zone: { type: String, default: "" },
             intervalEnabled: { type: Boolean, default: false },
             interval: { type: String, default: "" },
+            visitCountEnabled: { type: Boolean, default: false },
+            visitCount: { type: Number, default: null },
           },
         ],
       },
@@ -138,6 +146,10 @@ const ReportSchema = new Schema<IReport>(
     comments: String,
     additionalInfo: String,
     finalNote: String,
+    medicationsNote: String,
+    homeCareNote: String,
+    examsNote: String,
+    proceduresNote: String,
     editHistory: [EditHistorySubSchema],
   },
   { timestamps: true },

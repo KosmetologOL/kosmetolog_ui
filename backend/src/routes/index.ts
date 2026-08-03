@@ -9,6 +9,7 @@ import patientRoutes from "./patient.routes";
 import proceduresRoutes from "./procedures.routes";
 import registrationRequestsRoutes from "./registrationRequests.routes";
 import reportsRoutes from "./reports.routes";
+import settingsRoutes from "./settings.routes";
 import specialistsRoutes from "./specialist.routes";
 
 const router = Router();
@@ -24,5 +25,6 @@ router.use("/doctors", doctorsRoutes);
 router.use("/registration-requests", registrationRequestsRoutes);
 router.use("/patients", patientRoutes);
 router.use("/home-cares", homeCareRoutes);
+router.use("/settings", settingsRoutes);
 
 export default router;
