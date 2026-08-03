@@ -83,4 +83,8 @@ export const reportSchema = Joi.object({
   additionalInfo: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   finalNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
   comments: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  medicationsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  homeCareNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  examsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  proceduresNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
 }).messages(commonMessages);
