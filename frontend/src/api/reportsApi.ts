@@ -19,6 +19,8 @@ export interface IReportProcedure {
   zone?: string;
   intervalEnabled?: boolean;
   interval?: string;
+  visitCountEnabled?: boolean;
+  visitCount?: number;
 }
 
 export interface IReportProcedureStage {
@@ -54,6 +56,10 @@ export interface IReport {
   additionalInfo?: string;
   finalNote?: string;
   comments?: string;
+  medicationsNote?: string;
+  homeCareNote?: string;
+  examsNote?: string;
+  proceduresNote?: string;
   createdAt?: string;
   updatedAt?: string;
   editHistory?: IReportEditHistoryItem[];

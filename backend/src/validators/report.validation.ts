@@ -45,6 +45,8 @@ const procedureStageItemSchema = Joi.object({
   zone: Joi.string().trim().max(NAME_MAX).allow("").optional(),
   intervalEnabled: Joi.boolean().default(false),
   interval: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  visitCountEnabled: Joi.boolean().default(false),
+  visitCount: Joi.number().integer().min(0).allow(null).optional(),
 }).messages(commonMessages);
 
 const procedureStageSchema = Joi.object({

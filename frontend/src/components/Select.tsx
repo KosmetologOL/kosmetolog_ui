@@ -50,8 +50,25 @@ export default function Select({
           position="popper"
           sideOffset={6}
           className="select-content z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-lift"
+          style={{
+            maxHeight: "min(320px, var(--radix-select-content-available-height))",
+          }}
         >
-          <SelectPrimitive.Viewport className="p-1">
+          <SelectPrimitive.ScrollUpButton className="flex cursor-pointer items-center justify-center py-1 text-ink-soft">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12.5 10 7.5 15 12.5" />
+            </svg>
+          </SelectPrimitive.ScrollUpButton>
+          <SelectPrimitive.Viewport className="max-h-[320px] overflow-y-auto p-1">
             {options.map((opt) => (
               <SelectPrimitive.Item
                 key={opt}
@@ -62,6 +79,20 @@ export default function Select({
               </SelectPrimitive.Item>
             ))}
           </SelectPrimitive.Viewport>
+          <SelectPrimitive.ScrollDownButton className="flex cursor-pointer items-center justify-center py-1 text-ink-soft">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 7.5 10 12.5 15 7.5" />
+            </svg>
+          </SelectPrimitive.ScrollDownButton>
         </SelectPrimitive.Content>
       </SelectPrimitive.Portal>
     </SelectPrimitive.Root>

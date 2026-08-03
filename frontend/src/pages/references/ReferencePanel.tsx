@@ -3,6 +3,7 @@ import CategoriesManager from "#components/Admin/CategoriesManager";
 import CategoryItemsManager from "#components/Admin/CategoryItemsManager";
 import DoctorsManager from "#components/Admin/DoctorsManager";
 import RegistrationRequestsManager from "#components/Admin/RegistrationRequestsManager";
+import SettingsManager from "#components/Admin/SettingsManager";
 import ExamsManager from "#components/Exams/ExamsManager";
 import HomeCaresManager from "#components/HomeCare/HomeCaresManager";
 import MedicationsManager from "#components/Medications/MedicationsManager";
@@ -63,6 +64,7 @@ const ReferencePanel: React.FC = () => {
     { key: "specialists", label: "Суміжні спеціалісти" },
     { key: "homecares", label: "Домашній догляд" },
     { key: "patients", label: "Пацієнти" },
+    { key: "settings", label: "Важливі тексти" },
   ];
 
   useEffect(() => {
@@ -123,6 +125,7 @@ const ReferencePanel: React.FC = () => {
         )}
         {activeTab === "homecares" && <HomeCaresManager readOnly={readOnly} />}
         {activeTab === "patients" && <PatientManager canDelete={isAdmin} />}
+        {activeTab === "settings" && <SettingsManager readOnly={readOnly} />}
 
         {activeTab === "categories" && <CategoriesManager />}
         {activeTab === "doctors" && <DoctorsManager />}

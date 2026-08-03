@@ -6,6 +6,7 @@ import {
   type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
+import { getSettings, type ISettings } from "#api/settingsApi";
 import { useAuth } from "#hooks/useAuth";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -51,9 +52,23 @@ type StageProcedure = IProcedure & {
   comment?: string;
   zoneEnabled?: boolean;
   zone?: string;
+  zoneOther?: boolean;
   intervalEnabled?: boolean;
   interval?: string;
+  intervalOther?: boolean;
+  visitCountEnabled?: boolean;
+  visitCount?: number;
 };
+
+const OTHER_OPTION = "Інше";
+
+const withOtherFlags = (procedures: StageProcedure[]): StageProcedure[] =>
+  procedures.map((p) => ({
+    ...p,
+    zoneOther: !!p.zone && !ZONE_OPTIONS.includes(p.zone),
+    intervalOther: !!p.interval && !INTERVAL_OPTIONS.includes(p.interval),
+    visitCountEnabled: p.visitCountEnabled ?? true,
+  }));
 
 interface IProcedureStage {
   id: string;
@@ -72,8 +87,6 @@ interface EditingProcedureState {
 }
 
 const DEFAULT_FINAL_NOTE = `Якщо Вас щось турбує, обов’язково повідомте за номером телефону
-📞 +38 (073) 838-23-23 або напишіть нам в Instagram, Telegram. При термінових станах телефонуйте за номером чи у позаробочий час у Instagram (декілька разів, якщо без відповіді).`;
-const DEFAULT_PROCEDURE_COMMENT = `Якщо Вас щось турбує, обов’язково повідомте за номером телефону
 📞 +38 (073) 838-23-23 або напишіть нам в Instagram, Telegram. При термінових станах телефонуйте за номером чи у позаробочий час у Instagram (декілька разів, якщо без відповіді).`;
 
 const CreateReportForm: React.FC = () => {
@@ -108,6 +121,10 @@ const CreateReportForm: React.FC = () => {
   const isDocxSupported = isDocxLinkingSupported();
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [finalNote, setFinalNote] = useState(DEFAULT_FINAL_NOTE);
+  const [medicationsNote, setMedicationsNote] = useState("");
+  const [homeCareNote, setHomeCareNote] = useState("");
+  const [examsNote, setExamsNote] = useState("");
+  const [proceduresNote, setProceduresNote] = useState("");
   const createdDate = patient?.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
     : "";
@@ -116,11 +133,23 @@ const CreateReportForm: React.FC = () => {
     const fetchData = async () => {
       if (!patientId) return;
       try {
-        const [patientData, reportData] = await Promise.all([
+        const [patientData, reportData, settingsData] = await Promise.all([
           getPatientById(patientId),
           getReportByPatientId(patientId).catch(() => null),
+          getSettings().catch((): ISettings => ({})),
         ]);
         setPatient(patientData);
+
+        setMedicationsNote(
+          reportData?.medicationsNote ?? settingsData.medicationsNote ?? "",
+        );
+        setHomeCareNote(
+          reportData?.homeCareNote ?? settingsData.homeCareNote ?? "",
+        );
+        setExamsNote(reportData?.examsNote ?? settingsData.examsNote ?? "");
+        setProceduresNote(
+          reportData?.proceduresNote ?? settingsData.proceduresNote ?? "",
+        );
 
         if (reportData) {
           setReportId(reportData._id ?? null);
@@ -152,6 +181,8 @@ const CreateReportForm: React.FC = () => {
             zone?: string;
             intervalEnabled?: boolean;
             interval?: string;
+            visitCountEnabled?: boolean;
+            visitCount?: number;
           }
 
           interface ReportProcedureStage {
@@ -171,7 +202,9 @@ const CreateReportForm: React.FC = () => {
               title: s.stage,
               workWithEnabled: s.workWithEnabled ?? false,
               workWith: s.workWith ?? "",
-              procedures: (s.procedures ?? []) as StageProcedure[],
+              procedures: withOtherFlags(
+                (s.procedures ?? []) as StageProcedure[],
+              ),
             }));
             setProcedureStages(stages);
           } else if (
@@ -194,7 +227,7 @@ const CreateReportForm: React.FC = () => {
                 title: stageName,
                 workWithEnabled: false,
                 workWith: "",
-                procedures: procs as StageProcedure[],
+                procedures: withOtherFlags(procs as StageProcedure[]),
               }),
             );
 
@@ -218,7 +251,7 @@ const CreateReportForm: React.FC = () => {
       {
         id: crypto.randomUUID(),
         title: `Етап ${prev.length + 1}`,
-        workWithEnabled: false,
+        workWithEnabled: true,
         workWith: "",
         procedures: [],
       },
@@ -336,6 +369,8 @@ const CreateReportForm: React.FC = () => {
           zone: p.zone ?? "",
           intervalEnabled: p.intervalEnabled ?? false,
           interval: p.interval ?? "",
+          visitCountEnabled: p.visitCountEnabled ?? false,
+          visitCount: p.visitCount,
         })),
       })),
       procedures: procedureStages.flatMap((s) =>
@@ -349,6 +384,10 @@ const CreateReportForm: React.FC = () => {
       comments,
       additionalInfo,
       finalNote,
+      medicationsNote,
+      homeCareNote,
+      examsNote,
+      proceduresNote,
     };
 
     setIsSubmitting(true);
@@ -397,6 +436,10 @@ const CreateReportForm: React.FC = () => {
       comments,
       additionalInfo,
       finalNote,
+      medicationsNote,
+      homeCareNote,
+      examsNote,
+      proceduresNote,
       doctorName:
         getReportCreatorName(savedReport.editHistory ?? []) ||
         user?.name ||
@@ -425,6 +468,10 @@ const CreateReportForm: React.FC = () => {
         comments,
         additionalInfo,
         finalNote,
+        medicationsNote,
+        homeCareNote,
+        examsNote,
+        proceduresNote,
         doctorName:
           getReportCreatorName(savedReport.editHistory ?? []) ||
           user?.name ||
@@ -517,6 +564,18 @@ const CreateReportForm: React.FC = () => {
               selectedExams={selectedExams}
               setSelectedExams={setSelectedExams}
             />
+            <div className="mt-3">
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Важливо
+              </p>
+              <textarea
+                value={examsNote}
+                onChange={(e) => setExamsNote(e.target.value)}
+                placeholder="Важливо..."
+                rows={2}
+                className="field-textarea w-full min-h-[60px] resize-y text-[13.5px]"
+              />
+            </div>
           </ReportSection>
 
           <ReportSection title="Засоби">
@@ -529,6 +588,18 @@ const CreateReportForm: React.FC = () => {
               selectedMedications={selectedMedications}
               setSelectedMedications={setSelectedMedications}
             />
+            <div className="mt-3">
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Важливо
+              </p>
+              <textarea
+                value={medicationsNote}
+                onChange={(e) => setMedicationsNote(e.target.value)}
+                placeholder="Важливо..."
+                rows={2}
+                className="field-textarea w-full min-h-[60px] resize-y text-[13.5px]"
+              />
+            </div>
           </ReportSection>
 
           <ReportSection title="Домашній догляд">
@@ -536,6 +607,18 @@ const CreateReportForm: React.FC = () => {
               selectedHomeCares={selectedHomeCares}
               setSelectedHomeCares={setSelectedHomeCares}
             />
+            <div className="mt-3">
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Важливо
+              </p>
+              <textarea
+                value={homeCareNote}
+                onChange={(e) => setHomeCareNote(e.target.value)}
+                placeholder="Важливо..."
+                rows={2}
+                className="field-textarea w-full min-h-[60px] resize-y text-[13.5px]"
+              />
+            </div>
           </ReportSection>
 
           <ReportSection title="Категорії">
@@ -616,12 +699,20 @@ const CreateReportForm: React.FC = () => {
 
                       updateStage(stage.id, {
                         ...stage,
-                        procedures: newProcedures.map((p) => ({
-                          ...p,
-                          comment:
-                            stage.procedures.find((sp) => sp._id === p._id)
-                              ?.comment || DEFAULT_PROCEDURE_COMMENT,
-                        })),
+                        procedures: newProcedures.map((p) => {
+                          const existing = stage.procedures.find(
+                            (sp) => sp._id === p._id,
+                          );
+                          return {
+                            ...p,
+                            comment: existing?.comment ?? "",
+                            zoneEnabled: existing?.zoneEnabled ?? true,
+                            intervalEnabled: existing?.intervalEnabled ?? true,
+                            visitCountEnabled:
+                              existing?.visitCountEnabled ?? true,
+                            visitCount: existing?.visitCount,
+                          };
+                        }),
                       });
                     }}
                   />
@@ -678,14 +769,19 @@ const CreateReportForm: React.FC = () => {
                           Зона
                         </label>
                         <Select
-                          value={proc.zone || ""}
+                          value={proc.zoneOther ? OTHER_OPTION : proc.zone || ""}
                           disabled={!proc.zoneEnabled}
                           onValueChange={(value) =>
                             updateStage(stage.id, {
                               ...stage,
                               procedures: stage.procedures.map((p) =>
                                 p._id === proc._id
-                                  ? { ...p, zone: value }
+                                  ? {
+                                      ...p,
+                                      zoneOther: value === OTHER_OPTION,
+                                      zone:
+                                        value === OTHER_OPTION ? "" : value,
+                                    }
                                   : p,
                               ),
                             })
@@ -693,6 +789,25 @@ const CreateReportForm: React.FC = () => {
                           options={ZONE_OPTIONS}
                           className="h-9 w-[160px] flex-none"
                         />
+                        {proc.zoneOther && (
+                          <input
+                            type="text"
+                            value={proc.zone || ""}
+                            disabled={!proc.zoneEnabled}
+                            onChange={(e) =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.map((p) =>
+                                  p._id === proc._id
+                                    ? { ...p, zone: e.target.value }
+                                    : p,
+                                ),
+                              })
+                            }
+                            placeholder="Вкажіть зону"
+                            className="field-input h-9 w-[180px] flex-none"
+                          />
+                        )}
 
                         <label className="flex h-9 flex-none items-center gap-1.5 text-sm font-medium text-ink-soft cursor-pointer select-none">
                           <input
@@ -716,20 +831,94 @@ const CreateReportForm: React.FC = () => {
                           Інтервал
                         </label>
                         <Select
-                          value={proc.interval || ""}
+                          value={
+                            proc.intervalOther
+                              ? OTHER_OPTION
+                              : proc.interval || ""
+                          }
                           disabled={!proc.intervalEnabled}
                           onValueChange={(value) =>
                             updateStage(stage.id, {
                               ...stage,
                               procedures: stage.procedures.map((p) =>
                                 p._id === proc._id
-                                  ? { ...p, interval: value }
+                                  ? {
+                                      ...p,
+                                      intervalOther: value === OTHER_OPTION,
+                                      interval:
+                                        value === OTHER_OPTION ? "" : value,
+                                    }
                                   : p,
                               ),
                             })
                           }
                           options={INTERVAL_OPTIONS}
                           className="h-9 w-[160px] flex-none"
+                        />
+                        {proc.intervalOther && (
+                          <input
+                            type="text"
+                            value={proc.interval || ""}
+                            disabled={!proc.intervalEnabled}
+                            onChange={(e) =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.map((p) =>
+                                  p._id === proc._id
+                                    ? { ...p, interval: e.target.value }
+                                    : p,
+                                ),
+                              })
+                            }
+                            placeholder="Вкажіть інтервал"
+                            className="field-input h-9 w-[180px] flex-none"
+                          />
+                        )}
+
+                        <label className="flex h-9 flex-none items-center gap-1.5 text-sm font-medium text-ink-soft cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={!!proc.visitCountEnabled}
+                            onChange={(e) =>
+                              updateStage(stage.id, {
+                                ...stage,
+                                procedures: stage.procedures.map((p) =>
+                                  p._id === proc._id
+                                    ? {
+                                        ...p,
+                                        visitCountEnabled: e.target.checked,
+                                      }
+                                    : p,
+                                ),
+                              })
+                            }
+                            className="rounded border-line-strong text-brand focus:ring-brand/20"
+                          />
+                          Кількість візитів
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={proc.visitCount ?? ""}
+                          disabled={!proc.visitCountEnabled}
+                          onChange={(e) =>
+                            updateStage(stage.id, {
+                              ...stage,
+                              procedures: stage.procedures.map((p) =>
+                                p._id === proc._id
+                                  ? {
+                                      ...p,
+                                      visitCount:
+                                        e.target.value === ""
+                                          ? undefined
+                                          : Number(e.target.value),
+                                    }
+                                  : p,
+                              ),
+                            })
+                          }
+                          className="field-input h-9 w-[100px] flex-none"
                         />
                       </div>
                     </div>
@@ -789,6 +978,19 @@ const CreateReportForm: React.FC = () => {
             >
               + Додати етап
             </button>
+
+            <div className="mt-3">
+              <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+                Важливо
+              </p>
+              <textarea
+                value={proceduresNote}
+                onChange={(e) => setProceduresNote(e.target.value)}
+                placeholder="Важливо..."
+                rows={2}
+                className="field-textarea w-full min-h-[60px] resize-y text-[13.5px]"
+              />
+            </div>
           </ReportSection>
 
           <ReportSection title="Все, що необхідно знати про ваш стан">

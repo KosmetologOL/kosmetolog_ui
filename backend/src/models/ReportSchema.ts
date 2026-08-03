@@ -39,6 +39,8 @@ export interface IReportProcedureStage {
     zone?: string;
     intervalEnabled?: boolean;
     interval?: string;
+    visitCountEnabled?: boolean;
+    visitCount?: number;
   }[];
 }
 
@@ -127,6 +129,8 @@ const ReportSchema = new Schema<IReport>(
             zone: { type: String, default: "" },
             intervalEnabled: { type: Boolean, default: false },
             interval: { type: String, default: "" },
+            visitCountEnabled: { type: Boolean, default: false },
+            visitCount: { type: Number, default: null },
           },
         ],
       },
