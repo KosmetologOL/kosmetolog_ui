@@ -2,27 +2,60 @@ import {
   createCategoryItem,
   deleteCategoryItem,
   listCategoryItems,
+  updateCategory,
   updateCategoryItem,
+  type CategoryReportPosition,
 } from "#api/referenceApi";
 import ConfirmModal from "#components/ConfirmModal";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
+import Select from "#components/Select";
 import React, { useEffect, useState } from "react";
+
+const REPORT_POSITION_OPTIONS: { value: CategoryReportPosition; label: string }[] = [
+  { value: "after_specialists", label: "Після «Суміжні спеціалісти»" },
+  { value: "after_exams", label: "Після «Обстеження»" },
+  { value: "after_medications", label: "Після «Засоби»" },
+  { value: "after_homecare", label: "Після «Домашній догляд»" },
+  { value: "after_procedure_stages", label: "Після «Протокол процедур»" },
+  { value: "after_procedures", label: "Після «Рекомендації щодо процедур»" },
+];
 
 interface Props {
   categoryId: string;
   categoryName: string;
+  showNameInReport?: boolean;
+  reportPosition?: CategoryReportPosition;
 }
 
 const CategoryItemsManager: React.FC<Props> = ({
   categoryId,
   categoryName,
+  showNameInReport,
+  reportPosition,
 }) => {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleUpdateSettings = async (
+    nextShowNameInReport: boolean,
+    nextReportPosition: CategoryReportPosition,
+  ) => {
+    try {
+      await updateCategory(
+        categoryId,
+        categoryName,
+        nextShowNameInReport,
+        nextReportPosition,
+      );
+      window.dispatchEvent(new CustomEvent("categoriesUpdated"));
+    } catch (err) {
+      console.error("Помилка при оновленні налаштувань категорії:", err);
+    }
+  };
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = items.filter((item) => {
@@ -117,6 +150,47 @@ const CategoryItemsManager: React.FC<Props> = ({
         </button>
       </div>
 
+      {/* Report display settings */}
+      <div className="mb-5 flex w-full flex-wrap items-center gap-x-5 gap-y-3 border-b border-line pb-4">
+        <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+          <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-line-strong transition-colors duration-200 has-[:checked]:bg-brand has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/30 has-[:focus-visible]:ring-offset-2">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={showNameInReport ?? true}
+              onChange={(e) =>
+                handleUpdateSettings(
+                  e.target.checked,
+                  reportPosition ?? "after_homecare",
+                )
+              }
+              className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+            <span className="pointer-events-none absolute left-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform duration-200 peer-checked:translate-x-4" />
+          </span>
+          <span className="text-sm font-medium text-ink">
+            Показувати назву у сформованому звіті
+          </span>
+        </label>
+
+        <span className="hidden h-4 w-px bg-line sm:block" aria-hidden="true" />
+
+        <label className="inline-flex items-center gap-2.5">
+          <span className="text-sm text-ink-soft">Розташування у звіті</span>
+          <Select
+            value={reportPosition ?? "after_homecare"}
+            onValueChange={(value) =>
+              handleUpdateSettings(
+                showNameInReport ?? true,
+                value as CategoryReportPosition,
+              )
+            }
+            options={REPORT_POSITION_OPTIONS}
+            className="h-9 w-auto"
+          />
+        </label>
+      </div>
+
       {/* Search input bar */}
       <div className="relative mb-5 w-full max-w-md">
         <svg
@@ -162,7 +236,7 @@ const CategoryItemsManager: React.FC<Props> = ({
                 <div className="list-row-name">{item.name}</div>
                 {item.recommendation && (
                   <div className="list-row-sub whitespace-pre-wrap">
-                    <ExpandableText text={item.recommendation} />
+                    <FormattedText markdown={item.recommendation} />
                   </div>
                 )}
               </div>

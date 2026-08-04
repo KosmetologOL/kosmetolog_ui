@@ -1,5 +1,5 @@
 import type { IProcedure } from "#api/proceduresApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import React, { useState } from "react";
 
 interface Props {
@@ -102,7 +102,7 @@ const SelectedProceduresTable: React.FC<Props> = ({
                     className="cursor-pointer whitespace-pre-wrap"
                     onClick={() => handleEdit(procedure)}
                   >
-                    <ExpandableText text={procedure.recommendation || ""} limit={120} />
+                    <FormattedText markdown={procedure.recommendation} />
                   </span>
                 )}
               </td>
