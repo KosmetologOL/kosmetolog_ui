@@ -1,4 +1,5 @@
 import { getAllHomeCares } from "#api/homeCaresApi";
+import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type {
   GenerateReportHtmlParams,
 } from "../html/generateReportHtml";
@@ -27,14 +28,18 @@ const escapeXml = (text: string): string =>
 interface RunOptions {
   bold?: boolean;
   italic?: boolean;
+  color?: string;
+  size?: number;
 }
 
 export const run = (text: string, options: RunOptions = {}): string => {
   if (text === "") return "";
   const rPr =
-    options.bold || options.italic
+    options.bold || options.italic || options.color || options.size
       ? `<w:rPr>${options.bold ? "<w:b/>" : ""}${
           options.italic ? "<w:i/>" : ""
+        }${options.color ? `<w:color w:val="${options.color}"/>` : ""}${
+          options.size ? `<w:sz w:val="${options.size}"/>` : ""
         }</w:rPr>`
       : "";
   return `<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r>`;
@@ -51,8 +56,10 @@ export const bulletParagraph = (runsXml: string): string =>
   )}${runsXml}</w:p>`;
 
 export const headingParagraph = (text: string): string =>
-  `<w:p><w:pPr><w:spacing w:before="200" w:after="120"/></w:pPr>${run(text, {
+  `<w:p><w:pPr><w:spacing w:before="280" w:after="160"/></w:pPr>${run(text, {
     bold: true,
+    color: "3D4025",
+    size: 24,
   })}</w:p>`;
 
 export const dividerParagraph = (text: string): string =>
@@ -196,26 +203,112 @@ export const buildAppendParagraphsXml = async (
   const today = new Date().toLocaleDateString("uk-UA");
   const parts: string[] = [];
 
+  const categorySectionsByAnchor: Record<CategoryReportPosition, string[]> = {
+    after_specialists: [],
+    after_exams: [],
+    after_medications: [],
+    after_homecare: [],
+    after_procedure_stages: [],
+    after_procedures: [],
+  };
+
+  if (categoryItems.length > 0) {
+    const categoriesMeta = await getCategories();
+    const categoryNames = Array.from(
+      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
+    );
+
+    categoryNames.forEach((categoryName) => {
+      const items = categoryItems.filter((c) => c.categoryName === categoryName);
+      if (items.length === 0) return;
+
+      const meta =
+        categoriesMeta.find((cat) => cat._id === items[0].categoryId) ??
+        categoriesMeta.find((cat) => cat.name === categoryName);
+      const showName = meta?.showNameInReport ?? true;
+      const anchor = meta?.reportPosition ?? "after_homecare";
+
+      const xml =
+        headingParagraph(categoryName as string) +
+        items
+          .map((c) => {
+            const content = parseStructuredContent(c.recommendation);
+            return showName
+              ? itemParagraphs(c.itemName, content)
+              : renderStructuredBodyAsDocxParagraphs(content);
+          })
+          .join("");
+
+      categorySectionsByAnchor[anchor].push(xml);
+    });
+  }
+
+  const flushCategoriesFor = (anchor: CategoryReportPosition) => {
+    categorySectionsByAnchor[anchor].forEach((xml) => parts.push(xml));
+  };
+
   parts.push(emptyParagraph());
   parts.push(dividerParagraph(`Рекомендаційний лист · ${today}`));
 
   if (specialists.length > 0) {
     parts.push(headingParagraph("Суміжні спеціалісти"));
-    specialists.forEach((s) => parts.push(bulletParagraph(run(s.name))));
+    specialists.forEach((s) =>
+      parts.push(paragraph(run(s.name, { bold: true }))),
+    );
   }
+  flushCategoriesFor("after_specialists");
 
   if (exams.length > 0) {
     parts.push(headingParagraph("Обстеження"));
     exams.forEach((e) =>
-      parts.push(itemParagraphs(e.name, parseStructuredContent(e.recommendation))),
+      parts.push(renderStructuredBodyAsDocxParagraphs(parseStructuredContent(e.recommendation))),
     );
     parts.push(importantParagraph(examsNote));
   }
+  flushCategoriesFor("after_exams");
 
-  if (medications.length > 0 && medicationsNote?.trim()) {
+  if (medications.length > 0) {
     parts.push(headingParagraph("Засоби"));
+    medications.forEach((m) =>
+      parts.push(itemParagraphs(m.name, parseStructuredContent(m.recommendation))),
+    );
     parts.push(importantParagraph(medicationsNote));
   }
+  flushCategoriesFor("after_medications");
+
+  if (homeCares.length > 0) {
+    parts.push(headingParagraph("Домашній догляд"));
+    const allCares = await getAllHomeCares();
+    const uniqueCategories = Array.from(
+      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
+    );
+
+    uniqueCategories.forEach((category) => {
+      const items = homeCares.filter((h) => h.name === category);
+      if (items.length === 0) return;
+
+      parts.push(paragraph(run(category as string, { bold: true })));
+      items.forEach((h) => {
+        const when = [h.morning ? "день" : "", h.evening ? "вечір" : ""]
+          .filter(Boolean)
+          .join(", ");
+        parts.push(
+          bulletParagraph(
+            run(h.medicationName || "—", { bold: true }) +
+              (when ? run(` (${when})`) : ""),
+          ),
+        );
+        parts.push(
+          renderStructuredBodyAsDocxParagraphs(
+            parseStructuredContent(h.recommendations),
+            "Рекомендацію не знайдено",
+          ),
+        );
+      });
+    });
+    parts.push(importantParagraph(homeCareNote));
+  }
+  flushCategoriesFor("after_homecare");
 
   const activeStages = procedureStages.filter((s) => s.procedures.length > 0);
   if (activeStages.length > 0) {
@@ -263,66 +356,20 @@ export const buildAppendParagraphsXml = async (
         }
       });
     });
-    parts.push(importantParagraph(proceduresNote));
+    if (procedures.length === 0) {
+      parts.push(importantParagraph(proceduresNote));
+    }
   }
-
-  if (homeCares.length > 0) {
-    parts.push(headingParagraph("Домашній догляд"));
-    const allCares = await getAllHomeCares();
-    const uniqueCategories = Array.from(
-      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
-    );
-
-    uniqueCategories.forEach((category) => {
-      const items = homeCares.filter((h) => h.name === category);
-      if (items.length === 0) return;
-
-      parts.push(paragraph(run(category as string, { bold: true })));
-      items.forEach((h) => {
-        const when = [h.morning ? "день" : "", h.evening ? "вечір" : ""]
-          .filter(Boolean)
-          .join(", ");
-        parts.push(
-          bulletParagraph(
-            run(h.medicationName || "—", { bold: true }) +
-              (when ? run(` (${when})`) : ""),
-          ),
-        );
-        parts.push(
-          renderStructuredBodyAsDocxParagraphs(
-            parseStructuredContent(h.recommendations),
-            "Рекомендацію не знайдено",
-          ),
-        );
-      });
-    });
-    parts.push(importantParagraph(homeCareNote));
-  }
-
-  if (categoryItems.length > 0) {
-    const categoryNames = Array.from(
-      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
-    );
-
-    categoryNames.forEach((categoryName) => {
-      const items = categoryItems.filter((c) => c.categoryName === categoryName);
-      if (items.length === 0) return;
-
-      parts.push(headingParagraph(categoryName as string));
-      items.forEach((c) =>
-        parts.push(
-          itemParagraphs(c.itemName, parseStructuredContent(c.recommendation)),
-        ),
-      );
-    });
-  }
+  flushCategoriesFor("after_procedure_stages");
 
   if (procedures.length > 0) {
     parts.push(headingParagraph("Рекомендації щодо процедур"));
     procedures.forEach((p) =>
       parts.push(itemParagraphs(p.name, parseStructuredContent(p.recommendation))),
     );
+    parts.push(importantParagraph(proceduresNote));
   }
+  flushCategoriesFor("after_procedures");
 
   if (additionalInfo?.trim()) {
     parts.push(headingParagraph("Все, що необхідно знати про ваш стан"));

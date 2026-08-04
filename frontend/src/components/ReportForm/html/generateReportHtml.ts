@@ -4,6 +4,7 @@ import { getAllHomeCares } from "#api/homeCaresApi";
 import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
+import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type { ISpecialist } from "#api/specialistsApi";
 import type { IReportCategoryItem } from "#components/Categories/SearchCategories";
 import logoUrl from "#assets/logo.png";
@@ -203,12 +204,68 @@ export const generateReportHtml = async ({
 
   const sectionBodies: { title: string; html: string }[] = [];
 
+  const categorySectionsByAnchor: Record<
+    CategoryReportPosition,
+    { title: string; html: string }[]
+  > = {
+    after_specialists: [],
+    after_exams: [],
+    after_medications: [],
+    after_homecare: [],
+    after_procedure_stages: [],
+    after_procedures: [],
+  };
+
+  if (categoryItems.length > 0) {
+    const categoriesMeta = await getCategories();
+    const categoryNames = Array.from(
+      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
+    );
+
+    for (const categoryName of categoryNames) {
+      const items = categoryItems.filter((c) => c.categoryName === categoryName);
+      if (items.length === 0) continue;
+
+      const meta =
+        categoriesMeta.find((cat) => cat._id === items[0].categoryId) ??
+        categoriesMeta.find((cat) => cat.name === categoryName);
+      const showName = meta?.showNameInReport ?? true;
+      const anchor = meta?.reportPosition ?? "after_homecare";
+
+      const blocks = items
+        .map((c) => {
+          const content = parseStructuredContent(c.recommendation);
+          return showName
+            ? itemBlock(c.itemName, content)
+            : `<div class="exam"><div class="exam-body">${renderStructuredBody(content)}</div></div>`;
+        })
+        .join("");
+
+      categorySectionsByAnchor[anchor].push({
+        title: categoryName as string,
+        html: blocks,
+      });
+    }
+  }
+
+  const flushCategoriesFor = (anchor: CategoryReportPosition) => {
+    sectionBodies.push(...categorySectionsByAnchor[anchor]);
+  };
+
   if (specialists.length > 0) {
     const cards = specialists
-      .map((s) => `<div class="spec"><span class="who">${escapeHtml(s.name)}</span></div>`)
+      .map(
+        (s) => `
+          <div class="stage">
+            <div class="stage-h">
+              <span class="stage-name">${escapeHtml(s.name)}</span>
+            </div>
+          </div>`,
+      )
       .join("");
     sectionBodies.push({ title: "Суміжні спеціалісти", html: cards });
   }
+  flushCategoriesFor("after_specialists");
 
   if (exams.length > 0) {
     const cards = exams
@@ -216,7 +273,6 @@ export const generateReportHtml = async ({
         const content = parseStructuredContent(e.recommendation);
         return `
           <div class="exam">
-            <div class="exam-title"><span class="cb"></span>${escapeHtml(e.name)}</div>
             <div class="exam-body">${renderStructuredBody(content)}</div>
           </div>`;
       })
@@ -226,13 +282,72 @@ export const generateReportHtml = async ({
       html: cards + importantBlock(examsNote),
     });
   }
+  flushCategoriesFor("after_exams");
 
-  if (medications.length > 0 && medicationsNote?.trim()) {
+  if (medications.length > 0) {
+    const blocks = medications
+      .map((m) => itemBlock(m.name, parseStructuredContent(m.recommendation)))
+      .join("");
     sectionBodies.push({
       title: "Засоби",
-      html: importantBlock(medicationsNote),
+      html: blocks + importantBlock(medicationsNote),
     });
   }
+  flushCategoriesFor("after_medications");
+
+  if (homeCares.length > 0) {
+    const allCares = await getAllHomeCares();
+    const uniqueCategories = Array.from(
+      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
+    );
+
+    const groups = uniqueCategories
+      .map((category) => {
+        const items = homeCares.filter((h) => h.name === category);
+        if (items.length === 0) return "";
+
+        const rows = items
+          .map((h) => {
+            const content = parseStructuredContent(h.recommendations);
+            return `
+            <tr>
+              <td class="hc-product">
+                <div class="hc-name">${escapeHtml(h.medicationName || "—")}</div>
+                ${renderStructuredBody(content, "Рекомендацію не знайдено")}
+              </td>
+              <td class="hc-check"><span class="chk ${h.morning ? "is-on" : ""}"></span></td>
+              <td class="hc-check"><span class="chk ${h.evening ? "is-on" : ""}"></span></td>
+              <td class="hc-price"><span class="line"></span></td>
+            </tr>`;
+          })
+          .join("");
+
+        return `
+          <div class="hc-category">
+            <div class="hc-cat-h">${escapeHtml(category as string)}</div>
+            <div class="hc-cat-b">
+              <table class="hc-table">
+                <thead>
+                  <tr>
+                    <th class="hc-product">Засіб</th>
+                    <th class="hc-check">День</th>
+                    <th class="hc-check">Вечір</th>
+                    <th class="hc-price">Орієнтовна вартість</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    sectionBodies.push({
+      title: "Домашній догляд",
+      html: groups + importantBlock(homeCareNote),
+    });
+  }
+  flushCategoriesFor("after_homecare");
 
   if (procedureStages.some((s) => s.procedures.length > 0)) {
     const stagesHtml = procedureStages
@@ -288,88 +403,21 @@ export const generateReportHtml = async ({
 
     sectionBodies.push({
       title: "Протокол процедур",
-      html: stagesHtml + importantBlock(proceduresNote),
+      html: stagesHtml + (procedures.length === 0 ? importantBlock(proceduresNote) : ""),
     });
   }
-
-  if (homeCares.length > 0) {
-    const allCares = await getAllHomeCares();
-    const uniqueCategories = Array.from(
-      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
-    );
-
-    const groups = uniqueCategories
-      .map((category) => {
-        const items = homeCares.filter((h) => h.name === category);
-        if (items.length === 0) return "";
-
-        const rows = items
-          .map((h) => {
-            const content = parseStructuredContent(h.recommendations);
-            return `
-            <tr>
-              <td class="hc-product">
-                <div class="hc-name">${escapeHtml(h.medicationName || "—")}</div>
-                ${renderStructuredBody(content, "Рекомендацію не знайдено")}
-              </td>
-              <td class="hc-check"><span class="chk ${h.morning ? "is-on" : ""}"></span></td>
-              <td class="hc-check"><span class="chk ${h.evening ? "is-on" : ""}"></span></td>
-              <td class="hc-price"><span class="line"></span></td>
-            </tr>`;
-          })
-          .join("");
-
-        return `
-          <div class="hc-category">
-            <div class="hc-cat-h">${escapeHtml(category as string)}</div>
-            <div class="hc-cat-b">
-              <table class="hc-table">
-                <thead>
-                  <tr>
-                    <th class="hc-product">Засіб</th>
-                    <th class="hc-check">День</th>
-                    <th class="hc-check">Вечір</th>
-                    <th class="hc-price">Орієнтовна вартість</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>
-          </div>`;
-      })
-      .join("");
-
-    sectionBodies.push({
-      title: "Домашній догляд",
-      html: groups + importantBlock(homeCareNote),
-    });
-  }
-
-  if (categoryItems.length > 0) {
-    const categoryNames = Array.from(
-      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
-    );
-
-    for (const categoryName of categoryNames) {
-      const items = categoryItems.filter((c) => c.categoryName === categoryName);
-      if (items.length === 0) continue;
-
-      const blocks = items
-        .map((c) =>
-          itemBlock(c.itemName, parseStructuredContent(c.recommendation)),
-        )
-        .join("");
-
-      sectionBodies.push({ title: categoryName as string, html: blocks });
-    }
-  }
+  flushCategoriesFor("after_procedure_stages");
 
   if (procedures.length > 0) {
     const blocks = procedures
       .map((p) => itemBlock(p.name, parseStructuredContent(p.recommendation)))
       .join("");
-    sectionBodies.push({ title: "Рекомендації щодо процедур", html: blocks });
+    sectionBodies.push({
+      title: "Рекомендації щодо процедур",
+      html: blocks + importantBlock(proceduresNote),
+    });
   }
+  flushCategoriesFor("after_procedures");
 
   if (additionalInfo?.trim()) {
     sectionBodies.push({
@@ -487,20 +535,19 @@ export const generateReportHtml = async ({
   }
   .meta .v { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
 
-  .sec { margin-bottom: 6mm; }
+  .sec { margin-bottom: 7mm; }
   .sec-head {
-    display: flex; align-items: center; gap: 3mm;
-    margin-bottom: 3.2mm;
+    display: flex; align-items: baseline; gap: 3.5mm;
+    margin-bottom: 4mm;
     break-after: avoid;
   }
-  .sec-num { font-size: 8pt; font-weight: 700; color: var(--sage); }
+  .sec-num { font-size: 15pt; font-weight: 400; color: var(--sage); line-height: 1; }
   .sec-title {
     margin: 0;
-    font-size: 10pt; font-weight: 700;
-    letter-spacing: .16em; text-transform: uppercase;
-    color: var(--ink);
+    font-size: 13.5pt; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--olive);
   }
-  .sec-head::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
   .sub-h {
     font-size: 9.5pt; font-weight: 700;
@@ -508,28 +555,8 @@ export const generateReportHtml = async ({
     margin: 3mm 0 1.6mm;
   }
 
-  .spec {
-    border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
-    padding: 2.6mm 4mm;
-    margin-bottom: 2mm;
-    break-inside: avoid;
-  }
-  .spec:last-child { margin-bottom: 0; }
-  .spec .who { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
-
   .exam { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .exam:last-child { margin-bottom: 0; }
-  .exam-title {
-    display: flex; align-items: center; gap: 3mm;
-    border-bottom: 1px solid var(--line);
-    background: var(--card);
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 2.6mm 4mm;
-    font-weight: 700; color: var(--ink); font-size: 10.5pt;
-    break-after: avoid;
-  }
-  .cb { flex: none; width: 3.6mm; height: 3.6mm; border: 1.6px solid var(--ink); background: #fff; }
   .exam-body { padding: 3.5mm 4mm 4mm; }
 
   .det {
