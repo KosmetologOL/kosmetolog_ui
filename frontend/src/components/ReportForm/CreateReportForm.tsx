@@ -788,19 +788,40 @@ const CreateReportForm: React.FC = () => {
           <ReportSection
             title="Текст у кінці рекомендаційного листа"
             actions={
-              <button
-                type="button"
-                onClick={() => setFinalNote(DEFAULT_FINAL_NOTE)}
-                className="btn-link text-sm"
-              >
-                Повернути стандартний текст
-              </button>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      finalNote !== DEFAULT_FINAL_NOTE &&
+                      !window.confirm(
+                        "Прибрати цей текст із листа? Відновити можна буде лише стандартний текст.",
+                      )
+                    ) {
+                      return;
+                    }
+                    setFinalNote("");
+                  }}
+                  disabled={!finalNote}
+                  className="btn-link text-sm text-ink-soft"
+                >
+                  Очистити
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFinalNote(DEFAULT_FINAL_NOTE)}
+                  disabled={finalNote === DEFAULT_FINAL_NOTE}
+                  className="btn-link text-sm"
+                >
+                  Повернути стандартний текст
+                </button>
+              </div>
             }
           >
             <textarea
               value={finalNote}
               onChange={(e) => setFinalNote(e.target.value)}
-              placeholder="Текст, який буде додано в кінець PDF"
+              placeholder="Текст, який буде додано в кінці листа"
               rows={4}
               className="field-textarea min-h-[90px] w-full resize-y"
             />
