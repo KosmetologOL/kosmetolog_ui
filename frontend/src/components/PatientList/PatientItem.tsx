@@ -38,6 +38,9 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
 
   const openChart = () => navigate(`/create-report/${patient._id}`);
 
+  const normalizeCategoryItems = (report: Awaited<ReturnType<typeof getReportByPatientId>>) =>
+    (report.categories || []).map((c) => ({ ...c, _id: c._id ?? "" }));
+
   const handleExportHtml = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExportingHtml(true);
@@ -52,6 +55,7 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
         procedureStages: procedureStages,
         specialists: report.specialists || [],
         homeCares: report.homeCares || [],
+        categoryItems: normalizeCategoryItems(report),
         additionalInfo: report.additionalInfo || "",
         comments: report.comments || "",
         finalNote: report.finalNote || "",
@@ -78,6 +82,7 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit }) => {
         procedureStages: procedureStages,
         specialists: report.specialists || [],
         homeCares: report.homeCares || [],
+        categoryItems: normalizeCategoryItems(report),
         additionalInfo: report.additionalInfo || "",
         comments: report.comments || "",
         finalNote: report.finalNote || "",

@@ -243,7 +243,7 @@ export const generateReportHtml = async ({
 
       categorySectionsByAnchor[anchor].push({
         title: categoryName as string,
-        html: blocks,
+        html: blocks + importantBlock(meta?.importantNote),
       });
     }
   }
@@ -284,7 +284,9 @@ export const generateReportHtml = async ({
   }
   flushCategoriesFor("after_exams");
 
-  if (medications.length > 0) {
+  // TEMPORARILY DISABLED: client asked not to include "Засоби" in the report for now.
+  const includeMedicationsSection = false;
+  if (includeMedicationsSection && medications.length > 0) {
     const blocks = medications
       .map((m) => itemBlock(m.name, parseStructuredContent(m.recommendation)))
       .join("");
@@ -461,14 +463,19 @@ export const generateReportHtml = async ({
   :root {
     --ink: #2F311A;
     --olive: #3D4025;
-    --sage: #83875F;
-    --sage-soft: #A9AC8B;
-    --card: #F4F2E7;
-    --line: #C9C6B2;
-    --line-soft: #E2E0D0;
-    --text: #3A3C2C;
-    --muted: #6F715A;
-    --danger: #8A5A3B;
+    --sage: #6E6E6E;
+    --sage-soft: #9A9A9A;
+    --card: #F2F2F2;
+    --line: #B8B8B8;
+    --line-soft: #E0E0E0;
+    --text: #262626;
+    --muted: #707070;
+    --danger: #404040;
+    --accent: var(--olive);
+    --accent-dark: var(--ink);
+    --accent-soft: var(--secondary);
+    --det-bg: #F7F7F7;
+    --secondary: #DCDCDC;
   }
 
   * { box-sizing: border-box; }
@@ -484,7 +491,7 @@ export const generateReportHtml = async ({
     font-size: 10pt;
     line-height: 1.5;
     color: var(--text);
-    background: #E3E1D2;
+    background: #E8E8E8;
   }
 
   .sheet {
@@ -493,7 +500,7 @@ export const generateReportHtml = async ({
     margin: 24px auto;
     background: #fff;
     padding: 12mm 12mm 14mm;
-    box-shadow: 0 18px 45px -20px rgba(47,49,26,.4);
+    box-shadow: 0 18px 45px -20px rgba(26,26,26,.4);
   }
 
   .letterhead {
@@ -508,11 +515,15 @@ export const generateReportHtml = async ({
   }
   .lh-logo { width: 30mm; height: auto; display: block; }
   .lh-kind {
-    font-size: 11pt;
+    font-size: 9pt;
     font-weight: 700;
     letter-spacing: .2em;
     text-transform: uppercase;
     color: var(--ink);
+    background: var(--secondary);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    padding: 2mm 3.5mm;
+    border-radius: 1mm;
   }
 
   .meta {
@@ -535,18 +546,23 @@ export const generateReportHtml = async ({
   }
   .meta .v { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
 
-  .sec { margin-bottom: 7mm; }
+  .sec { margin-bottom: 8mm; }
   .sec-head {
     display: flex; align-items: baseline; gap: 3.5mm;
-    margin-bottom: 4mm;
+    margin-bottom: 4.5mm;
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-radius: 1mm;
+    padding: 3mm 4.5mm;
     break-after: avoid;
+    break-inside: avoid;
   }
-  .sec-num { font-size: 15pt; font-weight: 400; color: var(--sage); line-height: 1; }
+  .sec-num { font-size: 15pt; font-weight: 400; color: rgba(255,255,255,.65); line-height: 1; }
   .sec-title {
     margin: 0;
     font-size: 13.5pt; font-weight: 700;
     letter-spacing: .1em; text-transform: uppercase;
-    color: var(--olive);
+    color: #fff;
   }
 
   .sub-h {
@@ -561,7 +577,7 @@ export const generateReportHtml = async ({
 
   .det {
     border: 1px solid var(--line-soft);
-    background: #FAF9F2;
+    background: var(--det-bg);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 3mm 3.5mm;
     margin: 2mm 0;
@@ -575,7 +591,7 @@ export const generateReportHtml = async ({
     text-transform: uppercase; color: var(--sage);
     padding-top: .5mm;
   }
-  .kv .v { flex: 1; margin: 0; font-size: 9pt; }
+  .kv .v { flex: 1; margin: 0; }
 
   .det-box {
     border: 1px solid var(--line-soft);
@@ -605,7 +621,6 @@ export const generateReportHtml = async ({
     position: relative;
     padding-left: 5mm;
     margin: 0 0 1.2mm;
-    font-size: 9pt;
   }
   .det-box--warn .rich-content p:last-child,
   .det-box--warn .rich-content li:last-child { margin-bottom: 0; }
@@ -622,22 +637,21 @@ export const generateReportHtml = async ({
   .important {
     display: flex; gap: 3.5mm;
     margin: 3mm 0;
-    border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
-    background: var(--card);
+    border: 1px solid var(--accent);
+    border-left: 1mm solid var(--accent);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 3mm 3.5mm;
-    font-size: 8.5pt;
     break-inside: avoid;
   }
-  .important .mark { font-size: 15pt; font-weight: 700; color: var(--sage); line-height: 1; }
+  .important .mark { font-size: 15pt; font-weight: 700; color: var(--accent-dark); line-height: 1; }
   .important .rich-content a { color: var(--ink); font-weight: 700; text-decoration: none; }
 
   .stage { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .stage:last-child { margin-bottom: 0; }
   .stage-h {
     display: flex; align-items: center; gap: 3mm;
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-bottom: 1px solid var(--line);
     padding: 2.6mm 4mm;
@@ -646,16 +660,18 @@ export const generateReportHtml = async ({
   .stage-n {
     flex: none;
     width: 6.4mm; height: 6.4mm;
-    border: 1.6px solid var(--ink); border-radius: 50%;
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 9.5pt; color: var(--ink);
+    font-weight: 700; font-size: 9.5pt; color: #fff;
   }
   .stage-name { font-weight: 700; font-size: 11pt; color: var(--ink); }
   .stage-b { padding: 3.5mm 4mm 4mm; }
 
   .proc-card {
     border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
+    border-left: 1mm solid var(--accent);
     padding: 3mm 4mm;
     margin-bottom: 2.5mm;
     break-inside: avoid;
@@ -677,20 +693,20 @@ export const generateReportHtml = async ({
   .tag {
     display: inline-block;
     font-size: 6.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--sage);
-    border: 1px solid var(--sage-soft);
+    color: var(--accent-dark);
+    border: 1px solid var(--accent);
     border-radius: 3mm;
     padding: .8mm 3mm;
   }
   .tag b { color: var(--olive); text-transform: none; letter-spacing: 0; font-size: 8pt; }
 
-  .proc-card .plain { margin-top: 2.4mm; font-size: 8.5pt; color: var(--muted); }
+  .proc-card .plain { margin-top: 2.4mm; color: var(--muted); }
 
   .hc-category { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .hc-category:last-child { margin-bottom: 0; }
   .hc-cat-h {
     border-bottom: 1px solid var(--line);
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 2.6mm 4mm;
     font-weight: 700; color: var(--ink); font-size: 10.5pt;
@@ -720,7 +736,7 @@ export const generateReportHtml = async ({
   .item-block:last-child { margin-bottom: 0; }
   .item-name {
     border-bottom: 1px solid var(--line);
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 2.6mm 4mm;
     font-weight: 700; color: var(--ink); font-size: 10.5pt;
@@ -728,16 +744,16 @@ export const generateReportHtml = async ({
   }
   .item-body { padding: 3.5mm 4mm 4mm; }
 
-  .plain { white-space: pre-wrap; margin: 0; }
+  .plain { white-space: pre-wrap; margin: 0; font-size: 9.5pt; }
 
-  .rich-content { margin: 0; }
+  .rich-content { margin: 0; font-size: 9.5pt; }
   .rich-content h1, .rich-content h2, .rich-content h3 { font-size: 1.05em; font-weight: 700; margin: 0.6em 0 0.3em; }
   .rich-content p { margin: 0.5em 0; }
   .rich-content p:first-child { margin-top: 0; }
   .rich-content p:last-child { margin-bottom: 0; }
   .rich-content ul { list-style: disc; padding-left: 1.3em; margin: 0.3em 0; }
   .rich-content ul li { break-inside: avoid; margin-bottom: 1.2mm; }
-  .rich-content ul li::marker { color: var(--sage); font-weight: 700; }
+  .rich-content ul li::marker { color: var(--accent); font-weight: 700; }
 
   .rich-content ol {
     list-style: none;
@@ -758,10 +774,11 @@ export const generateReportHtml = async ({
     content: counter(step);
     position: absolute; left: 0; top: .4mm;
     width: 4.6mm; height: 4.6mm;
-    border: 1px solid var(--sage-soft);
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 6.5pt; font-weight: 700; color: var(--sage);
+    font-size: 6.5pt; font-weight: 700; color: #fff;
   }
 
   .rich-content hr { border: none; border-top: 1px solid var(--line-soft); margin: 0.6em 0; }

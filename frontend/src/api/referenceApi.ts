@@ -46,6 +46,7 @@ export interface ICategory {
   name: string;
   showNameInReport?: boolean;
   reportPosition?: CategoryReportPosition;
+  importantNote?: string;
 }
 
 export interface ICategoryItem {
@@ -64,11 +65,13 @@ export const createCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const { data } = await axios.post(`${BASE_URL}/categories`, {
     name,
     showNameInReport,
     reportPosition,
+    importantNote,
   });
   return data.category;
 };
@@ -78,11 +81,13 @@ export const updateCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const { data } = await axios.patch(`${BASE_URL}/categories/${id}`, {
     name,
     showNameInReport,
     reportPosition,
+    importantNote,
   });
   return data.category;
 };

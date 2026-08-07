@@ -9,6 +9,7 @@ export const categorySchema = Joi.object({
     .valid(...CATEGORY_REPORT_POSITIONS)
     .optional()
     .messages(commonMessages),
+  importantNote: Joi.string().trim().max(2000).allow("").optional().messages(commonMessages),
 });
 
 export const categoryItemSchema = Joi.object({

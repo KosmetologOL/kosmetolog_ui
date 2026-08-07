@@ -149,6 +149,10 @@ const ReferencePanel: React.FC = () => {
               categories.find((c) => `cat-${c._id}` === activeTab)
                 ?.reportPosition
             }
+            importantNote={
+              categories.find((c) => `cat-${c._id}` === activeTab)
+                ?.importantNote
+            }
           />
         )}
       </div>

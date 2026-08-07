@@ -12,11 +12,12 @@ export const getCategories = async (_req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name, showNameInReport, reportPosition } = req.body;
+    const { name, showNameInReport, reportPosition, importantNote } = req.body;
     const category = await CategoriesService.createCategory(
       name,
       showNameInReport,
       reportPosition,
+      importantNote,
     );
     res.status(201).json({ category });
   } catch (err) {
@@ -27,12 +28,13 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, showNameInReport, reportPosition } = req.body;
+    const { name, showNameInReport, reportPosition, importantNote } = req.body;
     const category = await CategoriesService.updateCategory(
       id,
       name,
       showNameInReport,
       reportPosition,
+      importantNote,
     );
     res.json({ category });
   } catch (err) {
