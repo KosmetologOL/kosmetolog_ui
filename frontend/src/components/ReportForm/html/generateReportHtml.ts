@@ -794,6 +794,28 @@ export const generateReportHtml = async ({
     body { background: #fff; }
     .sheet { width: auto; max-width: none; margin: 0; padding: 0; box-shadow: none; }
     p, li { orphans: 3; widows: 3; }
+
+    /* Чорно-білий друк/ксерокопія: суцільна темна заливка з білим текстом
+       на таких пристроях часто губить контраст і витрачає багато тонера —
+       для друку замінюємо на контур + темний текст. */
+    .sec-head {
+      background: none;
+      border: 1px solid var(--ink);
+    }
+    .sec-num { color: var(--muted); }
+    .sec-title { color: var(--ink); }
+
+    .stage-n {
+      background: none;
+      border: 1.6px solid var(--ink);
+      color: var(--ink);
+    }
+
+    .rich-content ol li::before {
+      background: none;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+    }
   }
 
   @media screen and (max-width: 760px) {
