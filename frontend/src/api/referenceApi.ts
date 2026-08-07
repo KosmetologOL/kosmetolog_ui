@@ -30,9 +30,23 @@ export const approveRegistration = async (id: string) => {
   return data;
 };
 
+export const CATEGORY_REPORT_POSITIONS = [
+  "after_specialists",
+  "after_exams",
+  "after_medications",
+  "after_homecare",
+  "after_procedure_stages",
+  "after_procedures",
+] as const;
+
+export type CategoryReportPosition = (typeof CATEGORY_REPORT_POSITIONS)[number];
+
 export interface ICategory {
   _id: string;
   name: string;
+  showNameInReport?: boolean;
+  reportPosition?: CategoryReportPosition;
+  importantNote?: string;
 }
 
 export interface ICategoryItem {
@@ -47,13 +61,34 @@ export const getCategories = async (): Promise<ICategory[]> => {
   return data.categories;
 };
 
-export const createCategory = async (name: string) => {
-  const { data } = await axios.post(`${BASE_URL}/categories`, { name });
+export const createCategory = async (
+  name: string,
+  showNameInReport?: boolean,
+  reportPosition?: CategoryReportPosition,
+  importantNote?: string,
+) => {
+  const { data } = await axios.post(`${BASE_URL}/categories`, {
+    name,
+    showNameInReport,
+    reportPosition,
+    importantNote,
+  });
   return data.category;
 };
 
-export const updateCategory = async (id: string, name: string) => {
-  const { data } = await axios.patch(`${BASE_URL}/categories/${id}`, { name });
+export const updateCategory = async (
+  id: string,
+  name: string,
+  showNameInReport?: boolean,
+  reportPosition?: CategoryReportPosition,
+  importantNote?: string,
+) => {
+  const { data } = await axios.patch(`${BASE_URL}/categories/${id}`, {
+    name,
+    showNameInReport,
+    reportPosition,
+    importantNote,
+  });
   return data.category;
 };
 

@@ -1,26 +1,47 @@
 import ActivityLog from "../models/ActivityLog";
-import Category from "../models/Category";
+import Category, { CategoryReportPosition } from "../models/Category";
 import CategoryItem from "../models/CategoryItem";
 
 export const listCategories = async () => {
   return Category.find();
 };
 
-export const createCategory = async (name: string) => {
+export const createCategory = async (
+  name: string,
+  showNameInReport?: boolean,
+  reportPosition?: CategoryReportPosition,
+  importantNote?: string,
+) => {
   const existing = await Category.findOne({ name });
   if (existing) {
     throw new Error("Категорія вже існує");
   }
 
-  const category = new Category({ name });
+  const category = new Category({
+    name,
+    ...(showNameInReport !== undefined ? { showNameInReport } : {}),
+    ...(reportPosition ? { reportPosition } : {}),
+    ...(importantNote !== undefined ? { importantNote } : {}),
+  });
   await category.save();
   await ActivityLog.create({ action: "create-category", meta: { name } });
 
   return category;
 };
 
-export const updateCategory = async (id: string, name: string) => {
-  const category = await Category.findByIdAndUpdate(id, { name }, { new: true });
+export const updateCategory = async (
+  id: string,
+  name: string,
+  showNameInReport?: boolean,
+  reportPosition?: CategoryReportPosition,
+  importantNote?: string,
+) => {
+  const update: Record<string, unknown> = { name };
+  if (showNameInReport !== undefined) update.showNameInReport = showNameInReport;
+  if (reportPosition) update.reportPosition = reportPosition;
+  if (importantNote !== undefined) update.importantNote = importantNote;
+
+  const category = await Category.findByIdAndUpdate(id, update, { new: true });
   if (!category) {
     throw new Error("Категорію не знайдено");
   }

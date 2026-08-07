@@ -4,6 +4,7 @@ import { getAllHomeCares } from "#api/homeCaresApi";
 import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
+import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type { ISpecialist } from "#api/specialistsApi";
 import type { IReportCategoryItem } from "#components/Categories/SearchCategories";
 import logoUrl from "#assets/logo.png";
@@ -27,6 +28,8 @@ export interface IProcedureStage {
     zone?: string;
     intervalEnabled?: boolean;
     interval?: string;
+    visitCountEnabled?: boolean;
+    visitCount?: number;
   })[];
 }
 
@@ -42,6 +45,10 @@ export interface GenerateReportHtmlParams {
   additionalInfo: string;
   comments: string;
   finalNote?: string;
+  medicationsNote?: string;
+  homeCareNote?: string;
+  examsNote?: string;
+  proceduresNote?: string;
   doctorName?: string;
   directoryHandle?: FileSystemDirectoryHandle | null;
 }
@@ -64,6 +71,16 @@ const escapeHtml = (text: string): string =>
 
 const plainTextToHtml = (text: string): string =>
   `<p class="plain">${escapeHtml(text).replace(/\n/g, "<br />")}</p>`;
+
+const importantBlock = (note?: string): string => {
+  const trimmed = note?.trim();
+  if (!trimmed) return "";
+  return `
+    <div class="important">
+      <span class="mark">!</span>
+      ${plainTextToHtml(trimmed)}
+    </div>`;
+};
 
 const renderStructuredBody = (
   content: StructuredContent,
@@ -157,6 +174,7 @@ const fetchAsDataUrl = async (url: string): Promise<string> => {
 export const generateReportHtml = async ({
   patient,
   exams,
+  medications,
   procedures,
   procedureStages = [],
   specialists,
@@ -165,6 +183,10 @@ export const generateReportHtml = async ({
   additionalInfo,
   comments,
   finalNote,
+  medicationsNote,
+  homeCareNote,
+  examsNote,
+  proceduresNote,
   doctorName,
   directoryHandle,
 }: GenerateReportHtmlParams) => {
@@ -182,12 +204,68 @@ export const generateReportHtml = async ({
 
   const sectionBodies: { title: string; html: string }[] = [];
 
+  const categorySectionsByAnchor: Record<
+    CategoryReportPosition,
+    { title: string; html: string }[]
+  > = {
+    after_specialists: [],
+    after_exams: [],
+    after_medications: [],
+    after_homecare: [],
+    after_procedure_stages: [],
+    after_procedures: [],
+  };
+
+  if (categoryItems.length > 0) {
+    const categoriesMeta = await getCategories();
+    const categoryNames = Array.from(
+      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
+    );
+
+    for (const categoryName of categoryNames) {
+      const items = categoryItems.filter((c) => c.categoryName === categoryName);
+      if (items.length === 0) continue;
+
+      const meta =
+        categoriesMeta.find((cat) => cat._id === items[0].categoryId) ??
+        categoriesMeta.find((cat) => cat.name === categoryName);
+      const showName = meta?.showNameInReport ?? true;
+      const anchor = meta?.reportPosition ?? "after_homecare";
+
+      const blocks = items
+        .map((c) => {
+          const content = parseStructuredContent(c.recommendation);
+          return showName
+            ? itemBlock(c.itemName, content)
+            : `<div class="exam"><div class="exam-body">${renderStructuredBody(content)}</div></div>`;
+        })
+        .join("");
+
+      categorySectionsByAnchor[anchor].push({
+        title: categoryName as string,
+        html: blocks + importantBlock(meta?.importantNote),
+      });
+    }
+  }
+
+  const flushCategoriesFor = (anchor: CategoryReportPosition) => {
+    sectionBodies.push(...categorySectionsByAnchor[anchor]);
+  };
+
   if (specialists.length > 0) {
     const cards = specialists
-      .map((s) => `<div class="spec"><span class="who">${escapeHtml(s.name)}</span></div>`)
+      .map(
+        (s) => `
+          <div class="stage">
+            <div class="stage-h">
+              <span class="stage-name">${escapeHtml(s.name)}</span>
+            </div>
+          </div>`,
+      )
       .join("");
     sectionBodies.push({ title: "Суміжні спеціалісти", html: cards });
   }
+  flushCategoriesFor("after_specialists");
 
   if (exams.length > 0) {
     const cards = exams
@@ -195,63 +273,29 @@ export const generateReportHtml = async ({
         const content = parseStructuredContent(e.recommendation);
         return `
           <div class="exam">
-            <div class="exam-title"><span class="cb"></span>${escapeHtml(e.name)}</div>
             <div class="exam-body">${renderStructuredBody(content)}</div>
           </div>`;
       })
       .join("");
-    sectionBodies.push({ title: "Обстеження", html: cards });
+    sectionBodies.push({
+      title: "Обстеження",
+      html: cards + importantBlock(examsNote),
+    });
   }
+  flushCategoriesFor("after_exams");
 
-  if (procedureStages.some((s) => s.procedures.length > 0)) {
-    const stagesHtml = procedureStages
-      .map((stage, i) => {
-        if (!stage.procedures.length) return "";
-
-        const proceduresHtml = stage.procedures
-          .map((proc) => {
-            const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
-            const interval =
-              proc.intervalEnabled && proc.interval ? proc.interval : "";
-
-            return `
-              <div class="proc-card">
-                <div class="proc-top">
-                  <span class="proc-name">${escapeHtml(proc.name)}</span>
-                  <span class="proc-price"><span class="pl">Орієнтовна вартість</span><span class="line"></span></span>
-                </div>
-                ${
-                  zone || interval
-                    ? `<div class="proc-tags">
-                        ${zone ? `<span class="tag">Зона · ${escapeHtml(zone)}</span>` : ""}
-                        ${interval ? `<span class="tag">Інтервал · <b>${escapeHtml(interval)}</b></span>` : ""}
-                      </div>`
-                    : ""
-                }
-                ${proc.comment?.trim() ? plainTextToHtml(proc.comment) : ""}
-              </div>
-            `;
-          })
-          .join("");
-
-        const workWith =
-          stage.workWithEnabled && stage.workWith?.trim()
-            ? stage.workWith.trim()
-            : "";
-
-        return `
-          <div class="stage">
-            <div class="stage-h">
-              <span class="stage-n">${i + 1}</span>
-              <span class="stage-name">${escapeHtml(stage.title || `Етап ${i + 1}`)}${workWith ? ` — робота з ${escapeHtml(workWith)}` : ""}</span>
-            </div>
-            <div class="stage-b">${proceduresHtml}</div>
-          </div>`;
-      })
+  // TEMPORARILY DISABLED: client asked not to include "Засоби" in the report for now.
+  const includeMedicationsSection = false;
+  if (includeMedicationsSection && medications.length > 0) {
+    const blocks = medications
+      .map((m) => itemBlock(m.name, parseStructuredContent(m.recommendation)))
       .join("");
-
-    sectionBodies.push({ title: "Протокол процедур", html: stagesHtml });
+    sectionBodies.push({
+      title: "Засоби",
+      html: blocks + importantBlock(medicationsNote),
+    });
   }
+  flushCategoriesFor("after_medications");
 
   if (homeCares.length > 0) {
     const allCares = await getAllHomeCares();
@@ -300,34 +344,82 @@ export const generateReportHtml = async ({
       })
       .join("");
 
-    sectionBodies.push({ title: "Домашній догляд", html: groups });
+    sectionBodies.push({
+      title: "Домашній догляд",
+      html: groups + importantBlock(homeCareNote),
+    });
   }
+  flushCategoriesFor("after_homecare");
 
-  if (categoryItems.length > 0) {
-    const categoryNames = Array.from(
-      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
-    );
+  if (procedureStages.some((s) => s.procedures.length > 0)) {
+    const stagesHtml = procedureStages
+      .map((stage, i) => {
+        if (!stage.procedures.length) return "";
 
-    for (const categoryName of categoryNames) {
-      const items = categoryItems.filter((c) => c.categoryName === categoryName);
-      if (items.length === 0) continue;
+        const proceduresHtml = stage.procedures
+          .map((proc) => {
+            const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
+            const interval =
+              proc.intervalEnabled && proc.interval ? proc.interval : "";
+            const visitCount =
+              proc.visitCountEnabled && proc.visitCount != null
+                ? String(proc.visitCount)
+                : "";
 
-      const blocks = items
-        .map((c) =>
-          itemBlock(c.itemName, parseStructuredContent(c.recommendation)),
-        )
-        .join("");
+            return `
+              <div class="proc-card">
+                <div class="proc-top">
+                  <span class="proc-name">${escapeHtml(proc.name)}</span>
+                  <span class="proc-price"><span class="pl">Орієнтовна вартість</span><span class="line"></span></span>
+                </div>
+                ${
+                  zone || interval || visitCount
+                    ? `<div class="proc-tags">
+                        ${zone ? `<span class="tag">Зона · ${escapeHtml(zone)}</span>` : ""}
+                        ${interval ? `<span class="tag">Інтервал · <b>${escapeHtml(interval)}</b></span>` : ""}
+                        ${visitCount ? `<span class="tag">Кількість візитів · <b>${escapeHtml(visitCount)}</b></span>` : ""}
+                      </div>`
+                    : ""
+                }
+                ${proc.comment?.trim() ? plainTextToHtml(proc.comment) : ""}
+              </div>
+            `;
+          })
+          .join("");
 
-      sectionBodies.push({ title: categoryName as string, html: blocks });
-    }
+        const workWith =
+          stage.workWithEnabled && stage.workWith?.trim()
+            ? stage.workWith.trim()
+            : "";
+
+        return `
+          <div class="stage">
+            <div class="stage-h">
+              <span class="stage-n">${i + 1}</span>
+              <span class="stage-name">${escapeHtml(stage.title || `Етап ${i + 1}`)}${workWith ? ` — робота з ${escapeHtml(workWith)}` : ""}</span>
+            </div>
+            <div class="stage-b">${proceduresHtml}</div>
+          </div>`;
+      })
+      .join("");
+
+    sectionBodies.push({
+      title: "Протокол процедур",
+      html: stagesHtml + (procedures.length === 0 ? importantBlock(proceduresNote) : ""),
+    });
   }
+  flushCategoriesFor("after_procedure_stages");
 
   if (procedures.length > 0) {
     const blocks = procedures
       .map((p) => itemBlock(p.name, parseStructuredContent(p.recommendation)))
       .join("");
-    sectionBodies.push({ title: "Рекомендації щодо процедур", html: blocks });
+    sectionBodies.push({
+      title: "Рекомендації щодо процедур",
+      html: blocks + importantBlock(proceduresNote),
+    });
   }
+  flushCategoriesFor("after_procedures");
 
   if (additionalInfo?.trim()) {
     sectionBodies.push({
@@ -371,14 +463,19 @@ export const generateReportHtml = async ({
   :root {
     --ink: #2F311A;
     --olive: #3D4025;
-    --sage: #83875F;
-    --sage-soft: #A9AC8B;
-    --card: #F4F2E7;
-    --line: #C9C6B2;
-    --line-soft: #E2E0D0;
-    --text: #3A3C2C;
-    --muted: #6F715A;
-    --danger: #8A5A3B;
+    --sage: #6E6E6E;
+    --sage-soft: #9A9A9A;
+    --card: #F2F2F2;
+    --line: #B8B8B8;
+    --line-soft: #E0E0E0;
+    --text: #262626;
+    --muted: #707070;
+    --danger: #404040;
+    --accent: var(--olive);
+    --accent-dark: var(--ink);
+    --accent-soft: var(--secondary);
+    --det-bg: #F7F7F7;
+    --secondary: #DCDCDC;
   }
 
   * { box-sizing: border-box; }
@@ -394,7 +491,7 @@ export const generateReportHtml = async ({
     font-size: 10pt;
     line-height: 1.5;
     color: var(--text);
-    background: #E3E1D2;
+    background: #E8E8E8;
   }
 
   .sheet {
@@ -403,7 +500,7 @@ export const generateReportHtml = async ({
     margin: 24px auto;
     background: #fff;
     padding: 12mm 12mm 14mm;
-    box-shadow: 0 18px 45px -20px rgba(47,49,26,.4);
+    box-shadow: 0 18px 45px -20px rgba(26,26,26,.4);
   }
 
   .letterhead {
@@ -418,11 +515,15 @@ export const generateReportHtml = async ({
   }
   .lh-logo { width: 30mm; height: auto; display: block; }
   .lh-kind {
-    font-size: 11pt;
+    font-size: 9pt;
     font-weight: 700;
     letter-spacing: .2em;
     text-transform: uppercase;
     color: var(--ink);
+    background: var(--secondary);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    padding: 2mm 3.5mm;
+    border-radius: 1mm;
   }
 
   .meta {
@@ -445,20 +546,24 @@ export const generateReportHtml = async ({
   }
   .meta .v { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
 
-  .sec { margin-bottom: 6mm; }
+  .sec { margin-bottom: 8mm; }
   .sec-head {
-    display: flex; align-items: center; gap: 3mm;
-    margin-bottom: 3.2mm;
+    display: flex; align-items: baseline; gap: 3.5mm;
+    margin-bottom: 4.5mm;
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-radius: 1mm;
+    padding: 3mm 4.5mm;
     break-after: avoid;
+    break-inside: avoid;
   }
-  .sec-num { font-size: 8pt; font-weight: 700; color: var(--sage); }
+  .sec-num { font-size: 15pt; font-weight: 400; color: rgba(255,255,255,.65); line-height: 1; }
   .sec-title {
     margin: 0;
-    font-size: 10pt; font-weight: 700;
-    letter-spacing: .16em; text-transform: uppercase;
-    color: var(--ink);
+    font-size: 13.5pt; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: #fff;
   }
-  .sec-head::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
   .sub-h {
     font-size: 9.5pt; font-weight: 700;
@@ -466,33 +571,13 @@ export const generateReportHtml = async ({
     margin: 3mm 0 1.6mm;
   }
 
-  .spec {
-    border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
-    padding: 2.6mm 4mm;
-    margin-bottom: 2mm;
-    break-inside: avoid;
-  }
-  .spec:last-child { margin-bottom: 0; }
-  .spec .who { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
-
   .exam { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .exam:last-child { margin-bottom: 0; }
-  .exam-title {
-    display: flex; align-items: center; gap: 3mm;
-    border-bottom: 1px solid var(--line);
-    background: var(--card);
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 2.6mm 4mm;
-    font-weight: 700; color: var(--ink); font-size: 10.5pt;
-    break-after: avoid;
-  }
-  .cb { flex: none; width: 3.6mm; height: 3.6mm; border: 1.6px solid var(--ink); background: #fff; }
   .exam-body { padding: 3.5mm 4mm 4mm; }
 
   .det {
     border: 1px solid var(--line-soft);
-    background: #FAF9F2;
+    background: var(--det-bg);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 3mm 3.5mm;
     margin: 2mm 0;
@@ -506,7 +591,7 @@ export const generateReportHtml = async ({
     text-transform: uppercase; color: var(--sage);
     padding-top: .5mm;
   }
-  .kv .v { flex: 1; margin: 0; font-size: 9pt; }
+  .kv .v { flex: 1; margin: 0; }
 
   .det-box {
     border: 1px solid var(--line-soft);
@@ -536,7 +621,6 @@ export const generateReportHtml = async ({
     position: relative;
     padding-left: 5mm;
     margin: 0 0 1.2mm;
-    font-size: 9pt;
   }
   .det-box--warn .rich-content p:last-child,
   .det-box--warn .rich-content li:last-child { margin-bottom: 0; }
@@ -553,22 +637,21 @@ export const generateReportHtml = async ({
   .important {
     display: flex; gap: 3.5mm;
     margin: 3mm 0;
-    border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
-    background: var(--card);
+    border: 1px solid var(--accent);
+    border-left: 1mm solid var(--accent);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 3mm 3.5mm;
-    font-size: 8.5pt;
     break-inside: avoid;
   }
-  .important .mark { font-size: 15pt; font-weight: 700; color: var(--sage); line-height: 1; }
+  .important .mark { font-size: 15pt; font-weight: 700; color: var(--accent-dark); line-height: 1; }
   .important .rich-content a { color: var(--ink); font-weight: 700; text-decoration: none; }
 
   .stage { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .stage:last-child { margin-bottom: 0; }
   .stage-h {
     display: flex; align-items: center; gap: 3mm;
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-bottom: 1px solid var(--line);
     padding: 2.6mm 4mm;
@@ -577,16 +660,18 @@ export const generateReportHtml = async ({
   .stage-n {
     flex: none;
     width: 6.4mm; height: 6.4mm;
-    border: 1.6px solid var(--ink); border-radius: 50%;
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 9.5pt; color: var(--ink);
+    font-weight: 700; font-size: 9.5pt; color: #fff;
   }
   .stage-name { font-weight: 700; font-size: 11pt; color: var(--ink); }
   .stage-b { padding: 3.5mm 4mm 4mm; }
 
   .proc-card {
     border: 1px solid var(--line);
-    border-left: 1mm solid var(--sage);
+    border-left: 1mm solid var(--accent);
     padding: 3mm 4mm;
     margin-bottom: 2.5mm;
     break-inside: avoid;
@@ -608,20 +693,20 @@ export const generateReportHtml = async ({
   .tag {
     display: inline-block;
     font-size: 6.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--sage);
-    border: 1px solid var(--sage-soft);
+    color: var(--accent-dark);
+    border: 1px solid var(--accent);
     border-radius: 3mm;
     padding: .8mm 3mm;
   }
   .tag b { color: var(--olive); text-transform: none; letter-spacing: 0; font-size: 8pt; }
 
-  .proc-card .plain { margin-top: 2.4mm; font-size: 8.5pt; color: var(--muted); }
+  .proc-card .plain { margin-top: 2.4mm; color: var(--muted); }
 
   .hc-category { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
   .hc-category:last-child { margin-bottom: 0; }
   .hc-cat-h {
     border-bottom: 1px solid var(--line);
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 2.6mm 4mm;
     font-weight: 700; color: var(--ink); font-size: 10.5pt;
@@ -651,7 +736,7 @@ export const generateReportHtml = async ({
   .item-block:last-child { margin-bottom: 0; }
   .item-name {
     border-bottom: 1px solid var(--line);
-    background: var(--card);
+    background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     padding: 2.6mm 4mm;
     font-weight: 700; color: var(--ink); font-size: 10.5pt;
@@ -659,16 +744,16 @@ export const generateReportHtml = async ({
   }
   .item-body { padding: 3.5mm 4mm 4mm; }
 
-  .plain { white-space: pre-wrap; margin: 0; }
+  .plain { white-space: pre-wrap; margin: 0; font-size: 9.5pt; }
 
-  .rich-content { margin: 0; }
+  .rich-content { margin: 0; font-size: 9.5pt; }
   .rich-content h1, .rich-content h2, .rich-content h3 { font-size: 1.05em; font-weight: 700; margin: 0.6em 0 0.3em; }
   .rich-content p { margin: 0.5em 0; }
   .rich-content p:first-child { margin-top: 0; }
   .rich-content p:last-child { margin-bottom: 0; }
   .rich-content ul { list-style: disc; padding-left: 1.3em; margin: 0.3em 0; }
   .rich-content ul li { break-inside: avoid; margin-bottom: 1.2mm; }
-  .rich-content ul li::marker { color: var(--sage); font-weight: 700; }
+  .rich-content ul li::marker { color: var(--accent); font-weight: 700; }
 
   .rich-content ol {
     list-style: none;
@@ -689,10 +774,11 @@ export const generateReportHtml = async ({
     content: counter(step);
     position: absolute; left: 0; top: .4mm;
     width: 4.6mm; height: 4.6mm;
-    border: 1px solid var(--sage-soft);
+    background: var(--accent);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 6.5pt; font-weight: 700; color: var(--sage);
+    font-size: 6.5pt; font-weight: 700; color: #fff;
   }
 
   .rich-content hr { border: none; border-top: 1px solid var(--line-soft); margin: 0.6em 0; }
@@ -746,7 +832,6 @@ export const generateReportHtml = async ({
 
   <div class="meta">
     <div class="cell"><span class="k">Пацієнт</span><span class="v">${escapeHtml(patient.fullName || "")}</span></div>
-    <div class="cell"><span class="k">Лікар</span><span class="v">${escapeHtml(doctorName?.trim() || "—")}</span></div>
     <div class="cell"><span class="k">Дата</span><span class="v">${today}</span></div>
   </div>
 

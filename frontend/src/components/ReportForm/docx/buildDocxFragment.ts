@@ -1,4 +1,5 @@
 import { getAllHomeCares } from "#api/homeCaresApi";
+import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type {
   GenerateReportHtmlParams,
 } from "../html/generateReportHtml";
@@ -27,14 +28,18 @@ const escapeXml = (text: string): string =>
 interface RunOptions {
   bold?: boolean;
   italic?: boolean;
+  color?: string;
+  size?: number;
 }
 
 export const run = (text: string, options: RunOptions = {}): string => {
   if (text === "") return "";
   const rPr =
-    options.bold || options.italic
+    options.bold || options.italic || options.color || options.size
       ? `<w:rPr>${options.bold ? "<w:b/>" : ""}${
           options.italic ? "<w:i/>" : ""
+        }${options.color ? `<w:color w:val="${options.color}"/>` : ""}${
+          options.size ? `<w:sz w:val="${options.size}"/>` : ""
         }</w:rPr>`
       : "";
   return `<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r>`;
@@ -51,8 +56,10 @@ export const bulletParagraph = (runsXml: string): string =>
   )}${runsXml}</w:p>`;
 
 export const headingParagraph = (text: string): string =>
-  `<w:p><w:pPr><w:spacing w:before="200" w:after="120"/></w:pPr>${run(text, {
+  `<w:p><w:pPr><w:spacing w:before="280" w:after="160"/></w:pPr>${run(text, {
     bold: true,
+    color: "3D4025",
+    size: 24,
   })}</w:p>`;
 
 export const dividerParagraph = (text: string): string =>
@@ -62,6 +69,12 @@ export const dividerParagraph = (text: string): string =>
   )}</w:p>`;
 
 export const emptyParagraph = (): string => "<w:p/>";
+
+const importantParagraph = (note?: string): string => {
+  const trimmed = note?.trim();
+  if (!trimmed) return "";
+  return paragraph(run("Важливо: ", { bold: true }) + run(trimmed));
+};
 
 const nodeToRuns = (node: ChildNode, inherited: RunOptions = {}): string => {
   if (node.nodeType === Node.TEXT_NODE) {
@@ -172,6 +185,7 @@ export const buildAppendParagraphsXml = async (
 ): Promise<string> => {
   const {
     exams,
+    medications,
     procedures,
     procedureStages = [],
     specialists,
@@ -180,75 +194,88 @@ export const buildAppendParagraphsXml = async (
     additionalInfo,
     comments,
     finalNote,
-    doctorName,
+    medicationsNote,
+    homeCareNote,
+    examsNote,
+    proceduresNote,
   } = params;
 
   const today = new Date().toLocaleDateString("uk-UA");
   const parts: string[] = [];
 
+  const categorySectionsByAnchor: Record<CategoryReportPosition, string[]> = {
+    after_specialists: [],
+    after_exams: [],
+    after_medications: [],
+    after_homecare: [],
+    after_procedure_stages: [],
+    after_procedures: [],
+  };
+
+  if (categoryItems.length > 0) {
+    const categoriesMeta = await getCategories();
+    const categoryNames = Array.from(
+      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
+    );
+
+    categoryNames.forEach((categoryName) => {
+      const items = categoryItems.filter((c) => c.categoryName === categoryName);
+      if (items.length === 0) return;
+
+      const meta =
+        categoriesMeta.find((cat) => cat._id === items[0].categoryId) ??
+        categoriesMeta.find((cat) => cat.name === categoryName);
+      const showName = meta?.showNameInReport ?? true;
+      const anchor = meta?.reportPosition ?? "after_homecare";
+
+      const xml =
+        headingParagraph(categoryName as string) +
+        items
+          .map((c) => {
+            const content = parseStructuredContent(c.recommendation);
+            return showName
+              ? itemParagraphs(c.itemName, content)
+              : renderStructuredBodyAsDocxParagraphs(content);
+          })
+          .join("") +
+        importantParagraph(meta?.importantNote);
+
+      categorySectionsByAnchor[anchor].push(xml);
+    });
+  }
+
+  const flushCategoriesFor = (anchor: CategoryReportPosition) => {
+    categorySectionsByAnchor[anchor].forEach((xml) => parts.push(xml));
+  };
+
   parts.push(emptyParagraph());
-  parts.push(
-    dividerParagraph(
-      `Рекомендаційний лист · ${today} · Лікар: ${
-        doctorName?.trim() || "—"
-      }`,
-    ),
-  );
+  parts.push(dividerParagraph(`Рекомендаційний лист · ${today}`));
 
   if (specialists.length > 0) {
     parts.push(headingParagraph("Суміжні спеціалісти"));
-    specialists.forEach((s) => parts.push(bulletParagraph(run(s.name))));
+    specialists.forEach((s) =>
+      parts.push(paragraph(run(s.name, { bold: true }))),
+    );
   }
+  flushCategoriesFor("after_specialists");
 
   if (exams.length > 0) {
     parts.push(headingParagraph("Обстеження"));
     exams.forEach((e) =>
-      parts.push(itemParagraphs(e.name, parseStructuredContent(e.recommendation))),
+      parts.push(renderStructuredBodyAsDocxParagraphs(parseStructuredContent(e.recommendation))),
     );
+    parts.push(importantParagraph(examsNote));
   }
+  flushCategoriesFor("after_exams");
 
-  const activeStages = procedureStages.filter((s) => s.procedures.length > 0);
-  if (activeStages.length > 0) {
-    parts.push(headingParagraph("Протокол процедур"));
-    activeStages.forEach((stage, i) => {
-      const workWith =
-        stage.workWithEnabled && stage.workWith?.trim()
-          ? stage.workWith.trim()
-          : "";
-
-      parts.push(
-        paragraph(
-          run(
-            `${i + 1}. ${stage.title || `Етап ${i + 1}`}${
-              workWith ? ` — робота з ${workWith}` : ""
-            }`,
-            { bold: true },
-          ),
-        ),
-      );
-
-      stage.procedures.forEach((proc) => {
-        const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
-        const interval =
-          proc.intervalEnabled && proc.interval ? proc.interval : "";
-        const tags = [
-          zone ? `Зона: ${zone}` : "",
-          interval ? `Інтервал: ${interval}` : "",
-        ]
-          .filter(Boolean)
-          .join(" · ");
-
-        parts.push(
-          bulletParagraph(
-            run(proc.name, { bold: true }) + (tags ? run(` (${tags})`) : ""),
-          ),
-        );
-        if (proc.comment?.trim()) {
-          parts.push(paragraph(run(proc.comment.trim())));
-        }
-      });
-    });
+  if (medications.length > 0) {
+    parts.push(headingParagraph("Засоби"));
+    medications.forEach((m) =>
+      parts.push(itemParagraphs(m.name, parseStructuredContent(m.recommendation))),
+    );
+    parts.push(importantParagraph(medicationsNote));
   }
+  flushCategoriesFor("after_medications");
 
   if (homeCares.length > 0) {
     parts.push(headingParagraph("Домашній догляд"));
@@ -280,32 +307,70 @@ export const buildAppendParagraphsXml = async (
         );
       });
     });
+    parts.push(importantParagraph(homeCareNote));
   }
+  flushCategoriesFor("after_homecare");
 
-  if (categoryItems.length > 0) {
-    const categoryNames = Array.from(
-      new Set(categoryItems.map((c) => c.categoryName?.trim()).filter(Boolean)),
-    );
+  const activeStages = procedureStages.filter((s) => s.procedures.length > 0);
+  if (activeStages.length > 0) {
+    parts.push(headingParagraph("Протокол процедур"));
+    activeStages.forEach((stage, i) => {
+      const workWith =
+        stage.workWithEnabled && stage.workWith?.trim()
+          ? stage.workWith.trim()
+          : "";
 
-    categoryNames.forEach((categoryName) => {
-      const items = categoryItems.filter((c) => c.categoryName === categoryName);
-      if (items.length === 0) return;
-
-      parts.push(headingParagraph(categoryName as string));
-      items.forEach((c) =>
-        parts.push(
-          itemParagraphs(c.itemName, parseStructuredContent(c.recommendation)),
+      parts.push(
+        paragraph(
+          run(
+            `${i + 1}. ${stage.title || `Етап ${i + 1}`}${
+              workWith ? ` — робота з ${workWith}` : ""
+            }`,
+            { bold: true },
+          ),
         ),
       );
+
+      stage.procedures.forEach((proc) => {
+        const zone = proc.zoneEnabled && proc.zone ? proc.zone : "";
+        const interval =
+          proc.intervalEnabled && proc.interval ? proc.interval : "";
+        const visitCount =
+          proc.visitCountEnabled && proc.visitCount != null
+            ? String(proc.visitCount)
+            : "";
+        const tags = [
+          zone ? `Зона: ${zone}` : "",
+          interval ? `Інтервал: ${interval}` : "",
+          visitCount ? `Кількість візитів: ${visitCount}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
+        parts.push(
+          bulletParagraph(
+            run(proc.name, { bold: true }) + (tags ? run(` (${tags})`) : ""),
+          ),
+        );
+        if (proc.comment?.trim()) {
+          parts.push(paragraph(run(proc.comment.trim())));
+        }
+      });
     });
+    if (procedures.length === 0) {
+      parts.push(importantParagraph(proceduresNote));
+    }
   }
+  flushCategoriesFor("after_procedure_stages");
 
   if (procedures.length > 0) {
     parts.push(headingParagraph("Рекомендації щодо процедур"));
     procedures.forEach((p) =>
       parts.push(itemParagraphs(p.name, parseStructuredContent(p.recommendation))),
     );
+    parts.push(importantParagraph(proceduresNote));
   }
+  flushCategoriesFor("after_procedures");
 
   if (additionalInfo?.trim()) {
     parts.push(headingParagraph("Все, що необхідно знати про ваш стан"));

@@ -4,7 +4,7 @@ import {
   type ICategory,
   type ICategoryItem,
 } from "#api/referenceApi";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { useEffect, useState } from "react";
 
@@ -165,10 +165,7 @@ const SearchCategories: React.FC<Props> = ({
                         </div>
                         {item.recommendation && (
                           <div className="text-xs text-ink-soft mt-1 leading-relaxed whitespace-pre-wrap">
-                            <ExpandableText
-                              text={item.recommendation}
-                              limit={120}
-                            />
+                            <FormattedText markdown={item.recommendation} />
                           </div>
                         )}
                       </div>
@@ -202,10 +199,7 @@ const SearchCategories: React.FC<Props> = ({
                       </div>
                       {item.recommendation && (
                         <div className="chip-sub mt-0.5 text-xs text-ink-soft whitespace-pre-wrap leading-relaxed">
-                          <ExpandableText
-                            text={item.recommendation}
-                            limit={120}
-                          />
+                          <FormattedText markdown={item.recommendation} />
                         </div>
                       )}
                     </div>

@@ -12,8 +12,13 @@ export const getCategories = async (_req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name } = req.body;
-    const category = await CategoriesService.createCategory(name);
+    const { name, showNameInReport, reportPosition, importantNote } = req.body;
+    const category = await CategoriesService.createCategory(
+      name,
+      showNameInReport,
+      reportPosition,
+      importantNote,
+    );
     res.status(201).json({ category });
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
@@ -23,8 +28,14 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
-    const category = await CategoriesService.updateCategory(id, name);
+    const { name, showNameInReport, reportPosition, importantNote } = req.body;
+    const category = await CategoriesService.updateCategory(
+      id,
+      name,
+      showNameInReport,
+      reportPosition,
+      importantNote,
+    );
     res.json({ category });
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
