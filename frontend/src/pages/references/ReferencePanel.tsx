@@ -1,4 +1,8 @@
-import { getCategories as fetchCategories } from "#api/referenceApi";
+import {
+  getCategories as fetchCategories,
+  getRegistrationRequests,
+  type ICategory,
+} from "#api/referenceApi";
 import CategoriesManager from "#components/Admin/CategoriesManager";
 import CategoryItemsManager from "#components/Admin/CategoryItemsManager";
 import DoctorsManager from "#components/Admin/DoctorsManager";
@@ -11,7 +15,8 @@ import PatientManager from "#components/PatientList/PatientManager";
 import ProceduresManager from "#components/Procedures/ProceduresManager";
 import SpecialistsManager from "#components/Specialists/SpecialistsManager";
 import { useAuth } from "#hooks/useAuth";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
 
 interface TabItem {
@@ -25,29 +30,34 @@ const ReferencePanel: React.FC = () => {
   const [activeTab, setActiveTabState] = useState<string>(
     () => searchParams.get("tab") || "categories",
   );
-  const setActiveTab = (tab: string) => {
-    setActiveTabState(tab);
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set("tab", tab);
-        return next;
-      },
-      { replace: true },
-    );
-  };
-  const [categories, setCategories] = useState<any[]>([]);
+  const setActiveTab = useCallback(
+    (tab: string) => {
+      setActiveTabState(tab);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set("tab", tab);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+  const [categories, setCategories] = useState<ICategory[]>([]);
+  const [requestsCount, setRequestsCount] = useState<number>(0);
+  const tabListRef = useRef<HTMLDivElement | null>(null);
   const { isAdmin, isDoctor } = useAuth();
   const readOnly = isDoctor && !isAdmin;
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const cats = await fetchCategories();
       setCategories(cats || []);
-    } catch (err) {
-      console.error("Failed to load categories:", err);
+    } catch {
+      toast.error("Не вдалося завантажити категорії довідників.");
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadCategories();
@@ -55,7 +65,32 @@ const ReferencePanel: React.FC = () => {
     window.addEventListener("categoriesUpdated", handler as EventListener);
     return () =>
       window.removeEventListener("categoriesUpdated", handler as EventListener);
-  }, []);
+  }, [loadCategories]);
+
+  // Бейдж кількості запитів на реєстрацію (таб «Запити»): один фетч на монтування
+  // + оновлення через подію від RegistrationRequestsManager після кожного load.
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let cancelled = false;
+    getRegistrationRequests()
+      .then((requests) => {
+        if (!cancelled) setRequestsCount(requests?.length ?? 0);
+      })
+      .catch(() => {
+        // Бейдж — необовʼязкова прикраса; помилку побачить сам таб «Запити»
+      });
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<number>).detail;
+      if (typeof detail === "number") setRequestsCount(detail);
+    };
+    window.addEventListener("registrationRequestsUpdated", handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("registrationRequestsUpdated", handler);
+    };
+  }, [isAdmin]);
 
   const referenceTabs: TabItem[] = [
     { key: "medications", label: "Засоби" },
@@ -64,7 +99,6 @@ const ReferencePanel: React.FC = () => {
     { key: "specialists", label: "Суміжні спеціалісти" },
     { key: "homecares", label: "Домашній догляд" },
     { key: "patients", label: "Пацієнти" },
-    { key: "settings", label: "Важливі тексти" },
   ];
 
   useEffect(() => {
@@ -76,15 +110,19 @@ const ReferencePanel: React.FC = () => {
     ) {
       setActiveTab("medications");
     }
-  }, [activeTab, isAdmin]);
+  }, [activeTab, isAdmin, setActiveTab]);
 
-  const adminTabs: TabItem[] = isAdmin
-    ? [
-        { key: "categories", label: "Категорії" },
-        { key: "doctors", label: "Лікарі" },
-        { key: "registration-requests", label: "Запити" },
-      ]
-    : [];
+  // Автопрокрутка рядка табів до активного таба (без block-скролу сторінки)
+  useEffect(() => {
+    const activeButton = tabListRef.current?.querySelector<HTMLElement>(
+      '[aria-selected="true"]',
+    );
+    activeButton?.scrollIntoView({
+      inline: "nearest",
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [activeTab]);
 
   const dynamicTabs: TabItem[] = categories.map((cat) => ({
     key: `cat-${cat._id}`,
@@ -92,7 +130,32 @@ const ReferencePanel: React.FC = () => {
     isDynamic: true,
   }));
 
-  const allTabs = [...referenceTabs, ...adminTabs, ...dynamicTabs];
+  // Адмін-група в кінці рядка табів; «Важливі тексти» доступні й лікарям
+  const trailingTabs: TabItem[] = [
+    ...(isAdmin
+      ? [
+          { key: "categories", label: "Категорії" },
+          { key: "doctors", label: "Лікарі" },
+          { key: "registration-requests", label: "Запити" },
+        ]
+      : []),
+    { key: "settings", label: "Важливі тексти" },
+  ];
+
+  const renderTab = (tab: TabItem) => (
+    <button
+      key={tab.key}
+      role="tab"
+      aria-selected={activeTab === tab.key}
+      onClick={() => setActiveTab(tab.key)}
+      className={`tab-pill whitespace-nowrap ${activeTab === tab.key ? "is-active" : ""}`}
+    >
+      {tab.label}
+      {tab.key === "registration-requests" && requestsCount > 0 && (
+        <span className="pill is-on ml-1.5">{requestsCount}</span>
+      )}
+    </button>
+  );
 
   return (
     <div>
@@ -100,16 +163,19 @@ const ReferencePanel: React.FC = () => {
         Довідники
       </h1>
 
-      <div className="mb-5 flex w-full overflow-x-auto pb-1 gap-1.5 scrollbar-none sm:flex-wrap">
-        {allTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`tab-pill whitespace-nowrap ${activeTab === tab.key ? "is-active" : ""}`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div
+        ref={tabListRef}
+        role="tablist"
+        aria-label="Довідники"
+        className="mb-5 flex w-full items-center overflow-x-auto pb-1 gap-1.5 scrollbar-none sm:flex-wrap"
+      >
+        {referenceTabs.map(renderTab)}
+        {dynamicTabs.map(renderTab)}
+        <span
+          className="h-4 w-px shrink-0 self-center bg-line"
+          aria-hidden="true"
+        />
+        {trailingTabs.map(renderTab)}
       </div>
 
       <div className="card">

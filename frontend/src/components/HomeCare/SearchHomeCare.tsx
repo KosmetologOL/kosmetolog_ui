@@ -1,8 +1,10 @@
 import { getAllHomeCares, type IHomeCare } from "#api/homeCaresApi";
 import { searchMedicationsByName, type IMedication } from "#api/medicationsApi";
 import FormattedText from "#components/FormattedText";
+import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
-import { useEffect, useState } from "react";
+import Spinner from "#components/Spinner";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface Props {
@@ -17,7 +19,10 @@ const SearchHomeCare: React.FC<Props> = ({
   const [allHomeCares, setAllHomeCares] = useState<IHomeCare[]>([]);
   const [editingHomeCare, setEditingHomeCare] = useState<IHomeCare | null>(null);
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<Record<string, IMedication[]>>({});
+  // undefined — пошук для цієї категорії ще не виконувався (порожнє поле)
+  const [results, setResults] = useState<
+    Record<string, IMedication[] | undefined>
+  >({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [loadingCares, setLoadingCares] = useState(true);
   const [checkboxes, setCheckboxes] = useState<
@@ -39,6 +44,7 @@ const SearchHomeCare: React.FC<Props> = ({
   }, []);
 
   useEffect(() => {
+    let ignore = false;
     const timers: Record<string, ReturnType<typeof setTimeout>> = {};
 
     allHomeCares.forEach((care) => {
@@ -46,7 +52,7 @@ const SearchHomeCare: React.FC<Props> = ({
       const value = searchValues[careId];
 
       if (!value?.trim()) {
-        setResults((prev) => ({ ...prev, [careId]: [] }));
+        setResults((prev) => ({ ...prev, [careId]: undefined }));
         return;
       }
 
@@ -54,14 +60,21 @@ const SearchHomeCare: React.FC<Props> = ({
         setLoading((prev) => ({ ...prev, [careId]: true }));
         try {
           const meds = await searchMedicationsByName(value.trim());
-          setResults((prev) => ({ ...prev, [careId]: meds }));
+          if (!ignore) {
+            setResults((prev) => ({ ...prev, [careId]: meds }));
+          }
         } finally {
-          setLoading((prev) => ({ ...prev, [careId]: false }));
+          if (!ignore) {
+            setLoading((prev) => ({ ...prev, [careId]: false }));
+          }
         }
       }, 400);
     });
 
-    return () => Object.values(timers).forEach(clearTimeout);
+    return () => {
+      ignore = true;
+      Object.values(timers).forEach(clearTimeout);
+    };
   }, [searchValues, allHomeCares]);
 
   const handleSearchChange = (careId: string, value: string) => {
@@ -73,12 +86,8 @@ const SearchHomeCare: React.FC<Props> = ({
     medication: IMedication,
     morning: boolean,
     evening: boolean,
-    careId: string,
+    checkboxKey: string,
   ) => {
-    const medicationId =
-      medication._id || `${careId}-${medication.name}-${Math.random()}`;
-    const checkboxKey = `${careId}:${medicationId}`;
-
     const isDuplicate = selectedHomeCares.some(
       (item) =>
         item.name === care.name && item.medicationName === medication.name,
@@ -91,7 +100,7 @@ const SearchHomeCare: React.FC<Props> = ({
 
     const newItem: IHomeCare = {
       ...care,
-      _id: medicationId,
+      _id: medication._id || crypto.randomUUID(),
       medicationName: medication.name,
       recommendations: medication.recommendation,
       morning,
@@ -99,8 +108,7 @@ const SearchHomeCare: React.FC<Props> = ({
     };
 
     setSelectedHomeCares((prev) => [...prev, newItem]);
-    setSearchValues((prev) => ({ ...prev, [careId]: "" }));
-    setResults((prev) => ({ ...prev, [careId]: [] }));
+    // Пошук і результати не скидаємо — лікар часто додає кілька засобів поспіль.
     setCheckboxes((prev) => ({
       ...prev,
       [checkboxKey]: { morning: false, evening: false },
@@ -108,13 +116,14 @@ const SearchHomeCare: React.FC<Props> = ({
   };
 
   if (loadingCares) {
-    return <p className="text-sm text-ink-soft">Завантаження категорій...</p>;
+    return <p className="text-sm text-ink-soft">Завантаження категорій…</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
       {allHomeCares.map((care) => {
         const careId = String(care._id || care.name);
+        const searchValue = searchValues[careId] || "";
 
         const availableResults = (results[careId] || []).filter(
           (medication) =>
@@ -125,24 +134,38 @@ const SearchHomeCare: React.FC<Props> = ({
             ),
         );
 
+        const showEmpty =
+          Boolean(searchValue.trim()) &&
+          !loading[careId] &&
+          results[careId] !== undefined &&
+          availableResults.length === 0;
+
         return (
           <div key={careId} className="rounded-xl border border-line bg-surface-2 p-4">
-            <p className="mb-3 text-[15px] font-bold">{care.name}</p>
+            <p className="list-row-name mb-3">{care.name}</p>
 
-            <input
-              type="text"
-              placeholder="Пошук засобу..."
-              value={searchValues[careId] || ""}
-              onChange={(e) => handleSearchChange(careId, e.target.value)}
-              className="field-input"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Пошук засобу"
+                aria-label={`Пошук засобу: ${care.name}`}
+                value={searchValue}
+                onChange={(e) => handleSearchChange(careId, e.target.value)}
+                className={`field-input${loading[careId] ? " pr-10" : ""}`}
+              />
+              {loading[careId] && (
+                <span className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-ink-soft">
+                  <Spinner />
+                </span>
+              )}
+            </div>
 
-            {loading[careId] && (
-              <p className="mt-2 text-sm text-ink-soft">Завантаження...</p>
+            {showEmpty && (
+              <p className="mt-2 text-sm text-ink-soft">Нічого не знайдено</p>
             )}
 
-            {availableResults.length > 0 && !loading[careId] && (
-              <div className="mt-3 flex flex-col gap-2">
+            {availableResults.length > 0 && (
+              <div className="select-content mt-3 flex flex-col gap-2">
                 {availableResults.map((medication, index) => {
                   const medicationId =
                     medication._id ||
@@ -155,13 +178,14 @@ const SearchHomeCare: React.FC<Props> = ({
                       className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-xl border border-line bg-surface p-3.5 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="text-[14.5px] font-bold text-ink">
+                        <div className="min-w-0 truncate text-sm font-bold text-ink">
                           {medication.name}
                         </div>
                         {medication.recommendation && (
-                          <div className="text-xs text-ink-soft mt-1 leading-relaxed whitespace-pre-wrap">
-                            <FormattedText markdown={medication.recommendation} />
-                          </div>
+                          <FormattedText
+                            markdown={medication.recommendation}
+                            className="mt-1 text-xs leading-relaxed text-ink-soft"
+                          />
                         )}
                       </div>
 
@@ -180,7 +204,6 @@ const SearchHomeCare: React.FC<Props> = ({
                                   },
                                 }))
                               }
-                              className="rounded border-line-strong text-brand focus:ring-brand/20"
                             />
                             Ранок
                           </label>
@@ -197,7 +220,6 @@ const SearchHomeCare: React.FC<Props> = ({
                                   },
                                 }))
                               }
-                              className="rounded border-line-strong text-brand focus:ring-brand/20"
                             />
                             Вечір
                           </label>
@@ -211,12 +233,12 @@ const SearchHomeCare: React.FC<Props> = ({
                               medication,
                               checkboxes[checkboxKey]?.morning ?? care.morning,
                               checkboxes[checkboxKey]?.evening ?? care.evening,
-                              careId,
+                              checkboxKey,
                             )
                           }
                           className="btn btn-tint btn-sm px-4"
                         >
-                          + Додати
+                          Додати
                         </button>
                       </div>
                     </div>
@@ -246,16 +268,17 @@ const SearchHomeCare: React.FC<Props> = ({
                     return (
                       <div
                         key={h._id || `${h.name}-${h.medicationName}`}
-                        className="chip-row flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-surface rounded-xl border border-line p-3"
+                        className="chip-row anim-rise flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-surface rounded-xl border border-line p-3"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="chip-name font-bold text-ink text-[14.5px]">
+                          <div className="chip-name">
                             {h.medicationName || h.name}
                           </div>
                           {h.recommendations && (
-                            <div className="chip-sub mt-0.5 text-xs text-ink-soft whitespace-pre-wrap leading-relaxed">
-                              <FormattedText markdown={h.recommendations} />
-                            </div>
+                            <FormattedText
+                              markdown={h.recommendations}
+                              className="chip-sub"
+                            />
                           )}
                         </div>
 
@@ -280,7 +303,6 @@ const SearchHomeCare: React.FC<Props> = ({
                                       );
                                     }
                                   }}
-                                  className="rounded border-line-strong text-brand focus:ring-brand/20"
                                 />
                                 {key === "morning" ? "Ранок" : "Вечір"}
                               </label>
@@ -289,23 +311,12 @@ const SearchHomeCare: React.FC<Props> = ({
 
                           <button
                             type="button"
-                            className="btn btn-ghost btn-sm px-2.5"
+                            className="icon-btn h-8 w-8 text-ink-soft hover:bg-line hover:text-ink"
                             title="Редагувати засіб"
                             aria-label="Редагувати засіб"
                             onClick={() => setEditingHomeCare(h)}
                           >
-                            <svg
-                              className="w-3.5 h-3.5 text-ink-soft"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M12 20h9" />
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                            </svg>
+                            <IconEdit />
                           </button>
                           <button
                             type="button"
@@ -317,7 +328,7 @@ const SearchHomeCare: React.FC<Props> = ({
                               );
                             }}
                           >
-                            ×
+                            <IconClose className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>

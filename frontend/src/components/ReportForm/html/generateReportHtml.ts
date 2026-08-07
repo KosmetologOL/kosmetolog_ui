@@ -11,7 +11,7 @@ import logoUrl from "#assets/logo.png";
 import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
 import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
 import { toast } from "react-hot-toast/headless";
-import { saveHtmlBlob } from "../../../lib/htmlSaveLocation";
+import { saveHtmlBlob } from "#lib/htmlSaveLocation";
 import {
   parseStructuredContent,
   type StructuredContent,

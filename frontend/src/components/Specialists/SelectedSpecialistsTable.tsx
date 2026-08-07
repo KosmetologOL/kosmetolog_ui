@@ -1,4 +1,6 @@
 import type { ISpecialist } from "#api/specialistsApi";
+import ReferenceItemModal from "#components/ReferenceItemModal";
+import SelectedChips from "#components/SelectedChips";
 import React, { useState } from "react";
 
 interface Props {
@@ -10,90 +12,47 @@ const SelectedSpecialistsTable: React.FC<Props> = ({
   selectedSpecialists,
   setSelectedSpecialists,
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingSpecialist, setEditingSpecialist] =
+    useState<ISpecialist | null>(null);
 
-  const handleEdit = (specialist: ISpecialist) => {
-    setEditingId(specialist._id || null);
-  };
+  const handleSave = (updated: { name: string }) => {
+    if (!editingSpecialist?._id) {
+      return;
+    }
 
-  const handleInputChange = (id: string, value: string) => {
     setSelectedSpecialists((prev) =>
-      prev.map((s) =>
-        s._id === id
-          ? {
-              ...s,
-              name: value,
-            }
-          : s
-      )
+      prev.map((specialist) =>
+        specialist._id === editingSpecialist._id
+          ? { ...specialist, name: updated.name }
+          : specialist,
+      ),
     );
+    setEditingSpecialist(null);
   };
-
-  const handleFinishEdit = () => {
-    setEditingId(null);
-  };
-
-  const handleRemove = (id: string) => {
-    setSelectedSpecialists((prev) => prev.filter((s) => s._id !== id));
-  };
-
-  if (selectedSpecialists.length === 0)
-    return <p className="mt-3 text-sm text-ink-soft">Нічого не вибрано</p>;
 
   return (
-    <div className="mt-3 flex flex-col gap-2">
-      {selectedSpecialists.map((specialist) => (
-        <div key={specialist._id} className="chip-row">
-          <div className="min-w-0 flex-1">
-            {editingId === specialist._id ? (
-              <input
-                type="text"
-                value={specialist.name || ""}
-                onChange={(e) =>
-                  handleInputChange(specialist._id!, e.target.value)
-                }
-                className="field-input h-9"
-                autoFocus
-              />
-            ) : (
-              <button
-                type="button"
-                className="chip-name text-left"
-                onClick={() => handleEdit(specialist)}
-              >
-                {specialist.name}
-              </button>
-            )}
-          </div>
+    <>
+      <SelectedChips<ISpecialist>
+        items={selectedSpecialists}
+        getName={(specialist) => specialist.name}
+        onEdit={setEditingSpecialist}
+        onRemove={(specialist) =>
+          setSelectedSpecialists((prev) =>
+            prev.filter((s) => s._id !== specialist._id),
+          )
+        }
+      />
 
-          {editingId === specialist._id ? (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={handleFinishEdit}
-            >
-              Готово
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => handleEdit(specialist)}
-            >
-              Оновити
-            </button>
-          )}
-          <button
-            type="button"
-            className="chip-remove"
-            aria-label="Видалити"
-            onClick={() => handleRemove(specialist._id!)}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-    </div>
+      <ReferenceItemModal
+        visible={Boolean(editingSpecialist)}
+        title="Редагувати спеціаліста"
+        submitLabel="Зберегти"
+        showRecommendation={false}
+        item={{ name: editingSpecialist?.name ?? "" }}
+        onClose={() => setEditingSpecialist(null)}
+        onSave={handleSave}
+      />
+    </>
   );
 };
 

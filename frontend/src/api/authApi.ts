@@ -27,13 +27,24 @@ export const loginUser = async (
   return data;
 };
 
+/**
+ * Відповідь /auth/register: для лікаря бекенд створює запит на реєстрацію
+ * і повертає лише { message }; для звичайного користувача — дані акаунта.
+ */
+export interface RegisterResponse {
+  message?: string;
+  email?: string;
+  role?: string;
+  id?: string;
+}
+
 export const registerUser = async (
   email: string,
   password: string,
   name?: string,
   role?: string,
 ) => {
-  const { data } = await axios.post(`${API_URL}/register`, {
+  const { data } = await axios.post<RegisterResponse>(`${API_URL}/register`, {
     email,
     password,
     name,

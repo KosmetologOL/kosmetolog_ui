@@ -1,7 +1,7 @@
 import logoMark from "#assets/logo-mark.png";
 import { useAuth } from "#hooks/useAuth";
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Адміністратор",
@@ -10,7 +10,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-4 py-2 rounded-full text-[15px] transition-colors ${
+  `px-4 py-2 rounded-full text-[15px] transition-[background-color,color,transform] duration-150 active:scale-[0.98] ${
     isActive
       ? "bg-brand-soft text-ink"
       : "text-ink-soft hover:bg-surface-2 hover:text-ink"
@@ -20,7 +20,12 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, canAccessReferencePanel, logout } = useAuth();
   const role = user?.role?.toLowerCase() ?? "user";
   const { pathname } = useLocation();
-  const onPatients = pathname === "/" || pathname.startsWith("/patients");
+  // «Пацієнти» активна і на сторінці створення листа, щоб лікар не «випадав»
+  // з навігації, тому активність керується вручну, а не матчингом NavLink.
+  const onPatients =
+    pathname === "/" ||
+    pathname.startsWith("/patients") ||
+    pathname.startsWith("/create-report");
 
   return (
     <div className="min-h-dvh flex flex-col bg-paper text-ink font-brand">
@@ -37,9 +42,13 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           <nav className="flex gap-1.5 mr-auto" aria-label="Основна навігація">
-            <NavLink to="/patients" className={() => navLinkClass({ isActive: onPatients })}>
+            <Link
+              to="/patients"
+              aria-current={onPatients ? "page" : undefined}
+              className={navLinkClass({ isActive: onPatients })}
+            >
               Пацієнти
-            </NavLink>
+            </Link>
             {canAccessReferencePanel && (
               <NavLink to="/references" className={navLinkClass}>
                 Довідники
