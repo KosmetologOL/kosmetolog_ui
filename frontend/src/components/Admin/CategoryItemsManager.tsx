@@ -2,21 +2,64 @@ import {
   createCategoryItem,
   deleteCategoryItem,
   listCategoryItems,
+  updateCategory,
   updateCategoryItem,
+  type CategoryReportPosition,
 } from "#api/referenceApi";
 import ConfirmModal from "#components/ConfirmModal";
-import ExpandableText from "#components/ExpandableText";
+import FormattedText from "#components/FormattedText";
 import ReferenceItemModal from "#components/ReferenceItemModal";
-import React, { useEffect, useState } from "react";
+import Select from "#components/Select";
+import { downloadCsv, parseCsv, toCsv } from "#types/csv";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
+
+const IMPORT_BATCH_SIZE = 15;
+
+// Пачками по IMPORT_BATCH_SIZE замість повністю послідовно — на сотнях
+// записів це в рази швидше, а onProgress все одно оновлюється по кожному
+// завершеному item, а не по пачці.
+const runInBatches = async <T,>(
+  items: T[],
+  worker: (item: T) => Promise<void>,
+  onProgress: (done: number) => void,
+): Promise<void> => {
+  let done = 0;
+  for (let i = 0; i < items.length; i += IMPORT_BATCH_SIZE) {
+    const batch = items.slice(i, i + IMPORT_BATCH_SIZE);
+    await Promise.all(
+      batch.map(async (item) => {
+        await worker(item);
+        done += 1;
+        onProgress(done);
+      }),
+    );
+  }
+};
+
+const REPORT_POSITION_OPTIONS: { value: CategoryReportPosition; label: string }[] = [
+  { value: "after_specialists", label: "Після «Суміжні спеціалісти»" },
+  { value: "after_exams", label: "Після «Обстеження»" },
+  { value: "after_medications", label: "Після «Засоби»" },
+  { value: "after_homecare", label: "Після «Домашній догляд»" },
+  { value: "after_procedure_stages", label: "Після «Протокол процедур»" },
+  { value: "after_procedures", label: "Після «Рекомендації щодо процедур»" },
+];
 
 interface Props {
   categoryId: string;
   categoryName: string;
+  showNameInReport?: boolean;
+  reportPosition?: CategoryReportPosition;
+  importantNote?: string;
 }
 
 const CategoryItemsManager: React.FC<Props> = ({
   categoryId,
   categoryName,
+  showNameInReport,
+  reportPosition,
+  importantNote,
 }) => {
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +67,38 @@ const CategoryItemsManager: React.FC<Props> = ({
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<
+    { phase: "deleting" | "creating"; done: number; total: number } | null
+  >(null);
+  const [pendingImport, setPendingImport] = useState<
+    { name: string; recommendation: string }[] | null
+  >(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [noteDraft, setNoteDraft] = useState(importantNote ?? "");
+
+  useEffect(() => {
+    setNoteDraft(importantNote ?? "");
+  }, [categoryId, importantNote]);
+
+  const handleUpdateSettings = async (
+    nextShowNameInReport: boolean,
+    nextReportPosition: CategoryReportPosition,
+    nextImportantNote?: string,
+  ) => {
+    try {
+      await updateCategory(
+        categoryId,
+        categoryName,
+        nextShowNameInReport,
+        nextReportPosition,
+        nextImportantNote ?? importantNote ?? "",
+      );
+      window.dispatchEvent(new CustomEvent("categoriesUpdated"));
+    } catch (err) {
+      console.error("Помилка при оновленні налаштувань категорії:", err);
+    }
+  };
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = items.filter((item) => {
@@ -87,6 +162,105 @@ const CategoryItemsManager: React.FC<Props> = ({
     }
   };
 
+  const handleExportCsv = () => {
+    const header = ["Назва", "Рекомендація"];
+    const rows = items.map((item) => [item.name, item.recommendation ?? ""]);
+    downloadCsv(`${categoryName}.csv`, toCsv(header, rows));
+  };
+
+  const handleImportClick = () => fileInputRef.current?.click();
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const rawText = await file.text();
+    const text = rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
+    const rows = parseCsv(text);
+
+    if (rows.length < 2) {
+      toast.error("Файл порожній або не містить рядків з даними.");
+      return;
+    }
+
+    const [header, ...dataRows] = rows;
+    const nameIdx = header.findIndex((h) => h.trim().toLowerCase() === "назва");
+    const recIdx = header.findIndex(
+      (h) => h.trim().toLowerCase() === "рекомендація",
+    );
+
+    if (nameIdx === -1) {
+      toast.error('У файлі немає колонки "Назва".');
+      return;
+    }
+
+    const parsed = dataRows
+      .map((cols) => ({
+        name: (cols[nameIdx] ?? "").trim(),
+        recommendation: recIdx >= 0 ? (cols[recIdx] ?? "").trim() : "",
+      }))
+      .filter((row) => row.name);
+
+    if (parsed.length === 0) {
+      toast.error("У файлі немає рядків із заповненою назвою.");
+      return;
+    }
+
+    const skipped = dataRows.length - parsed.length;
+    if (skipped > 0) {
+      toast(
+        `Пропущено ${skipped} ${skipped === 1 ? "рядок" : "рядків"} із порожньою назвою.`,
+        { icon: "⚠️" },
+      );
+    }
+
+    setPendingImport(parsed);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImport) return;
+
+    // Спочатку видаляємо всі старі записи категорії, потім створюємо нові з файлу.
+    const oldItems = items;
+
+    setIsImporting(true);
+    try {
+      setImportProgress({ phase: "deleting", done: 0, total: oldItems.length });
+      await runInBatches(
+        oldItems,
+        async (item) => {
+          await deleteCategoryItem(item._id);
+        },
+        (done) => setImportProgress({ phase: "deleting", done, total: oldItems.length }),
+      );
+
+      setImportProgress({ phase: "creating", done: 0, total: pendingImport.length });
+      await runInBatches(
+        pendingImport,
+        async (row) => {
+          await createCategoryItem(categoryId, row.name, row.recommendation);
+        },
+        (done) =>
+          setImportProgress({ phase: "creating", done, total: pendingImport.length }),
+      );
+
+      await load();
+      toast.success(
+        `Попередні записи видалено, імпортовано ${pendingImport.length} нових.`,
+      );
+    } catch {
+      await load();
+      toast.error(
+        "Під час імпорту сталася помилка. Старі записи вже видалено — перевірте список і за потреби довантажте файл ще раз.",
+      );
+    } finally {
+      setIsImporting(false);
+      setImportProgress(null);
+      setPendingImport(null);
+    }
+  };
+
   return (
     <div className="flex w-full flex-col items-start">
       {/* Header toolbar */}
@@ -100,25 +274,115 @@ const CategoryItemsManager: React.FC<Props> = ({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="btn btn-primary btn-sm"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            aria-hidden="true"
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="btn btn-primary btn-sm"
           >
-            <path d="M8 2v12M2 8h12" />
-          </svg>
-          Додати запис
-        </button>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M8 2v12M2 8h12" />
+            </svg>
+            Додати запис
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="btn btn-ghost btn-sm"
+          >
+            Експорт CSV
+          </button>
+
+          <button
+            type="button"
+            onClick={handleImportClick}
+            disabled={isImporting}
+            className="btn btn-ghost btn-sm"
+          >
+            {isImporting ? "Імпорт..." : "Імпорт CSV"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {/* Report display settings */}
+      <div className="mb-5 flex w-full flex-wrap items-center gap-x-5 gap-y-3 border-b border-line pb-4">
+        <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+          <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-line-strong transition-colors duration-200 has-[:checked]:bg-brand has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/30 has-[:focus-visible]:ring-offset-2">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={showNameInReport ?? true}
+              onChange={(e) =>
+                handleUpdateSettings(
+                  e.target.checked,
+                  reportPosition ?? "after_homecare",
+                )
+              }
+              className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+            <span className="pointer-events-none absolute left-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform duration-200 peer-checked:translate-x-4" />
+          </span>
+          <span className="text-sm font-medium text-ink">
+            Показувати назву у сформованому звіті
+          </span>
+        </label>
+
+        <span className="hidden h-4 w-px bg-line sm:block" aria-hidden="true" />
+
+        <label className="inline-flex items-center gap-2.5">
+          <span className="text-sm text-ink-soft">Розташування у звіті</span>
+          <Select
+            value={reportPosition ?? "after_homecare"}
+            onValueChange={(value) =>
+              handleUpdateSettings(
+                showNameInReport ?? true,
+                value as CategoryReportPosition,
+              )
+            }
+            options={REPORT_POSITION_OPTIONS}
+            className="h-9 w-auto"
+          />
+        </label>
+      </div>
+
+      {/* Важливий текст — автоматично додається блоком "!" під цією категорією у звіті */}
+      <div className="mb-5 w-full border-b border-line pb-4">
+        <span className="mb-1.5 block text-sm font-medium text-ink">
+          Важливий текст для розділу
+        </span>
+        <textarea
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={() => {
+            if (noteDraft !== (importantNote ?? "")) {
+              handleUpdateSettings(
+                showNameInReport ?? true,
+                reportPosition ?? "after_homecare",
+                noteDraft,
+              );
+            }
+          }}
+          rows={3}
+          placeholder="Важливо..."
+          className="field-textarea w-full min-h-[80px] resize-y"
+        />
       </div>
 
       {/* Search input bar */}
@@ -170,7 +434,7 @@ const CategoryItemsManager: React.FC<Props> = ({
                 <div className="list-row-name">{item.name}</div>
                 {item.recommendation && (
                   <div className="list-row-sub whitespace-pre-wrap">
-                    <ExpandableText text={item.recommendation} />
+                    <FormattedText markdown={item.recommendation} />
                   </div>
                 )}
               </div>
@@ -226,6 +490,24 @@ const CategoryItemsManager: React.FC<Props> = ({
         message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
+      />
+
+      <ConfirmModal
+        visible={Boolean(pendingImport)}
+        title="Імпорт CSV"
+        message={`Усі поточні записи (${items.length}) у категорії «${categoryName}» буде видалено і замінено на ${pendingImport?.length ?? 0} записів із файлу. Цю дію неможливо скасувати.`}
+        confirmLabel="Замінити записи"
+        isDanger={true}
+        isLoading={isImporting}
+        loadingLabel={
+          importProgress
+            ? importProgress.phase === "deleting"
+              ? `Видалення старих... ${importProgress.done}/${importProgress.total}`
+              : `Завантаження нових... ${importProgress.done}/${importProgress.total}`
+            : "Обробка..."
+        }
+        onConfirm={handleConfirmImport}
+        onCancel={() => setPendingImport(null)}
       />
     </div>
   );

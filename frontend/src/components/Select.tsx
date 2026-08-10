@@ -1,9 +1,14 @@
 import * as SelectPrimitive from "@radix-ui/react-select";
 
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
 interface SelectProps {
   value: string;
   onValueChange: (value: string) => void;
-  options: string[];
+  options: string[] | SelectOption[];
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -17,6 +22,10 @@ export default function Select({
   disabled,
   className = "",
 }: SelectProps) {
+  const normalizedOptions: SelectOption[] = options.map((opt) =>
+    typeof opt === "string" ? { value: opt, label: opt } : opt,
+  );
+
   return (
     <SelectPrimitive.Root
       value={value}
@@ -50,18 +59,49 @@ export default function Select({
           position="popper"
           sideOffset={6}
           className="select-content z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-lift"
+          style={{
+            maxHeight: "min(320px, var(--radix-select-content-available-height))",
+          }}
         >
-          <SelectPrimitive.Viewport className="p-1">
-            {options.map((opt) => (
+          <SelectPrimitive.ScrollUpButton className="flex cursor-pointer items-center justify-center py-1 text-ink-soft">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12.5 10 7.5 15 12.5" />
+            </svg>
+          </SelectPrimitive.ScrollUpButton>
+          <SelectPrimitive.Viewport className="max-h-[320px] overflow-y-auto p-1">
+            {normalizedOptions.map((opt) => (
               <SelectPrimitive.Item
-                key={opt}
-                value={opt}
+                key={opt.value}
+                value={opt.value}
                 className="cursor-pointer select-none rounded-lg px-3 py-2 text-sm text-ink outline-none [-webkit-tap-highlight-color:transparent] data-[highlighted]:bg-brand-soft data-[state=checked]:font-bold data-[state=checked]:text-brand"
               >
-                <SelectPrimitive.ItemText>{opt}</SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemText>{opt.label}</SelectPrimitive.ItemText>
               </SelectPrimitive.Item>
             ))}
           </SelectPrimitive.Viewport>
+          <SelectPrimitive.ScrollDownButton className="flex cursor-pointer items-center justify-center py-1 text-ink-soft">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 7.5 10 12.5 15 7.5" />
+            </svg>
+          </SelectPrimitive.ScrollDownButton>
         </SelectPrimitive.Content>
       </SelectPrimitive.Portal>
     </SelectPrimitive.Root>
