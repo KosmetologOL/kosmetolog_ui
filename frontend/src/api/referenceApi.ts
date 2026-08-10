@@ -2,15 +2,43 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-export const getDoctors = async () => {
-  const { data } = await axios.get(`${BASE_URL}/doctors`);
+// Форма відповіді бекенда: User без пароля (див. backend/src/services/doctors.service.ts)
+export interface IDoctor {
+  _id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Форма відповіді бекенда: RegistrationRequest без passwordHash
+// (див. backend/src/controllers/registrationRequests.controller.ts)
+export interface IRegistrationRequest {
+  _id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const getDoctors = async (): Promise<IDoctor[]> => {
+  const { data } = await axios.get<{ doctors: IDoctor[] }>(
+    `${BASE_URL}/doctors`,
+  );
   return data.doctors;
 };
 
-export const setUserActive = async (id: string, active: boolean) => {
-  const { data } = await axios.patch(`${BASE_URL}/doctors/${id}/active`, {
-    active,
-  });
+export const setUserActive = async (
+  id: string,
+  active: boolean,
+): Promise<IDoctor> => {
+  const { data } = await axios.patch<{ user: IDoctor }>(
+    `${BASE_URL}/doctors/${id}/active`,
+    { active },
+  );
   return data.user;
 };
 
@@ -18,13 +46,19 @@ export const deleteDoctor = async (id: string) => {
   await axios.delete(`${BASE_URL}/doctors/${id}`);
 };
 
-export const getRegistrationRequests = async () => {
-  const { data } = await axios.get(`${BASE_URL}/registration-requests`);
+export const getRegistrationRequests = async (): Promise<
+  IRegistrationRequest[]
+> => {
+  const { data } = await axios.get<{ requests: IRegistrationRequest[] }>(
+    `${BASE_URL}/registration-requests`,
+  );
   return data.requests;
 };
 
-export const approveRegistration = async (id: string) => {
-  const { data } = await axios.post(
+export const approveRegistration = async (
+  id: string,
+): Promise<{ user: IDoctor | null; message: string }> => {
+  const { data } = await axios.post<{ user: IDoctor | null; message: string }>(
     `${BASE_URL}/registration-requests/${id}/approve`,
   );
   return data;
@@ -46,6 +80,7 @@ export interface ICategory {
   name: string;
   showNameInReport?: boolean;
   reportPosition?: CategoryReportPosition;
+  importantNote?: string;
 }
 
 export interface ICategoryItem {
@@ -64,11 +99,13 @@ export const createCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const { data } = await axios.post(`${BASE_URL}/categories`, {
     name,
     showNameInReport,
     reportPosition,
+    importantNote,
   });
   return data.category;
 };
@@ -78,11 +115,13 @@ export const updateCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const { data } = await axios.patch(`${BASE_URL}/categories/${id}`, {
     name,
     showNameInReport,
     reportPosition,
+    importantNote,
   });
   return data.category;
 };

@@ -10,6 +10,7 @@ export const createCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const existing = await Category.findOne({ name });
   if (existing) {
@@ -20,6 +21,7 @@ export const createCategory = async (
     name,
     ...(showNameInReport !== undefined ? { showNameInReport } : {}),
     ...(reportPosition ? { reportPosition } : {}),
+    ...(importantNote !== undefined ? { importantNote } : {}),
   });
   await category.save();
   await ActivityLog.create({ action: "create-category", meta: { name } });
@@ -32,10 +34,12 @@ export const updateCategory = async (
   name: string,
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
+  importantNote?: string,
 ) => {
   const update: Record<string, unknown> = { name };
   if (showNameInReport !== undefined) update.showNameInReport = showNameInReport;
   if (reportPosition) update.reportPosition = reportPosition;
+  if (importantNote !== undefined) update.importantNote = importantNote;
 
   const category = await Category.findByIdAndUpdate(id, update, { new: true });
   if (!category) {

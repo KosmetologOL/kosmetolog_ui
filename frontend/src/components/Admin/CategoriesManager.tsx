@@ -2,33 +2,40 @@ import {
   createCategory,
   deleteCategory,
   getCategories,
+  type ICategory,
   updateCategory,
 } from "#api/referenceApi";
 import ConfirmModal from "#components/ConfirmModal";
+import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 const CategoriesManager: React.FC = () => {
-  const [cats, setCats] = useState<any[]>([]);
+  const [cats, setCats] = useState<ICategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [editingCat, setEditingCat] = useState<any | null>(null);
+  const [editingCat, setEditingCat] = useState<ICategory | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const load = async () => {
-    const c = await getCategories();
-    setCats(c || []);
-    // cache and notify other components
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__categories = c || [];
-    window.dispatchEvent(
-      new CustomEvent("categoriesUpdated", { detail: c || [] }),
-    );
-  };
+  const load = useCallback(async () => {
+    try {
+      const c = await getCategories();
+      setCats(c || []);
+      // Сповіщаємо інші компоненти (таби довідників) про зміни категорій
+      window.dispatchEvent(
+        new CustomEvent("categoriesUpdated", { detail: c || [] }),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredCats = cats.filter((c) =>
@@ -46,9 +53,10 @@ const CategoriesManager: React.FC = () => {
       }
       setIsModalOpen(false);
       setEditingCat(null);
+      toast.success("Категорію збережено.");
       void load();
-    } catch (err) {
-      console.error("Помилка при збереженні категорії:", err);
+    } catch {
+      toast.error("Не вдалося зберегти категорію. Спробуйте ще раз.");
     }
   };
 
@@ -57,16 +65,24 @@ const CategoriesManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (c: any) => {
+  const handleOpenEdit = (c: ICategory) => {
     setEditingCat(c);
     setIsModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
-    await deleteCategory(deletingId);
-    setDeletingId(null);
-    void load();
+    setIsDeleting(true);
+    try {
+      await deleteCategory(deletingId);
+      setDeletingId(null);
+      toast.success("Категорію видалено.");
+      void load();
+    } catch {
+      toast.error("Не вдалося видалити категорію. Спробуйте ще раз.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -74,11 +90,11 @@ const CategoriesManager: React.FC = () => {
       {/* Header toolbar */}
       <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
-            Категорії довідників
-          </h1>
+          <h2 className="panel-title">Категорії довідників</h2>
           <p className="mt-0.5 text-xs text-ink-soft">
-            Усього категорій: {filteredCats.length}
+            {normalizedSearch
+              ? `Знайдено: ${filteredCats.length} з ${cats.length}`
+              : `Усього: ${cats.length}`}
           </p>
         </div>
 
@@ -87,39 +103,17 @@ const CategoriesManager: React.FC = () => {
           onClick={handleOpenCreate}
           className="btn btn-primary btn-sm"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <path d="M8 2v12M2 8h12" />
-          </svg>
+          <IconPlus />
           Додати категорію
         </button>
       </div>
 
       {/* Search input bar */}
       <div className="relative mb-5 w-full max-w-md">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.8-3.8" />
-        </svg>
+        <IconSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none" />
         <input
           type="text"
-          placeholder="Пошук категорій..."
+          placeholder="Пошук категорій…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="field-input pl-10 pr-9 w-full"
@@ -136,37 +130,57 @@ const CategoriesManager: React.FC = () => {
         )}
       </div>
 
-      {filteredCats.length === 0 ? (
-        <p className="w-full py-8 text-center text-ink-soft">
-          Немає категорій
-        </p>
+      {isLoading ? (
+        <div className="flex w-full flex-col gap-2.5" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="list-row">
+              <div className="min-w-0 flex-1">
+                <div className="skeleton h-4 w-44 max-w-full" />
+              </div>
+              <div className="list-row-actions">
+                <div className="skeleton h-9.5 w-[110px]" />
+                <div className="skeleton h-9.5 w-[110px]" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredCats.length === 0 ? (
+        normalizedSearch ? (
+          <div className="w-full py-8 text-center text-ink-soft">
+            <p>Нічого не знайдено за запитом «{search.trim()}».</p>
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="btn btn-ghost btn-sm mt-3"
+            >
+              Очистити пошук
+            </button>
+          </div>
+        ) : (
+          <p className="w-full py-8 text-center text-ink-soft">
+            Категорій ще немає. Натисніть «Додати категорію».
+          </p>
+        )
       ) : (
         <div className="flex flex-col gap-2.5 w-full">
-          {filteredCats.map((c) => (
-            <div key={c._id} className="list-row">
+          {filteredCats.map((c, index) => (
+            <div
+              key={c._id}
+              className="list-row anim-rise"
+              style={{ "--stagger": Math.min(index, 10) } as React.CSSProperties}
+            >
               <div className="list-row-name">{c.name}</div>
               <div className="list-row-actions">
                 <button
                   onClick={() => handleOpenEdit(c)}
                   className="btn btn-ghost btn-sm min-w-[110px] justify-center"
                 >
-                  <svg
-                    className="w-3.5 h-3.5 text-ink-soft"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                  </svg>
+                  <IconEdit className="w-3.5 h-3.5 text-ink-soft" />
                   Редагувати
                 </button>
                 <button
                   onClick={() => setDeletingId(c._id)}
-                  className="btn btn-sm min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
+                  className="btn btn-sm btn-danger-soft min-w-[110px] justify-center"
                 >
                   Видалити
                 </button>
@@ -180,6 +194,7 @@ const CategoriesManager: React.FC = () => {
         visible={isModalOpen}
         title={editingCat ? "Редагувати категорію" : "Нова категорія довідника"}
         submitLabel={editingCat ? "Зберегти зміни" : "Додати"}
+        showRecommendation={false}
         item={{
           name: editingCat?.name ?? "",
         }}
@@ -194,6 +209,8 @@ const CategoriesManager: React.FC = () => {
         visible={Boolean(deletingId)}
         title="Видалити категорію"
         message="Ви впевнені, що хочете видалити цю категорію? Цю дію неможливо скасувати."
+        isLoading={isDeleting}
+        loadingLabel="Видаляємо…"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
       />

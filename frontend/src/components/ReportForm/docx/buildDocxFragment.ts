@@ -237,7 +237,8 @@ export const buildAppendParagraphsXml = async (
               ? itemParagraphs(c.itemName, content)
               : renderStructuredBodyAsDocxParagraphs(content);
           })
-          .join("");
+          .join("") +
+        importantParagraph(meta?.importantNote);
 
       categorySectionsByAnchor[anchor].push(xml);
     });

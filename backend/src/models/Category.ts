@@ -15,6 +15,7 @@ export interface ICategory extends Document {
   name: string;
   showNameInReport: boolean;
   reportPosition: CategoryReportPosition;
+  importantNote?: string;
 }
 
 const CategorySchema: Schema<ICategory> = new Schema(
@@ -26,6 +27,7 @@ const CategorySchema: Schema<ICategory> = new Schema(
       enum: CATEGORY_REPORT_POSITIONS,
       default: "after_homecare",
     },
+    importantNote: { type: String, default: "" },
   },
   { timestamps: true },
 );

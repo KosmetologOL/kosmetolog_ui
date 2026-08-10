@@ -18,7 +18,7 @@ export default function Select({
   value,
   onValueChange,
   options,
-  placeholder = "Оберіть...",
+  placeholder = "Оберіть…",
   disabled,
   className = "",
 }: SelectProps) {
@@ -33,7 +33,7 @@ export default function Select({
       disabled={disabled}
     >
       <SelectPrimitive.Trigger
-        className={`field-input inline-flex items-center justify-between gap-2 [-webkit-tap-highlight-color:transparent] disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+        className={`field-input inline-flex items-center justify-between gap-2 [-webkit-tap-highlight-color:transparent] ${className}`}
       >
         <span className="truncate">
           <SelectPrimitive.Value placeholder={placeholder} />
@@ -82,9 +82,26 @@ export default function Select({
               <SelectPrimitive.Item
                 key={opt.value}
                 value={opt.value}
-                className="cursor-pointer select-none rounded-lg px-3 py-2 text-sm text-ink outline-none [-webkit-tap-highlight-color:transparent] data-[highlighted]:bg-brand-soft data-[state=checked]:font-bold data-[state=checked]:text-brand"
+                className="flex cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-ink outline-none [-webkit-tap-highlight-color:transparent] data-[highlighted]:bg-brand-soft data-[state=checked]:font-bold data-[state=checked]:text-brand"
               >
                 <SelectPrimitive.ItemText>{opt.label}</SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemIndicator
+                  className="flex-none text-brand"
+                  aria-hidden="true"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 10.5 8.5 15 16 5.5" />
+                  </svg>
+                </SelectPrimitive.ItemIndicator>
               </SelectPrimitive.Item>
             ))}
           </SelectPrimitive.Viewport>

@@ -1,3 +1,4 @@
+import ReportSection from "#components/ReportForm/ReportSection";
 import React from "react";
 
 interface Props {
@@ -6,15 +7,14 @@ interface Props {
 }
 
 const ReportComments: React.FC<Props> = ({ comments, setComments }) => (
-  <div className="card">
-    <p className="section-label">Додаткова інформація</p>
+  <ReportSection title="Додаткова інформація">
     <textarea
       value={comments}
       onChange={(e) => setComments(e.target.value)}
       rows={3}
-      className="field-textarea w-full min-h-[80px] resize-y"
+      className="field-textarea min-h-[80px] w-full resize-y"
     />
-  </div>
+  </ReportSection>
 );
 
 export default ReportComments;
