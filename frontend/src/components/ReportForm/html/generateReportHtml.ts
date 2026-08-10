@@ -308,37 +308,43 @@ export const generateReportHtml = async ({
         const items = homeCares.filter((h) => h.name === category);
         if (items.length === 0) return "";
 
-        const rows = items
-          .map((h) => {
-            const content = parseStructuredContent(h.recommendations);
-            return `
-            <tr>
-              <td class="hc-product">
+        const rowHtml = (h: (typeof items)[number]): string => {
+          const content = parseStructuredContent(h.recommendations);
+          return `
+            <div class="hc-row">
+              <div class="hc-product">
                 <div class="hc-name">${escapeHtml(h.medicationName || "—")}</div>
                 ${renderStructuredBody(content, "Рекомендацію не знайдено")}
-              </td>
-              <td class="hc-check"><span class="chk ${h.morning ? "is-on" : ""}"></span></td>
-              <td class="hc-check"><span class="chk ${h.evening ? "is-on" : ""}"></span></td>
-              <td class="hc-price"><span class="line"></span></td>
-            </tr>`;
-          })
-          .join("");
+              </div>
+              <div class="hc-check"><span class="chk ${h.morning ? "is-on" : ""}"></span></div>
+              <div class="hc-check"><span class="chk ${h.evening ? "is-on" : ""}"></span></div>
+              <div class="hc-price"><span class="line"></span></div>
+            </div>`;
+        };
+
+        // Заголовок колонок і перший рядок навмисно в одному
+        // break-inside: avoid блоці (.hc-intro) — щоб "ЗАСІБ/ДЕНЬ/ВЕЧІР…"
+        // ніколи не лишався сам-один унизу сторінки без жодного товару під
+        // ним. Наступні рядки вже можуть розбиватись вільно між собою.
+        const [firstItem, ...restItems] = items;
+        const restRows = restItems.map(rowHtml).join("");
 
         return `
           <div class="hc-category">
             <div class="hc-cat-h">${escapeHtml(category as string)}</div>
             <div class="hc-cat-b">
-              <table class="hc-table">
-                <thead>
-                  <tr>
-                    <th class="hc-product">Засіб</th>
-                    <th class="hc-check">День</th>
-                    <th class="hc-check">Вечір</th>
-                    <th class="hc-price">Орієнтовна вартість</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
+              <div class="hc-grid">
+                <div class="hc-intro">
+                  <div class="hc-head-row">
+                    <span class="hc-product">Засіб</span>
+                    <span class="hc-check">День</span>
+                    <span class="hc-check">Вечір</span>
+                    <span class="hc-price">Орієнтовна вартість</span>
+                  </div>
+                  ${rowHtml(firstItem)}
+                </div>
+                ${restRows}
+              </div>
             </div>
           </div>`;
       })
@@ -488,8 +494,8 @@ export const generateReportHtml = async ({
   body {
     margin: 0;
     font-family: "Noah", -apple-system, "Segoe UI", Roboto, sans-serif;
-    font-size: 10pt;
-    line-height: 1.5;
+    font-size: 11.5pt;
+    line-height: 1.32;
     color: var(--text);
     background: #E8E8E8;
   }
@@ -508,9 +514,9 @@ export const generateReportHtml = async ({
     justify-content: space-between;
     align-items: flex-end;
     gap: 8mm;
-    padding-bottom: 5mm;
+    padding-bottom: 3.5mm;
     border-bottom: 2px solid var(--ink);
-    margin-bottom: 5mm;
+    margin-bottom: 3.5mm;
     break-inside: avoid;
   }
   .lh-logo { width: 30mm; height: auto; display: block; }
@@ -530,10 +536,10 @@ export const generateReportHtml = async ({
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     border: 1px solid var(--line);
-    margin-bottom: 6mm;
+    margin-bottom: 4.5mm;
     break-inside: avoid;
   }
-  .meta .cell { padding: 2.6mm 3.2mm; border-left: 1px solid var(--line); min-width: 0; }
+  .meta .cell { padding: 2mm 3.2mm; border-left: 1px solid var(--line); min-width: 0; }
   .meta .cell:first-child { border-left: none; }
   .meta .k {
     display: block;
@@ -544,16 +550,16 @@ export const generateReportHtml = async ({
     color: var(--muted);
     margin-bottom: .8mm;
   }
-  .meta .v { font-weight: 700; color: var(--olive); font-size: 10.5pt; }
+  .meta .v { font-weight: 700; color: var(--olive); font-size: 13pt; }
 
-  .sec { margin-bottom: 8mm; }
+  .sec { margin-bottom: 5.5mm; }
   .sec-head {
     display: flex; align-items: baseline; gap: 3.5mm;
-    margin-bottom: 4.5mm;
+    margin-bottom: 3mm;
     background: var(--accent);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-radius: 1mm;
-    padding: 3mm 4.5mm;
+    padding: 2.4mm 4mm;
     break-after: avoid;
     break-inside: avoid;
   }
@@ -566,43 +572,41 @@ export const generateReportHtml = async ({
   }
 
   .sub-h {
-    font-size: 9.5pt; font-weight: 700;
+    font-size: 10.5pt; font-weight: 700;
     color: var(--ink);
-    margin: 3mm 0 1.6mm;
+    margin: 2.4mm 0 1.2mm;
   }
 
-  .exam { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
+  .exam { border: 1px solid var(--line); margin-bottom: 3mm; }
   .exam:last-child { margin-bottom: 0; }
-  .exam-body { padding: 3.5mm 4mm 4mm; }
+  .exam-body { padding: 3mm 4mm 3.2mm; }
 
   .det {
     border: 1px solid var(--line-soft);
     background: var(--det-bg);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 3mm 3.5mm;
-    margin: 2mm 0;
-    break-inside: avoid;
+    padding: 2.4mm 3.5mm;
+    margin: 1.6mm 0;
   }
-  .kv { display: flex; gap: 3mm; padding-bottom: 1.8mm; break-inside: avoid; }
+  .kv { display: flex; align-items: baseline; gap: 3mm; padding-bottom: 1.3mm; break-inside: avoid; }
   .kv:last-child { padding-bottom: 0; }
   .kv .k {
     flex: none; width: 24mm;
     font-size: 7pt; font-weight: 700; letter-spacing: .08em;
     text-transform: uppercase; color: var(--sage);
-    padding-top: .5mm;
   }
   .kv .v { flex: 1; margin: 0; }
 
   .det-box {
     border: 1px solid var(--line-soft);
-    padding: 3mm 3.5mm;
-    margin: 2mm 0;
+    padding: 2.4mm 3.5mm;
+    margin: 1.6mm 0;
     break-inside: avoid;
   }
   .det-t {
     font-size: 7.5pt; font-weight: 700; letter-spacing: .14em;
     text-transform: uppercase; color: var(--ink);
-    margin-bottom: 2mm;
+    margin-bottom: 1.5mm;
     break-after: avoid;
   }
 
@@ -610,8 +614,8 @@ export const generateReportHtml = async ({
     border: none;
     border-top: 1px dashed var(--line);
     border-radius: 0;
-    padding: 3mm 0 0;
-    margin: 3mm 0 0;
+    padding: 2.4mm 0 0;
+    margin: 2.4mm 0 0;
   }
   .det-box--warn .det-t { color: var(--danger); }
   .det-box--warn .rich-content ul,
@@ -635,26 +639,26 @@ export const generateReportHtml = async ({
   .det-box--warn .rich-content li::marker { content: ""; }
 
   .important {
-    display: flex; gap: 3.5mm;
-    margin: 3mm 0;
+    display: flex; align-items: baseline; gap: 3.5mm;
+    margin: 2.4mm 0;
     border: 1px solid var(--accent);
     border-left: 1mm solid var(--accent);
     background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 3mm 3.5mm;
+    padding: 2.4mm 3.5mm;
     break-inside: avoid;
   }
   .important .mark { font-size: 15pt; font-weight: 700; color: var(--accent-dark); line-height: 1; }
   .important .rich-content a { color: var(--ink); font-weight: 700; text-decoration: none; }
 
-  .stage { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
+  .stage { border: 1px solid var(--line); margin-bottom: 3mm; }
   .stage:last-child { margin-bottom: 0; }
   .stage-h {
     display: flex; align-items: center; gap: 3mm;
     background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-bottom: 1px solid var(--line);
-    padding: 2.6mm 4mm;
+    padding: 2.2mm 4mm;
     break-after: avoid;
   }
   .stage-n {
@@ -666,14 +670,14 @@ export const generateReportHtml = async ({
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 9.5pt; color: #fff;
   }
-  .stage-name { font-weight: 700; font-size: 11pt; color: var(--ink); }
-  .stage-b { padding: 3.5mm 4mm 4mm; }
+  .stage-name { font-weight: 700; font-size: 12pt; color: var(--ink); }
+  .stage-b { padding: 3mm 4mm 3.2mm; }
 
   .proc-card {
     border: 1px solid var(--line);
     border-left: 1mm solid var(--accent);
-    padding: 3mm 4mm;
-    margin-bottom: 2.5mm;
+    padding: 2.4mm 4mm;
+    margin-bottom: 2mm;
     break-inside: avoid;
   }
   .proc-card:last-child { margin-bottom: 0; }
@@ -681,7 +685,7 @@ export const generateReportHtml = async ({
     display: flex; flex-wrap: wrap; align-items: baseline;
     justify-content: space-between; gap: 3mm;
   }
-  .proc-name { font-weight: 700; font-size: 10.5pt; color: var(--olive); }
+  .proc-name { font-weight: 700; font-size: 12pt; color: var(--olive); }
   .proc-price { display: flex; align-items: baseline; gap: 2mm; flex: none; }
   .proc-price .pl {
     font-size: 6.5pt; font-weight: 700; letter-spacing: .12em;
@@ -689,7 +693,7 @@ export const generateReportHtml = async ({
   }
   .proc-price .line { display: inline-block; width: 26mm; border-bottom: 1px dotted var(--sage-soft); height: .9em; }
 
-  .proc-tags { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 2.4mm; }
+  .proc-tags { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 1.8mm; }
   .tag {
     display: inline-block;
     font-size: 6.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
@@ -700,79 +704,98 @@ export const generateReportHtml = async ({
   }
   .tag b { color: var(--olive); text-transform: none; letter-spacing: 0; font-size: 8pt; }
 
-  .proc-card .plain { margin-top: 2.4mm; color: var(--muted); }
+  .proc-card .plain { margin-top: 1.8mm; color: var(--muted); }
 
-  .hc-category { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
+  .hc-category { border: 1px solid var(--line); margin-bottom: 3mm; }
   .hc-category:last-child { margin-bottom: 0; }
   .hc-cat-h {
     border-bottom: 1px solid var(--line);
     background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 2.6mm 4mm;
-    font-weight: 700; color: var(--ink); font-size: 10.5pt;
+    padding: 2.2mm 4mm;
+    font-weight: 700; color: var(--ink); font-size: 12pt;
     break-after: avoid;
   }
-  .hc-cat-b { padding: 3.5mm 4mm 4mm; }
+  .hc-cat-b { padding: 3mm 4mm 3.2mm; }
 
-  table.hc-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-  .hc-table th {
-    text-align: left;
+  /* Раніше тут була справжня <table> — Chrome/Safari при друку вперто
+     відмовляються розбивати HTML-таблиці між сторінками (навіть з
+     border-collapse: separate і break-inside: avoid на <tr>), тому
+     весь блок «стрибав» на наступну сторінку разом. Grid на div-ах
+     фрагментується так само надійно, як і решта карток звіту. */
+  .hc-grid { width: 100%; font-size: 9pt; }
+  .hc-head-row,
+  .hc-row {
+    display: grid;
+    grid-template-columns: 1fr 12mm 12mm 32mm;
+    column-gap: 2.5mm;
+    align-items: start;
+  }
+  .hc-head-row {
     font-size: 6.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
     color: var(--muted);
-    padding: 0 2.5mm 1.6mm 0;
+    padding-bottom: 1.6mm;
     border-bottom: 1.5px solid var(--ink);
+    break-after: avoid;
   }
-  .hc-table th.hc-check, .hc-table td.hc-check { text-align: center; width: 12mm; }
-  .hc-table th.hc-price { white-space: nowrap; width: 1%; }
-  .hc-table td { padding: 5mm 2.5mm 2.2mm 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-  .hc-table tr { break-inside: avoid; }
-  .hc-table tr:last-child td { border-bottom: none; }
-  .hc-name { font-weight: 700; color: var(--olive); margin-bottom: 1mm; }
+  .hc-head-row .hc-check, .hc-row .hc-check { text-align: center; }
+  .hc-intro { break-inside: avoid; }
+  .hc-row {
+    padding: 3.5mm 0 1.8mm;
+    border-bottom: 1px solid var(--line-soft);
+    break-inside: avoid;
+  }
+  .hc-name { font-weight: 700; color: var(--olive); font-size: 12pt; margin-bottom: 1mm; }
   .hc-price .line { display: inline-block; width: 20mm; border-bottom: 1px dotted var(--sage-soft); height: .9em; }
   .chk { display: inline-block; width: 3.2mm; height: 3.2mm; border: 1.4px solid var(--ink); background: #fff; }
   .chk.is-on { background: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  .item-block { border: 1px solid var(--line); margin-bottom: 4mm; break-inside: avoid; }
+  .item-block { border: 1px solid var(--line); margin-bottom: 3mm; }
   .item-block:last-child { margin-bottom: 0; }
   .item-name {
     border-bottom: 1px solid var(--line);
     background: var(--accent-soft);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    padding: 2.6mm 4mm;
-    font-weight: 700; color: var(--ink); font-size: 10.5pt;
+    padding: 2.2mm 4mm;
+    font-weight: 700; color: var(--ink); font-size: 12pt;
     break-after: avoid;
   }
-  .item-body { padding: 3.5mm 4mm 4mm; }
+  .item-body { padding: 3mm 4mm 3.2mm; }
 
-  .plain { white-space: pre-wrap; margin: 0; font-size: 9.5pt; }
+  .plain { white-space: pre-wrap; margin: 0; font-size: 11.5pt; }
 
-  .rich-content { margin: 0; font-size: 9.5pt; }
-  .rich-content h1, .rich-content h2, .rich-content h3 { font-size: 1.05em; font-weight: 700; margin: 0.6em 0 0.3em; }
-  .rich-content p { margin: 0.5em 0; }
+  .rich-content { margin: 0; font-size: 11.5pt; }
+  .rich-content h1, .rich-content h2, .rich-content h3 { font-size: 1.05em; font-weight: 700; margin: 0.5em 0 0.25em; }
+  .rich-content p { margin: 0.15em 0; }
   .rich-content p:first-child { margin-top: 0; }
   .rich-content p:last-child { margin-bottom: 0; }
-  .rich-content ul { list-style: disc; padding-left: 1.3em; margin: 0.3em 0; }
-  .rich-content ul li { break-inside: avoid; margin-bottom: 1.2mm; }
+  .rich-content ul { list-style: disc; padding-left: 1.3em; margin: 0.25em 0; }
+  .rich-content ul li { break-inside: avoid; margin-bottom: 1mm; }
   .rich-content ul li::marker { color: var(--accent); font-weight: 700; }
 
   .rich-content ol {
     list-style: none;
     padding-left: 0;
-    margin: 0.3em 0;
+    margin: 0.25em 0;
     counter-reset: step;
   }
   .rich-content ol li {
     position: relative;
     padding-left: 8mm;
-    margin-bottom: 1.8mm;
+    margin-bottom: 1.4mm;
     counter-increment: step;
-    font-size: 9.5pt;
+    --ol-fs: 11.5pt;
+    font-size: var(--ol-fs);
     break-inside: avoid;
   }
   .rich-content ol li:last-child { margin-bottom: 0; }
   .rich-content ol li::before {
     content: counter(step);
-    position: absolute; left: 0; top: .4mm;
+    position: absolute; left: 0;
+    /* Центрує кружечок з номером відносно першого рядка тексту:
+       (висота рядка − діаметр кружечка) / 2. Множник 1.32 має
+       збігатися з line-height у body, щоб не «розʼїжджалось». */
+    top: calc((var(--ol-fs) * 1.32 - 4.6mm) / 2);
     width: 4.6mm; height: 4.6mm;
     background: var(--accent);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
@@ -781,23 +804,23 @@ export const generateReportHtml = async ({
     font-size: 6.5pt; font-weight: 700; color: #fff;
   }
 
-  .rich-content hr { border: none; border-top: 1px solid var(--line-soft); margin: 0.6em 0; }
+  .rich-content hr { border: none; border-top: 1px solid var(--line-soft); margin: 0.5em 0; }
   .rich-content strong, b { font-weight: 700; color: var(--ink); }
   .rich-content a { color: var(--ink); font-weight: 700; text-decoration: underline; }
 
-  .bottom { display: flex; gap: 4mm; break-inside: avoid; margin-top: 4mm; }
+  .bottom { display: flex; gap: 4mm; break-inside: avoid; margin-top: 3mm; }
   .contact {
     flex: 1.6;
     border: 1px solid var(--line);
     border-left: 1mm solid var(--ink);
-    padding: 3.5mm 4mm;
+    padding: 3mm 4mm;
     font-size: 9pt;
     white-space: pre-wrap;
   }
   .sig {
     flex: 1;
     border: 1px solid var(--line);
-    padding: 3.5mm 4mm;
+    padding: 3mm 4mm;
     display: flex; flex-direction: column; justify-content: flex-start;
   }
   .sig .k {
@@ -808,6 +831,18 @@ export const generateReportHtml = async ({
   .sig .name { font-weight: 700; color: var(--olive); font-size: 13pt; }
 
   @media print {
+    /* На екрані світло-сірі підписи (--muted/--sage) та тонкі лінії
+       (--line/--line-soft) читаються нормально завдяки кольору фону,
+       але на чорно-білому друку/ксерокопії втрачають контраст і майже
+       зникають — тут ці змінні перевизначено темнішими лише для друку. */
+    :root {
+      --muted: #3D3D3D;
+      --sage: #3D3D3D;
+      --sage-soft: #707070;
+      --line: #8C8C8C;
+      --line-soft: #ACACAC;
+    }
+
     body { background: #fff; }
     .sheet { width: auto; max-width: none; margin: 0; padding: 0; box-shadow: none; }
     p, li { orphans: 3; widows: 3; }
@@ -817,7 +852,7 @@ export const generateReportHtml = async ({
        для друку замінюємо на контур + темний текст. */
     .sec-head {
       background: none;
-      border: 1px solid var(--ink);
+      border: none;
     }
     .sec-num { color: var(--muted); }
     .sec-title { color: var(--ink); }
@@ -832,6 +867,15 @@ export const generateReportHtml = async ({
       background: none;
       border: 1px solid var(--ink);
       color: var(--ink);
+    }
+
+    .lh-kind,
+    .det,
+    .important,
+    .stage-h,
+    .hc-cat-h,
+    .item-name {
+      background: none;
     }
   }
 

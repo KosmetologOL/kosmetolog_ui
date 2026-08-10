@@ -45,6 +45,7 @@ const ReferencePanel: React.FC = () => {
     [setSearchParams],
   );
   const [categories, setCategories] = useState<ICategory[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [requestsCount, setRequestsCount] = useState<number>(0);
   const tabListRef = useRef<HTMLDivElement | null>(null);
   const { isAdmin, isDoctor } = useAuth();
@@ -56,6 +57,8 @@ const ReferencePanel: React.FC = () => {
       setCategories(cats || []);
     } catch {
       toast.error("Не вдалося завантажити категорії довідників.");
+    } finally {
+      setIsCategoriesLoading(false);
     }
   }, []);
 
@@ -170,7 +173,15 @@ const ReferencePanel: React.FC = () => {
         className="mb-5 flex w-full items-center overflow-x-auto pb-1 gap-1.5 scrollbar-none sm:flex-wrap"
       >
         {referenceTabs.map(renderTab)}
-        {dynamicTabs.map(renderTab)}
+        {isCategoriesLoading ? (
+          <span className="flex items-center gap-1.5" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="skeleton h-9 w-24 rounded-full" />
+            ))}
+          </span>
+        ) : (
+          dynamicTabs.map(renderTab)
+        )}
         <span
           className="h-4 w-px shrink-0 self-center bg-line"
           aria-hidden="true"
