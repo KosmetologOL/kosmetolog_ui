@@ -18,10 +18,12 @@ const API_URL = import.meta.env.VITE_API_URL + "/patients";
 export const getAllPatients = async (
   page: number,
   limit: number,
-  query: string
+  query: string,
+  options?: { signal?: AbortSignal }
 ) => {
   const { data } = await axios.get<ApiResponse>(
-    `${API_URL}?page=${page}&limit=${limit}&query=${encodeURIComponent(query)}`
+    `${API_URL}?page=${page}&limit=${limit}&query=${encodeURIComponent(query)}`,
+    { signal: options?.signal }
   );
   return data;
 };

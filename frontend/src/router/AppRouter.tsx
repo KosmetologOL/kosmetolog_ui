@@ -1,3 +1,4 @@
+import FullScreenLoader from "#components/FullScreenLoader";
 import AuthenticatedLayout from "#layouts/AuthenticatedLayout";
 import PrivateRoute from "#router/PrivateRoute";
 import { lazy, Suspense } from "react";
@@ -15,9 +16,10 @@ const NotFoundPage = lazy(() => import("#pages/NotFoundPage"));
 
 export const AppRouter: React.FC = () => {
   return (
-    <Suspense
-      fallback={<p className="p-4 text-center text-sm">Завантаження...</p>}
-    >
+    // Зовнішній Suspense покриває сторінки поза AppShell (/login, /error, 404);
+    // для сторінок під AuthenticatedLayout працює внутрішній Suspense навколо
+    // <Outlet />, тож шапка не зникає під час довантаження чанка.
+    <Suspense fallback={<FullScreenLoader />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 

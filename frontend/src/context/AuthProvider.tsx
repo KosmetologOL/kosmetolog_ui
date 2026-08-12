@@ -5,9 +5,9 @@ import {
   type AuthUser,
 } from "#api/authApi";
 import { AuthContext } from "#context/AuthContext";
-import { registerAuthHandlers } from "../lib/sessionRefresh";
+import { registerAuthHandlers } from "#lib/sessionRefresh";
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -16,23 +16,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
-  const login = (newToken: string, nextUser: AuthUser | null) => {
+  const login = useCallback((newToken: string, nextUser: AuthUser | null) => {
     setToken(newToken);
     setUser(nextUser);
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(nextUser));
     axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-  };
+  }, []);
 
-  const clearLocalSession = () => {
+  const clearLocalSession = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     delete axios.defaults.headers.common.Authorization;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await logoutUser();
     } catch (err) {
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     clearLocalSession();
-  };
+  }, [clearLocalSession]);
 
   useEffect(() => {
     registerAuthHandlers({
@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         void logout();
       },
     });
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     void initializeAuth();
-  }, []);
+  }, [login, clearLocalSession]);
 
   const role = user?.role?.toLowerCase() ?? "user";
 

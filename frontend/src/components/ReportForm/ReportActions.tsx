@@ -1,110 +1,128 @@
-import type { IPatient } from "#api/patientsApi";
+import Spinner from "#components/Spinner";
 import React from "react";
 
 interface Props {
-  reportId: string | null;
-  patient: IPatient;
+  isSubmitting: boolean;
+  isExportingHtml: boolean;
+  isAppendingToDocx: boolean;
+  isDocxSupported: boolean;
+  /** Час останнього успішного збереження (HH:MM) — тихий напис у панелі. */
+  lastSavedAt: string | null;
   onExportHtml: () => void;
   onAppendToDocx: () => void;
-  isSubmitting?: boolean;
-  isAppendingToDocx?: boolean;
-  isDocxSupported: boolean;
+  onClose: () => void;
 }
 
 const ReportActions: React.FC<Props> = ({
-  reportId,
+  isSubmitting,
+  isExportingHtml,
+  isAppendingToDocx,
+  isDocxSupported,
+  lastSavedAt,
   onExportHtml,
   onAppendToDocx,
-  isSubmitting = false,
-  isAppendingToDocx = false,
-  isDocxSupported,
-}) => (
-  <div className="flex flex-wrap gap-3">
-    <button type="submit" disabled={isSubmitting} className="btn btn-primary min-w-[140px]">
-      {isSubmitting ? (
-        <>
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4 text-paper"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
+  onClose,
+}) => {
+  const busy = isSubmitting || isExportingHtml || isAppendingToDocx;
+
+  return (
+    <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-paper/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn btn-primary min-w-[160px]"
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner />
+              Зберігаємо…
+            </>
+          ) : (
+            "Зберегти лист"
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onExportHtml}
+          disabled={busy}
+          className="btn btn-ghost"
+        >
+          {isExportingHtml ? (
+            <Spinner className="h-4 w-4 text-brand" />
+          ) : (
+            <svg
+              className="h-4 w-4 text-brand"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Збереження...
-        </>
-      ) : reportId ? (
-        "Оновити звіт"
-      ) : (
-        "Створити звіт"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
+          )}
+          {isExportingHtml ? "Експортуємо…" : "Експортувати HTML"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onAppendToDocx}
+          disabled={busy || !isDocxSupported}
+          className="btn btn-ghost"
+        >
+          {isAppendingToDocx ? (
+            <Spinner className="h-4 w-4 text-brand" />
+          ) : (
+            <svg
+              className="h-4 w-4 text-brand"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="12" y1="18" x2="12" y2="12" />
+              <line x1="9" y1="15" x2="15" y2="15" />
+            </svg>
+          )}
+          {isAppendingToDocx ? "Додаємо…" : "Додати в картку (.docx)"}
+        </button>
+
+        {lastSavedAt && (
+          <span className="text-sm text-ink-soft">
+            Збережено о {lastSavedAt}
+          </span>
+        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="btn btn-ghost ml-auto"
+        >
+          Закрити
+        </button>
+      </div>
+
+      {!isDocxSupported && (
+        <p className="mt-2 text-[0.84375rem] text-ink-soft">
+          Додавання в картку доступне лише у Chrome або Edge.
+        </p>
       )}
-    </button>
-    <button type="button" onClick={onExportHtml} disabled={isSubmitting} className="btn btn-ghost">
-      <svg
-        className="w-4 h-4 text-brand"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
-      Експортувати HTML
-    </button>
-    <button
-      type="button"
-      onClick={onAppendToDocx}
-      disabled={isSubmitting || isAppendingToDocx || !isDocxSupported}
-      title={
-        isDocxSupported
-          ? undefined
-          : "Автоматичне додавання в картку доступне лише в Chrome або Edge."
-      }
-      className="btn btn-ghost"
-    >
-      <svg
-        className="w-4 h-4 text-brand"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="12" y1="18" x2="12" y2="12" />
-        <line x1="9" y1="15" x2="15" y2="15" />
-      </svg>
-      {isAppendingToDocx ? "Додаємо…" : "Додати в картку (.docx)"}
-    </button>
-    <button
-      type="button"
-      onClick={() => window.history.back()}
-      disabled={isSubmitting}
-      className="btn btn-ghost ml-auto"
-    >
-      Закрити
-    </button>
-  </div>
-);
+    </div>
+  );
+};
 
 export default ReportActions;

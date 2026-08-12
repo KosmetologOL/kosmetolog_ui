@@ -1,8 +1,9 @@
 import { loginUser, registerUser } from "#api/authApi";
-import logoMark from "#assets/logo-mark.png";
 import AuthButton from "#components/Auth/AuthButton";
 import AuthInput from "#components/Auth/AuthInput";
+import Spinner from "#components/Spinner";
 import { AuthContext } from "#context/AuthContext";
+import axios from "axios";
 import React, { useContext, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -15,6 +16,7 @@ const LoginForm: React.FC = () => {
   const [registerAsDoctor, setRegisterAsDoctor] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = () => {
     if (!email.trim() || !password.trim()) {
@@ -35,9 +37,11 @@ const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validateForm()) return;
 
     try {
+      setIsSubmitting(true);
       if (isRegister) {
         const role = registerAsDoctor ? "doctor" : undefined;
         const name = registerAsDoctor
@@ -45,12 +49,19 @@ const LoginForm: React.FC = () => {
           : undefined;
 
         if (registerAsDoctor && (!firstName.trim() || !lastName.trim())) {
-          toast.error("Вкажіть ім'я та прізвище для реєстрації лікаря");
+          toast.error("Вкажіть імʼя та прізвище для реєстрації лікаря");
           return;
         }
 
-        await registerUser(email, password, name, role);
-        toast.success("Запит на реєстрацію створено або реєстрація пройшла.");
+        const response = await registerUser(email, password, name, role);
+        // Для лікаря бекенд створює запит на підтвердження і повертає message.
+        if (response.message) {
+          toast.success(
+            "Запит надіслано. Дочекайтеся підтвердження адміністратора.",
+          );
+        } else {
+          toast.success("Реєстрація успішна. Тепер увійдіть.");
+        }
         setIsRegister(false);
         setFirstName("");
         setLastName("");
@@ -64,8 +75,20 @@ const LoginForm: React.FC = () => {
         toast.success("Вхід виконано успішно!");
       }
     } catch (err) {
-      toast.error("Помилка входу або реєстрації");
+      const serverMessage =
+        axios.isAxiosError(err) && err.response?.data?.message;
+      if (serverMessage) {
+        toast.error(serverMessage);
+      } else {
+        toast.error(
+          isRegister
+            ? "Не вдалося зареєструватися. Спробуйте ще раз."
+            : "Не вдалося увійти. Перевірте email і пароль.",
+        );
+      }
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -74,17 +97,7 @@ const LoginForm: React.FC = () => {
       <div className="flex flex-none flex-col items-center justify-center gap-5 bg-brand px-8 py-10 text-paper sm:py-16">
         <span
           aria-hidden="true"
-          className="h-14 w-16 bg-current sm:h-19 sm:w-22"
-          style={{
-            WebkitMaskImage: `url(${logoMark})`,
-            maskImage: `url(${logoMark})`,
-            WebkitMaskSize: "contain",
-            maskSize: "contain",
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-          }}
+          className="logo-mask h-14 w-16 sm:h-19 sm:w-22"
         />
         <div className="text-center">
           <div className="text-xl tracking-[0.3em] sm:text-2xl">ОЛІЙНИК</div>
@@ -99,7 +112,7 @@ const LoginForm: React.FC = () => {
       </div>
 
       <div className="flex flex-1 items-center justify-center px-6 py-10 sm:py-16">
-        <div className="w-full max-w-sm">
+        <div className="anim-rise w-full max-w-sm">
           <h1 className="mb-7 text-center text-[22px] tracking-[0.12em] uppercase">
             {isRegister ? "Реєстрація" : "Вхід"}
           </h1>
@@ -108,18 +121,24 @@ const LoginForm: React.FC = () => {
             <AuthInput
               type="email"
               placeholder="Email"
+              name="email"
+              autoComplete="email"
+              aria-label="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <AuthInput
               type="password"
               placeholder="Пароль"
+              name="password"
+              autoComplete={isRegister ? "new-password" : "current-password"}
+              aria-label="Пароль"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
             {isRegister && (
-              <div className="space-y-3">
+              <div className="anim-rise space-y-3">
                 <label className="flex items-center gap-2 text-sm text-ink-soft">
                   <input
                     type="checkbox"
@@ -130,16 +149,22 @@ const LoginForm: React.FC = () => {
                 </label>
 
                 {registerAsDoctor && (
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="anim-rise grid grid-cols-2 gap-2.5">
                     <AuthInput
                       type="text"
-                      placeholder="Ім'я"
+                      placeholder="Імʼя"
+                      name="given-name"
+                      autoComplete="given-name"
+                      aria-label="Імʼя"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                     />
                     <AuthInput
                       type="text"
                       placeholder="Прізвище"
+                      name="family-name"
+                      autoComplete="family-name"
+                      aria-label="Прізвище"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                     />
@@ -154,16 +179,31 @@ const LoginForm: React.FC = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              Запам&rsquo;ятати мене
+              Запамʼятати мене
             </label>
 
-            <AuthButton text={isRegister ? "Реєстрація" : "Увійти"} />
+            <AuthButton
+              disabled={isSubmitting}
+              text={
+                isSubmitting ? (
+                  <>
+                    <Spinner />
+                    {isRegister ? "Надсилаємо…" : "Входимо…"}
+                  </>
+                ) : isRegister ? (
+                  "Реєстрація"
+                ) : (
+                  "Увійти"
+                )
+              }
+            />
           </form>
 
           <div className="mt-5 text-center text-[14.5px]">
             <button
+              type="button"
               onClick={() => setIsRegister(!isRegister)}
-              className="font-bold text-brand hover:underline"
+              className="btn-link"
             >
               {isRegister ? "Повернутися до входу" : "Зареєструватись"}
             </button>

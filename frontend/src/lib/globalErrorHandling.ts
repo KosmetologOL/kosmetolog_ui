@@ -8,6 +8,11 @@ export const setupGlobalErrorHandling = () => {
   window.addEventListener("unhandledrejection", (event) => {
     const reason: unknown = event.reason;
 
+    // Скасовані запити (AbortController) — не помилка, тост не показуємо.
+    if (axios.isCancel(reason)) {
+      return;
+    }
+
     if (!axios.isAxiosError(reason)) {
       return;
     }

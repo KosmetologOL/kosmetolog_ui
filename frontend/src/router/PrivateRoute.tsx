@@ -1,6 +1,7 @@
+import FullScreenLoader from "#components/FullScreenLoader";
+import { useAuth } from "#hooks/useAuth";
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -14,7 +15,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   const { token, user, authReady } = useAuth();
 
   if (!authReady) {
-    return <p className="p-4 text-center text-sm">Завантаження...</p>;
+    return <FullScreenLoader />;
   }
 
   if (!token || !user) {
