@@ -844,7 +844,12 @@ export const generateReportHtml = async ({
     }
 
     body { background: #fff; }
-    .sheet { width: auto; max-width: none; margin: 0; padding: 0; box-shadow: none; }
+     /* Правий бордер рамок (.item-block, .exam, .stage тощо) торкався
+       правого краю друкованої області впритул — Chrome при друку іноді
+       відкидає останній піксель бордера, що впирається точно в межу
+       сторінки (заокруглення mm→px). Невеликий відступ справа зсуває
+       рамки трохи всередину, і бордер більше не «зникає». */
+    .sheet { width: auto; max-width: none; margin: 0; padding: 0 0.6mm 0 0; box-shadow: none; }
     p, li { orphans: 3; widows: 3; }
 
     /* Чорно-білий друк/ксерокопія: суцільна темна заливка з білим текстом
