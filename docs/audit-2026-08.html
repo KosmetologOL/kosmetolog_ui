@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Технічний аудит Kosmetolog</title>
+</head>
+<body>
+<style>
+:root {
+  --paper:#f4f3ee; --surface:#ffffff; --surface2:#eeede5; --line:#d9d7ca;
+  --ink:#26281c; --ink-soft:#5f6150; --brand:#3d4025; --accent:#565a33;
+  --sage:#7c8160; --danger:#96412f;
+  --sev-critical:#8f2f1d; --sev-high:#a35427; --sev-medium:#8a6f2f; --sev-low:#6f7160;
+  --sev-critical-bg:#f3e2dc; --sev-high-bg:#f2e6d9; --sev-medium-bg:#efe9d4; --sev-low-bg:#e9e8de;
+  --code-bg:#eceade; --shadow:0 1px 3px rgba(38,40,28,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#16180e; --surface:#1f2114; --surface2:#262919; --line:#3a3d29;
+    --ink:#e7e6da; --ink-soft:#a9ab97; --brand:#cdd1a3; --accent:#b9bd8f;
+    --sage:#9ca078; --danger:#db8a72;
+    --sev-critical:#e08a74; --sev-high:#dfa26b; --sev-medium:#d3b46b; --sev-low:#a8aa93;
+    --sev-critical-bg:#3a251d; --sev-high-bg:#38291a; --sev-medium-bg:#332d18; --sev-low-bg:#2a2c1f;
+    --code-bg:#2b2e1c; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#16180e; --surface:#1f2114; --surface2:#262919; --line:#3a3d29;
+  --ink:#e7e6da; --ink-soft:#a9ab97; --brand:#cdd1a3; --accent:#b9bd8f;
+  --sage:#9ca078; --danger:#db8a72;
+  --sev-critical:#e08a74; --sev-high:#dfa26b; --sev-medium:#d3b46b; --sev-low:#a8aa93;
+  --sev-critical-bg:#3a251d; --sev-high-bg:#38291a; --sev-medium-bg:#332d18; --sev-low-bg:#2a2c1f;
+  --code-bg:#2b2e1c; --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+* { box-sizing:border-box; }
+body { background:var(--paper); color:var(--ink); margin:0;
+  font:16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing:antialiased; }
+main { max-width:860px; margin:0 auto; padding:56px 24px 96px; }
+h1,h2,h3 { font-family:Georgia, "Times New Roman", serif; color:var(--brand); text-wrap:balance; line-height:1.25; }
+h1 { font-size:2.35rem; margin:.2em 0 .3em; font-weight:600; }
+h2 { font-size:1.5rem; margin:0 0 .35em; }
+h3 { font-size:1.12rem; margin:0; }
+code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.85em;
+  background:var(--code-bg); padding:.1em .35em; border-radius:4px; word-break:break-word; }
+.eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:.72rem; color:var(--ink-soft); margin:0; }
+.lede { font-size:1.06rem; color:var(--ink); max-width:64ch; }
+.lede + .lede { color:var(--ink-soft); }
+.stats { display:flex; flex-wrap:wrap; gap:12px; margin:32px 0 8px; }
+.stat { background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:12px 18px; display:flex; flex-direction:column; min-width:96px; box-shadow:var(--shadow); }
+.stat-n { font-family:Georgia, serif; font-size:1.7rem; font-variant-numeric:tabular-nums; }
+.stat-l { font-size:.76rem; color:var(--ink-soft); }
+.sev-t-critical { color:var(--sev-critical); } .sev-t-high { color:var(--sev-high); }
+.sev-t-medium { color:var(--sev-medium); } .sev-t-low { color:var(--sev-low); }
+.verdict { border-left:3px solid var(--accent); padding:4px 0 4px 20px; margin:36px 0; }
+.verdict p { margin:.5em 0; max-width:66ch; }
+nav.toc { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; margin:20px 0 56px; }
+nav.toc a { display:flex; justify-content:space-between; gap:8px; text-decoration:none; color:var(--ink);
+  background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 14px; font-size:.9rem; }
+nav.toc a:hover { border-color:var(--accent); }
+.toc-n { color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.chips { display:inline-flex; gap:6px; align-items:center; flex-shrink:0; }
+.sev { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; padding:2px 9px;
+  border-radius:99px; font-weight:600; white-space:nowrap; }
+.sev-critical { color:var(--sev-critical); background:var(--sev-critical-bg); }
+.sev-high { color:var(--sev-high); background:var(--sev-high-bg); }
+.sev-medium { color:var(--sev-medium); background:var(--sev-medium-bg); }
+.sev-low { color:var(--sev-low); background:var(--sev-low-bg); }
+.eff { font-family:ui-monospace, Menlo, monospace; font-size:.72rem; color:var(--ink-soft);
+  border:1px solid var(--line); border-radius:5px; padding:1px 7px; cursor:help; }
+.topcard { background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:24px 26px; margin:18px 0; box-shadow:var(--shadow); border-top:3px solid var(--sev-high); }
+.topcard.t-critical { border-top-color:var(--sev-critical); }
+.top-head { display:flex; gap:16px; align-items:flex-start; }
+.top-num { font-family:Georgia, serif; font-size:1.9rem; color:var(--ink-soft); line-height:1.1; min-width:1.4ch;
+  font-variant-numeric:tabular-nums; }
+.top-title-wrap { display:flex; flex-direction:column; gap:6px; }
+.top-files { margin:12px 0 4px; display:flex; flex-wrap:wrap; gap:6px; }
+.topcard p { margin:.6em 0; }
+.f-rec { background:var(--surface2); border-radius:8px; padding:12px 16px; margin-top:14px; }
+.f-rec p { margin:.3em 0 0; }
+.rec-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; color:var(--accent); font-weight:600; }
+section.cat { margin:64px 0 0; }
+.sec-blurb { color:var(--ink-soft); margin:.2em 0 18px; max-width:64ch; }
+details.finding { background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  margin:8px 0; overflow:hidden; }
+details.finding summary { display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  padding:11px 16px; cursor:pointer; list-style:none; }
+details.finding summary::-webkit-details-marker { display:none; }
+details.finding summary:hover { background:var(--surface2); }
+details.finding[open] summary { border-bottom:1px solid var(--line); }
+.f-title { font-weight:600; flex:1 1 300px; font-size:.95rem; }
+.f-file { font-size:.72rem; color:var(--ink-soft); background:none; padding:0; }
+.f-body { padding:14px 18px 18px; font-size:.94rem; }
+.f-body > p { margin:.2em 0; }
+.merge-note { color:var(--ink-soft); font-size:.87rem; border-left:2px solid var(--sage); padding-left:12px; }
+.legend { font-size:.85rem; color:var(--ink-soft); margin:8px 0 0; }
+.method { margin-top:80px; border-top:1px solid var(--line); padding-top:24px; color:var(--ink-soft); font-size:.88rem; max-width:70ch; }
+.method h2 { font-size:1.05rem; color:var(--ink-soft); }
+a { color:var(--accent); }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion: no-preference) {
+  details.finding summary, nav.toc a { transition:background .15s, border-color .15s; }
+}
+@media (max-width:560px) { h1 { font-size:1.8rem; } main { padding-top:36px; } }
+</style>
+<main>
+<p class="eyebrow">Kosmetolog UI · косметологічна практика Олійник · серпень 2026</p>
+<h1>Технічний аудит</h1>
+<p class="lede">Незалежний аудит кодової бази за шістьма вимірами: безпека, бекенд, фронтенд, UX і доступність, продуктивність, надійність. Кожен висновок верифіковано по коду з точністю до рядка.</p>
+
+<div class="stats">
+<div class="stat"><span class="stat-n">99</span><span class="stat-l">підтверджених висновків</span></div>
+<div class="stat"><span class="stat-n sev-t-critical">2</span><span class="stat-l">критичні</span></div>
+<div class="stat"><span class="stat-n sev-t-high">15</span><span class="stat-l">високі</span></div>
+<div class="stat"><span class="stat-n sev-t-medium">39</span><span class="stat-l">середні</span></div>
+<div class="stat"><span class="stat-n sev-t-low">43</span><span class="stat-l">низькі</span></div>
+</div>
+<p class="legend">Обсяг виправлення: <span class="eff">S</span> до пів дня · <span class="eff">M</span> 1–2 дні · <span class="eff">L</span> 3+ днів. Позначка ⚡ — швидка перемога: помітний ефект за пів дня.</p>
+
+<div class="verdict">
+<p><strong>Загальний вердикт.</strong> Проєкт у добрій формі: шарувата архітектура бекенда витримується послідовно, фабрика довідників і спільні UI-примітиви реально працюють проти копіпасти, дизайн-система в токенах — рідкість для проєктів такого розміру. Головні ризики сконцентровані не в «якості коду», а у двох місцях: <strong>збереження даних</strong> (база без бекапів плюс кілька операцій, що незворотно нищать або мовчки гублять дані) та <strong>шлях збереження листа</strong> — основний робочий сценарій лікаря має кілька тихих режимів відмови.</p>
+<p>Топ-10 нижче — це те, що варто зробити перед будь-яким новим функціоналом. Перші три пункти разом займають приблизно один робочий день.</p>
+</div>
+
+<h2 id="top10">Найважливіше: топ-10</h2>
+<article class="topcard t-critical">
+<div class="top-head"><span class="top-num">1</span>
+<div class="top-title-wrap"><h3>База даних без страхувального троса</h3><div class="chips"><span class="sev sev-critical">критично</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>backend/.env</code> <code>backend/src/seed.ts</code> <code>frontend/src/components/CRUDManager.tsx</code></p>
+<p>Продакшн-база на MongoDB Atlas не має жодного бекапу — ні автоматичного, ні за розкладом; у репозиторії немає й натяку на бекап-інфраструктуру. При цьому в системі є одразу три «кнопки», що незворотно нищать дані: <code>npm run seed</code> без підтвердження виконує <code>deleteMany({})</code> на шести колекціях включно з пацієнтами (сьогодні його випадково рятує лише зламаний шлях до .env — це не запобіжник, а везіння); CSV-імпорт довідників працює за схемою «видалити все → створити заново», і обрив мережі посередині лишає довідник порожнім без можливості відновлення (сусідній HomeCaresManager уже вміє безпечний merge — підхід непослідовний); жорстке видалення пацієнта і повний перезапис листа при кожному збереженні не мають «скасувати». Для медичних записів це неприйнятний рівень ризику.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p><strong>Сьогодні:</strong> щоденний <code>mongodump --uri="$MONGODB_URI" --archive=… --gzip</code> за розкладом (cron/launchd) з ротацією 30 днів і копією в хмару — коштує $0; раз на місяць перевіряти відновлення. Якщо кластер безкоштовний M0 — перейти на Atlas Flex/M10 із вбудованими бекапами. <strong>Далі:</strong> у seed.ts відмовлятися від запуску проти нелокального URI і прибрати <code>Patient.deleteMany</code> взагалі; у CSV-імпорті — авто-експорт поточного стану перед видаленням або merge-стратегія за зразком HomeCaresManager.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">2</span>
+<div class="top-title-wrap"><h3>Лист мовчки губить дані при збереженні</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>backend/src/services/reports.service.ts:89</code></p>
+<p><code>buildReportPayload</code> не включає поля <code>medicationsNote / homeCareNote / examsNote / proceduresNote</code>, а <code>normalizeProcedureStages</code> відкидає <code>visitCount / visitCountEnabled</code> — хоча Joi-валідатор ці поля приймає, схема зберігає, а форма надсилає. Лікар редагує текст «Важливо» під секцією чи кількість відвідувань, бачить «Лист збережено.», а після перезавантаження зміни зникають. Втрату маскує фолбек на глобальні тексти з налаштувань — тому її досі ніхто не помітив.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Додати чотири поля в <code>buildReportPayload</code> і два — в <code>normalizeProcedureStages</code> (по рядку на поле, за зразком сусідніх <code>additionalInfo</code>/<code>finalNote</code>). Після фіксу вручну прогнати цикл «зберегти → перезавантажити → звірити» — тестів у проєкті немає.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">3</span>
+<div class="top-title-wrap"><h3>Збій мережі → порожня форма → дублікат листа</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>frontend/src/components/ReportForm/CreateReportForm.tsx:175</code> <code>backend/src/models/ReportSchema.ts:116</code></p>
+<p><code>getReportByPatientId(patientId).catch(() =&gt; null)</code> трактує будь-яку помилку — 500, таймаут, обрив мережі — як «листа ще немає». Форма відкривається порожньою, «Зберегти» викликає <code>createReport</code>, а поле <code>patient</code> не має unique-індексу — у пацієнта зʼявляється другий лист. <code>findOne</code> далі повертає довільний із двох: дані «роздвоюються», нова робота лікаря зникає з видимості. Збій повністю тихий: помилка проковтнута ще до глобального обробника, жоден тост не показується. Сусідній <code>getSettings().catch(() =&gt; ({}))</code> так само мовчки губить типові тексти.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>У catch пропускати лише 404 (<code>axios.isAxiosError(e) &amp;&amp; e.response?.status === 404</code>), решту помилок — прокидати до наявного обробника і показувати стан «Не вдалося завантажити лист» із кнопкою «Спробувати ще раз», а збереження блокувати. На бекенді — unique-індекс на <code>Report.patient</code> (перед увімкненням вручну перевірити базу на вже наявні дублікати — лише список, без видалень).</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">4</span>
+<div class="top-title-wrap"><h3>Незбережена робота лікаря нічим не захищена</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></div></div></div>
+<p class="top-files"><code>frontend/src/lib/sessionRefresh.ts:70</code> <code>frontend/src/layouts/AppShell.tsx:44</code> <code>frontend/src/components/ReportForm/CreateReportForm.tsx:293</code></p>
+<p>Чернетка листа живе лише в памʼяті React. Протухла сесія (<code>onSessionExpired → logout</code> → редірект на /login) розмонтовує форму без жодного попередження чи пояснення; кліки «Пацієнти», «Довідники» та «Вийти» в шапці — клієнтські переходи, які <code>beforeunload</code>-захист не ловить; F5 або креш вкладки — усе набране втрачено. Для головного робочого сценарію лікаря (тривале заповнення листа з довідників) це найдорожча за наслідками прогалина, і половина інфраструктури для фіксу вже є: форма обчислює і <code>isDirty</code>, і <code>currentSnapshot</code>.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>1) Автозберігати <code>currentSnapshot</code> у localStorage під ключем <code>report-draft:&lt;patientId&gt;</code> (debounce 1–2 с), при відкритті пропонувати «Відновити чернетку від HH:MM?», чистити після успішного збереження. 2) <code>UnsavedChangesContext</code>: форма наповнює, AppShell питає підтвердження перед переходом/виходом. 3) При протуханні сесії — модалка повторного входу поверх живої форми замість розмонтування; мінімум — тост «Сесія закінчилася, увійдіть знову».</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">5</span>
+<div class="top-title-wrap"><h3>DOCX-конвеєр може зіпсувати картку пацієнта</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></div></div></div>
+<p class="top-files"><code>frontend/src/components/ReportForm/docx/spliceDocumentXml.ts:16</code> <code>frontend/src/lib/docxCardLink.ts:19</code></p>
+<p>Дописування листа в .docx шукає останнє текстове входження <code>&lt;w:sectPr</code> регексом і перезаписує файл поверх оригіналу без валідації результату. Для документів зі сторонніх генераторів (де фінальний body-рівневий sectPr необовʼязковий) або з tracked changes (<code>sectPrChange</code> містить вкладений sectPr, який матчиться пізніше за зовнішній) сплайс дає невалідний XML — Word перестає відкривати картку, а резервної копії немає. Додатково: пікер приймає будь-який .docx без звірки з пацієнтом — misclick дописує лист Іваненко в картку Петренко; а після довгого збереження пікер може мовчки не відкритися через втрачену user activation.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Перед записом парсити результат через <code>DOMParser</code> і шукати sectPr як пряму дитину <code>w:body</code> (DOM-ом, не рядком); мінімум — перевіряти <code>parsererror</code> і не писати файл при збої. Зберігати прочитаний оригінал як <code>.bak</code> поруч. Звіряти імʼя вибраного файлу з <code>patient.fullName</code> і при розбіжності питати через ConfirmModal. Відкривати пікер до <code>saveReport</code> — дзеркально до наявного handleExportHtml.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">6</span>
+<div class="top-title-wrap"><h3>Деактивація лікаря не діє до семи днів</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>backend/src/services/auth.service.ts:107</code></p>
+<p><code>refresh()</code> перевіряє лише підпис токена та існування користувача — перевірки <code>active</code> немає (і <code>lockUntil</code> теж), на відміну від <code>login()</code>. Деактивований адміном лікар продовжує отримувати нові 15-хвилинні access-токени, поки живе його 7-денний refresh-JWT. Ширша картина: refresh-токени stateless — ніде не зберігаються, не ротуються і не відкликаються; logout лише чистить cookie, тож «вийти з усіх пристроїв» чи анулювати викрадений токен неможливо.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Один рядок у <code>refresh()</code>: <code>if (user.active === false) throw new Error("Акаунт деактивовано")</code> — інтерцептор фронтенда сам розлогінить. Наступним кроком (M) — колекція сесій: hash refresh-токена + TTL-індекс, ротація при кожному refresh, видалення при logout і деактивації; заразом узгодити maxAge cookie з життям JWT (зараз «Запамʼятати мене» обіцяє 30 днів, а токен живе 7).</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">7</span>
+<div class="top-title-wrap"><h3>Експорт листа завершується беззвучно</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>frontend/src/components/ReportForm/html/generateReportHtml.ts:13</code></p>
+<p>Файл імпортує <code>toast</code> з <code>react-hot-toast/headless</code>, а <code>&lt;Toaster /&gt;</code> в App.tsx — з основного пакета. Це два незалежні бандли з окремими сторами, тож «HTML-файл збережено», помилки запису та відмова в дозволі не показуються ніколи — успішний і невдалий експорт виглядають однаково. Для гілок no-folder/unsupported повідомлення взагалі не передбачено.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Замінити один рядок: <code>import toast from "react-hot-toast"</code>. Додати повідомлення для гілок no-folder/unsupported («Файл завантажено у папку Завантаження»). Закрити шлях до регресу ESLint-правилом <code>no-restricted-imports</code> для <code>react-hot-toast/headless</code>.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">8</span>
+<div class="top-title-wrap"><h3>Один засіб у двох категоріях догляду редагується і видаляється разом</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>frontend/src/components/HomeCare/SearchHomeCare.tsx:103</code></p>
+<p>Доданий у лист засіб отримує <code>_id</code> прямо з довідника медикаментів, тож той самий засіб у двох категоріях догляду має однаковий <code>_id</code>. Видалення хрестиком (<code>filter</code> за _id) прибирає обидва записи одним кліком; збереження з модалки редагування переписує назву, рекомендації і чекбокси обох. Результат такої правки зберігається в лист.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Генерувати <code>_id: crypto.randomUUID()</code> для кожного доданого елемента — точно так, як уже робить сусідній SearchCategories; звʼязок із довідником за потреби зберігати окремим полем <code>medicationId</code>.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">9</span>
+<div class="top-title-wrap"><h3>Кожне відкриття реєстру пацієнтів — повний скан колекції звітів</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>backend/src/models/ReportSchema.ts:116</code></p>
+<p>Поле <code>patient</code> — головний ключ доступу до звітів — не має індексу. <code>getLastVisitMap</code> виконує <code>Report.find({patient: {$in: …}})</code> на кожну сторінку реєстру і кожен дебаунснутий пошук; <code>getByPatientId</code> — <code>findOne</code> при кожному відкритті листа. Документи звітів великі (procedureStages, editHistory), тож COLLSCAN тягне всю колекцію щоразу. Супутній баг: Map бере останній документ у природному порядку, а не max(updatedAt) — «останній візит» може показувати застарілу дату при дублікатах.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Додати <code>ReportSchema.index({ patient: 1 })</code> — індекс збудується автоматично при старті, базу вручну чіпати не треба (а після фіксу №3 це стане unique-індексом). <code>getLastVisitMap</code> переписати на агрегацію <code>$group + $max</code>; на read-шляхах додати <code>.lean()</code>.</p></div>
+</article><article class="topcard t-high">
+<div class="top-head"><span class="top-num">10</span>
+<div class="top-title-wrap"><h3>Tiptap Editor створюється на кожен рядок кожного списку</h3><div class="chips"><span class="sev sev-high">високий</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></div></div></div>
+<p class="top-files"><code>frontend/src/lib/markdown.ts:11</code></p>
+<p><code>markdownToHtml</code> на кожен виклик будує повний ProseMirror Editor (схема, плагіни, DOM-вузол) і одразу знищує — заради однієї конвертації рядка. <code>FormattedText</code> викликає це для кожного запису довідника (сотні інстанціювань при відкритті вкладки CRUDManager), кожного результату автокомпліту і в циклах експорту. Поруч: CRUDManager рендерить весь довідник без пагінації, а клієнтський пошук у ньому — без дебаунсу.</p>
+<div class="f-rec"><span class="rec-label">Що зробити</span><p>Замінити конвертацію на легкий парсер (marked / markdown-it) + вже підключений DOMPurify; Tiptap лишити тільки в RichTextEditor. Перехідний крок на пів години — модульний LRU-кеш <code>Map&lt;string,string&gt;</code>. У CRUDManager — «показати ще» після ~50 рядків і наявний хук <code>useDebouncedValue</code> для пошуку.</p></div>
+</article>
+
+<h2 style="margin-top:64px">Повний каталог</h2>
+<p class="sec-blurb">Решта 62 висновків за темами — натисніть на картку, щоб розгорнути деталі та рекомендацію. Перехресні знахідки різних аудиторів злито; топ-10 тут не повторюється.</p>
+<nav class="toc">
+<a href="#s-security"><span>Безпека та сесії</span><span class="toc-n">8</span></a><a href="#s-backend"><span>Бекенд: коректність та архітектура</span><span class="toc-n">13</span></a><a href="#s-export"><span>Експорт листа: HTML і DOCX</span><span class="toc-n">7</span></a><a href="#s-frontend"><span>Фронтенд: код і стан</span><span class="toc-n">9</span></a><a href="#s-ux"><span>UX і доступність</span><span class="toc-n">9</span></a><a href="#s-performance"><span>Продуктивність</span><span class="toc-n">10</span></a><a href="#s-reliability"><span>Надійність та експлуатація</span><span class="toc-n">6</span></a>
+</nav>
+<section class="cat" id="s-security">
+<h2>Безпека та сесії</h2>
+<p class="sec-blurb">Автентифікація, токени, заголовки, ліміти. Відоме відкладене питання ролі «user» сюди свідомо не включалося.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Rate-limiter без trust proxy: за реверс-проксі ламається або дає спільний ліміт на всіх ⚡</span><code class="f-file">backend/src/middlewares/rateLimiters.ts:3</code></summary>
+<div class="f-body">
+<p>loginRateLimiter/registerRateLimiter (rateLimiters.ts:3-17) використовують дефолтний ключ за req.ip; у app.ts (рядки 10-26) немає app.set("trust proxy", …), а package.json має express-rate-limit ^8.5.2, чия вбудована валідація кидає ERR_ERL_UNEXPECTED_X_FORWARDED_FOR (500 на /auth/login і /auth/register) при X-Forwarded-For без trust proxy; без заголовка всі клієнти рахуються за IP проксі — 10 спроб/15 хв на всю клініку. Також підтверджено: GET /auth/refresh (auth.routes.ts:26) і POST /auth/logout без жодного лімітера.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У app.ts додати app.set("trust proxy", 1) (або точну кількість хопів під реальну топологію nginx/Cloudflare) з коментарем; додати помірний лімітер на GET /auth/refresh (напр. 60/15 хв на IP). Перевірити на staging за реальним проксі, що req.ip повертає клієнтський IP.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">rememberMe обіцяє 30 днів, а refresh-JWT завжди живе 7; cookieOptions із сервісу — мертвий код ⚡</span><code class="f-file">backend/src/controllers/auth.controller.ts:38</code></summary>
+<div class="f-body">
+<p>Контролер ставить cookie з maxAge: rememberMe ? 30 днів : 7 днів (рядок 38), sameSite "none", secure true (33–39), а refresh-JWT підписується завжди на "7d" (auth.service.ts:9–11) — rememberMe у generateTokens не передається взагалі. Через 7 днів користувач із «запамʼятай мене» отримає «Недійсний або прострочений refresh-токен» попри живу cookie. auth.service.login повертає cookieOptions (рядки 89–94: sameSite "strict", secure за NODE_ENV, 7д/1д), які контролер повністю ігнорує — деструктуризація на рядку 28 бере лише accessToken, refreshToken, user.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Передати rememberMe у generateTokens і підписувати refresh-токен на "30d"/"7d" синхронно з maxAge cookie в auth.controller.ts:38. Видалити невикористовувані cookieOptions з auth.service.login (рядки 89–94) або навпаки — застосовувати саме їх у res.cookie, лишивши одне джерело правди (зокрема визначитись між sameSite "strict" і "none").</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Access-токен і обʼєкт user зберігаються в localStorage</span><code class="f-file">frontend/src/context/AuthProvider.tsx:22</code></summary>
+<div class="f-body">
+<p>login() пише «localStorage.setItem("token", newToken); localStorage.setItem("user", JSON.stringify(nextUser))» (рядки 22-23, також 49 в registerAuthHandlers). Однак твердження про «довготривалий доступ» невірне: access-токен живе 15 хвилин (auth.service.ts:8, expiresIn: "15m"), а refresh-токен — у httpOnly cookie, недоступній скриптам. Тобто XSS дає атакеру щонайбільше ~15 хв токена (хоча XSS сам по собі може робити запити від імені користувача незалежно від сховища). Основний markdown-рендеринг санітизується DOMPurify (lib/markdown.ts:22), відомого XSS-вектора немає. Це defense-in-depth, не активна вада — звідси low.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Тримати access-токен лише в памʼяті (стан AuthProvider + axios.defaults.headers), прибрати localStorage.setItem("token"/"user") — сесія при перезавантаженні вже відновлюється наявним tryRefresh() (AuthProvider.tsx:76-87: /auth/refresh + /auth/me). Це також прибере довіру до збереженої копії user (зокрема role), яку зараз читають без перевірки (рядки 68-74).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Відсутні безпекові HTTP-заголовки (немає helmet)</span><code class="f-file">backend/src/app.ts:10</code></summary>
+<div class="f-body">
+<p>Ланцюжок middleware в app.ts:10-20 — лише cors, cookieParser, express.json/urlencoded; helmet немає ні в коді, ні в package.json (grep по src і package.json — нуль збігів). API не віддає X-Content-Type-Options: nosniff, HSTS, Referrer-Policy. Для чистого JSON-API ризик обмежений (severity low адекватна), але nosniff і HSTS — дешевий захист, особливо з огляду на secure:true cookie в auth.controller.ts:35.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>npm i helmet і app.use(helmet({ contentSecurityPolicy: false })) першим middleware в app.ts (перед cors) — CSP для JSON-API не потрібна, решта заголовків (nosniff, HSTS, frameguard) корисна за замовчуванням.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Сирі повідомлення внутрішніх помилок повертаються клієнту</span><code class="f-file">backend/src/controllers/auth.controller.ts:18</code></summary>
+<div class="f-body">
+<p>Підтверджено, всі посилання точні: auth.controller.ts:18,43,55,76; doctors.controller.ts:9,20,29; categories.controller.ts (8 catch-блоків: рядки 9,24,41,51,61,76,91,101); registrationRequests.controller.ts:16,32; homeCareController.ts:16,25,38 (плюс 51,61) зі статусом 500 — усі віддають (err as Error).message без фільтрації. Реальний витік: email має unique-індекс (UserSchema.ts:17), register() перевіряє findOne перед save (auth.service.ts:31), тож E11000 можливий при гонці; а approveRegistration взагалі пише через User.collection.insertOne (registrationRequests.service.ts:45) в обхід Mongoose — дублікат email при апруві поверне клієнту сирий «E11000 duplicate key error…» через registrationRequests.controller.ts:32.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Перевести ці контролери на прийнятий у проєкті патерн (як patient.controller.ts:44,55,59 і reports.controller.ts:16): відомі бізнес-помилки мапити на next(ApiError.badRequest(&lt;український текст&gt;)), усе інше — next(ApiError.internal("Помилка сервера")); errorHandler вже є єдиною точкою серіалізації.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Енумерація акаунтів через тексти відповідей register/login</span><code class="f-file">backend/src/services/auth.service.ts:59</code></summary>
+<div class="f-body">
+<p>Тексти розрізняють стани: register — «Користувач вже існує» (auth.service.ts:32) і «Запит на реєстрацію вже існує» (registrationRequests.service.ts:23); login — «Запит на реєстрацію очікує підтвердження» (auth.service.ts:59), «Акаунт деактивовано» (63), «Забагато невдалих спроб входу…» (66-68). Перебором можна підтверджувати, які email зареєстровані. Rate-limit (10 реєстрацій/год, 10 логінів/15 хв, rateLimiters.ts) стримує масовий перебір — severity low коректна для внутрішнього продукту клініки.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Для login повертати єдине «Неправильний email або пароль» для неіснуючих і pending акаунтів (стан «очікує підтвердження» показувати лише в потоці реєстрації); для register — нейтральне повідомлення. Або зафіксувати поточну поведінку як усвідомлений компроміс для внутрішнього застосунку — з урахуванням rate-limit це прийнятно.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">CSV-експорт без захисту від formula injection</span><code class="f-file">frontend/src/lib/csv.ts:3</code></summary>
+<div class="f-body">
+<p>Підтверджено, з виправленням шляху одного зі споживачів. escapeCsvField (csv.ts:3-8) екранує лише лапки/коми/переноси — значення, що починаються з =, +, -, @, потрапляють у файл як є і в Excel інтерпретуються як формули (=HYPERLINK(…) тощо). Споживачі: CRUDManager.tsx:189 і HomeCare/HomeCaresManager.tsx:201 — вірно; третій файл насправді components/Admin/CategoryItemsManager.tsx:180 (не components/Categories/). Дані вводять лише admin/doctor, тож практичний ризик малий — severity low адекватна, але файли довідників можуть піти третій стороні.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У escapeCsvField додати нейтралізацію перед перевіркою лапок: if (/^[=+\-@\t\r]/.test(value)) value = "'" + value; — врахувати, що після додавання префікса поле з комами все одно піде через існуючу гілку з лапками. Врахувати симетрію з parseCsv при реімпорті (префікс «'» залишиться в даних) — або зрізати його при імпорті.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Немає механізму зміни чи скидання пароля</span><code class="f-file">backend/src/routes/auth.routes.ts:19</code></summary>
+<div class="f-body">
+<p>auth.routes.ts:19-28 містить рівно пʼять маршрутів (register/login/refresh/logout/me); grep по всіх routes/ і controllers/ не знаходить жодного password-ендпоїнта. doctors.routes.ts вміє лише GET /, PATCH /:id/active і DELETE /:id (рядки 11-22). Скомпрометований чи забутий пароль неможливо змінити штатно — лише ручним редагуванням БД, що для бази без бекапів особливо ризиковано.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати POST /auth/change-password (authMiddleware + перевірка старого пароля через user.comparePassword + Joi-валідація складності нового, реюз commonMessages) і адмінський POST /doctors/:id/reset-password з тимчасовим паролем (requireRoles("admin")). Після зміни пароля інвалідувати сесії користувача — залежить від впровадження серверного зберігання refresh-токенів (пункт 2).</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-backend">
+<h2>Бекенд: коректність та архітектура</h2>
+<p class="sec-blurb">Схеми Mongoose, контролери, мертвий код і відхилення від власних конвенцій проєкту.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Видалення пацієнта не каскадується: звіти лишаються сиротами назавжди ⚡</span><code class="f-file">backend/src/services/patient.service.ts:27</code></summary>
+<div class="f-body">
+<p>PatientService.remove (рядки 26–28) — лише Patient.findByIdAndDelete(id); deletePatient у контролері (patient.controller.ts:91–104) нічого не робить зі звітами. reports.routes.ts має тільки GET /, GET /patient/:patientId, GET /:id, POST /, PUT /:id — DELETE-ендпойнта для звітів не існує, тож сироти недосяжні з UI назавжди, але GET /reports їх повертає.</p>
+<p class="merge-note">Те саме відзначив і аудит надійності: сироти недосяжні з UI, але GET /reports їх повертає.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У deletePatient (або в PatientService.remove) після успішного видалення пацієнта: await Report.deleteMany({ patient: id }) — в ідеалі в транзакції, якщо кластер replica set (Atlas — так). Як мінімум додати DELETE /reports/:id для адміна, щоб наявних сиріт можна було прибрати.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">admin.service.ts — 161 рядок мертвого коду, що дублює три живі сервіси ⚡</span><code class="f-file">backend/src/services/admin.service.ts:1</code></summary>
+<div class="f-body">
+<p>grep по backend/src не знаходить жодного імпорту admin.service. Файл дублює doctors.service.ts (listDoctors/toggleUserActive), registrationRequests.service.ts (createRegistrationRequest/approveRegistration) і categories.service.ts, і вже розійшовся з живим кодом: його createCategory/updateCategory (рядки 91–105) не знають про showNameInReport/reportPosition/importantNote, які є в categories.service.ts:9–51. В approveRegistration — сміття: new User(...) створюється і ніколи не зберігається, «user.password = req.passwordHash as any» (рядки 55–62), далі insertOne повз Mongoose. Пастка для наступних правок.</p>
+<p class="merge-note">Продубльовано аудитом надійності: файл уже розійшовся з живими сервісами (не знає про showNameInReport/reportPosition).</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Видалити backend/src/services/admin.service.ts повністю (git rm). Уся жива функціональність вже існує в doctors.service.ts, registrationRequests.service.ts і categories.service.ts.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">approveRegistration пише в колекцію повз Mongoose і не перевіряє існуючого користувача ⚡</span><code class="f-file">backend/src/services/registrationRequests.service.ts:45</code></summary>
+<div class="f-body">
+<p>User.collection.insertOne (рядки 45–53) обходить Mongoose-валідацію і pre-save хук (навмисно, щоб не подвійно хешувати passwordHash — хук у UserSchema.ts:28–33 хешує при isModified("password")). Перевірка User.findOne({email}) є лише при СТВОРЕННІ заявки (рядки 16–19), але не при approve — користувач міг самозареєструватися з тим самим email між створенням заявки і підтвердженням: insertOne впаде з E11000 (unique на email, UserSchema.ts:17), який через registrationRequests.controller.ts:32 витече назовні сирим англомовним 400. Операція не атомарна: insertOne → findById → findByIdAndDelete → ActivityLog.create — падіння посередині лишає і користувача, і заявку.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Перед insertOne: const existing = await User.findOne({ email: request.email }); if (existing) — видалити заявку і кинути зрозумілу помилку («Користувач з таким email вже існує»). Додатково ловити err.code === 11000 і мапити на людський текст. Чистіша альтернатива обходу хука: прапорець isPasswordHashed на документі (хук пропускає хешування) і звичайний user.save() з валідацією.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Ліміт тіла запиту 100kb менший за дозволені валідатором 200 000 символів у звіті ⚡</span><code class="f-file">backend/src/app.ts:19</code></summary>
+<div class="f-body">
+<p>app.ts:19 — express.json() без опцій (дефолт body-parser — 100kb). report.validation.ts: FREE_TEXT_MAX = 200000 (рядок 8) для additionalInfo/finalNote/comments і 4 note-полів (83–89), TEXT_MAX = 100000 на recommendation/comment при MAX_ITEMS = 200. Кирилиця в UTF-8 — 2 байти/символ, тож Joi-валідний звіт легко перевищує 100kb: body-parser відкине його з PayloadTooLargeError (413, «request entity too large») ще до валідації.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Задати явний ліміт: app.use(express.json({ limit: "2mb" })) (і аналогічно urlencoded), а в middlewares/errorHandler.ts мапити err.type === "entity.too.large" / status 413 на українське повідомлення («Занадто великий обсяг даних»). Або знизити FREE_TEXT_MAX/TEXT_MAX до реалістичних значень, щоб контракти збігалися.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Пʼять контролерів обходять ApiError/errorHandler і віддають сирі англомовні err.message</span><code class="f-file">backend/src/controllers/categories.controller.ts:9</code></summary>
+<div class="f-body">
+<p>auth.controller.ts (рядки 18, 43, 55, 76 — res.status(400|403).json({message: (err as Error).message})), categories.controller.ts (усі 8 catch-блоків — res.status(400) з сирим err.message), doctors.controller.ts (9, 20, 29), homeCareController.ts (16, 25, 38, 51, 61 — res.status(500) з сирим err.message), registrationRequests.controller.ts (16, 32; рядок 30 — message: "Approved" англійською). reports.controller.ts:62 — єдине місце у файлі з res.status(404).json напряму замість next(ApiError.notFound), як у сусідньому getById (43). Наслідки точні: сирі Mongo/Mongoose-повідомлення (E11000, CastError) течуть назовні англійською, внутрішні помилки стають 400 замість 500.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Привести перелічені контролери до канонічного шаблону з patient.controller.ts/reports.controller.ts: try/catch → next(ApiError.badRequest/notFound/internal(українське повідомлення)); очікувані бізнес-помилки сервісів ("Категорію не знайдено", "Користувача не знайдено") мапити на ApiError.notFound, решту — на ApiError.internal з generic-текстом, не прокидаючи err.message назовні. Замінити "Approved" на «Підтверджено» (registrationRequests.controller.ts:30). Виправити reports.controller.ts:62 на next(ApiError.notFound("Звіт не знайдено")).</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">ActivityLog — write-only: жодного читання, жодного ендпойнта, необмежене зростання</span><code class="f-file">backend/src/models/ActivityLog.ts:18</code></summary>
+<div class="f-body">
+<p>усі звернення до ActivityLog — тільки .create() (categories.service.ts — 6 живих місць, doctors.service.ts:19, registrationRequests.service.ts:31,60, плюс мертвий admin.service.ts). Жодного ActivityLog.find ніде — ні сервісу, ні контролера, ні маршруту. Логуються CRUD категорій, деактивація і реєстрації, але НЕ пацієнти і НЕ звіти (хоча у звітів є власний editHistory). Схема без TTL/capped — колекція росте необмежено без можливості прочитати дані інакше, ніж прямим доступом до БД.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Визначитися: якщо аудит потрібен — GET /activity-log для адміна (requireRoles("admin")), розширення на мутації пацієнтів/звітів і TTL-індекс ({ createdAt: 1 }, { expireAfterSeconds: ... }); якщо ні — видалити модель і всі ActivityLog.create, що заразом прибере зайвий await у кожній мутації категорій.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Прогалини в індексах і схемах: сортування пацієнтів без індексу, Specialist/HomeCare без unique, Patient без timestamps</span><code class="f-file">backend/src/models/PatientSchema.ts:8</code></summary>
+<div class="f-body">
+<p>Підтверджено всі 4 пункти. 1) patient.controller.ts:22–25 сортує .sort({ createdAt: -1 }).skip().limit(), а PatientSchema (рядки 8–18) не має жодного індексу на createdAt. 2) Exam/Medication/Procedure/Category мають unique: true на name (перевірено grep), а SpecialistSchema.ts:9 і HomeCareSchema.ts:11 — ні. 3) CategoryItem.category (CategoryItem.ts:13) без index, а listCategoryItems фільтрує по ньому (categories.service.ts:68). 4) PatientSchema веде createdAt вручну (default: Date.now) без { timestamps: true } — updatedAt немає взагалі, на відміну від решти моделей.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>PatientSchema: перейти на { timestamps: true } (createdAt збережеться) і додати PatientSchema.index({ createdAt: -1 }). Specialist.name і HomeCare.name: unique: true — попередньо вивівши список наявних дублікатів у БД (без автоматичного видалення, бекапів немає). CategoryItem: index на category або компаундний CategoryItemSchema.index({ category: 1, name: 1 }, { unique: true }) проти дублів у межах категорії.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">editHistory оновлюється через read-modify-write — конкурентні збереження губляють записи історії</span><code class="f-file">backend/src/services/reports.service.ts:151</code></summary>
+<div class="f-body">
+<p>update(): findById (рядок 145) → у памʼяті [...(existing.editHistory || []), createHistoryItem("update", actor)] (151–154) → findByIdAndUpdate з перезаписом усього масиву (156–163). Два одночасні PUT прочитають однакову історію, другий перезатре запис першого. Плюс два раунд-трипи замість одного.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Один атомарний запит: return Report.findByIdAndUpdate(id, { $set: reportData, $push: { editHistory: createHistoryItem("update", actor) } }, { new: true }) — findByIdAndUpdate повертає null для неіснуючого id, тож семантика «404 якщо не знайдено» у контролері (reports.controller.ts:84–86) збережеться без попереднього findById.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Мертвий utils/generateTokens.ts з небезпечним process.env.JWT_SECRET!</span><code class="f-file">backend/src/utils/generateTokens.ts:4</code></summary>
+<div class="f-body">
+<p>grep не знаходить жодного імпорту utils/generateTokens — auth.service.ts має власний локальний generateTokens (рядки 7–13), який кладе {id, email, role} у payload access-токена (на role спирається requireRoles). Мертва версія підписує лише { id: userId } (без role — усі ставали б "user") і читає process.env.JWT_SECRET! з non-null assertion замість перевіреного config/env.ts — при незавантаженому env токени підписувалися б undefined-секретом.</p>
+<p class="merge-note">Аудит безпеки дійшов того самого висновку: дублікат генерації токенів може непомітно розійтися з робочим кодом в auth.service.ts.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Видалити backend/src/utils/generateTokens.ts. Єдиним джерелом токенів лишити функцію в auth.service.ts, яка використовує JWT_SECRET/JWT_REFRESH_SECRET з config/env (той падає при старті, якщо секрети відсутні).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Одноразовий міграційний скрипт cleanupProcedureRecommendations: зламаний .env-шлях і небезпечний fallback cutIndex ?? 0</span><code class="f-file">backend/src/scripts/cleanupProcedureRecommendations.ts:32</code></summary>
+<div class="f-body">
+<p>(а) Рядок 6: dotenv path.resolve(__dirname, "../config/.env") → backend/src/config/.env, якого не існує (перевірено ls) — скрипт працює лише від env шелла; скрипт не підключений до package.json (там лише "seed"). (б) Патерни продубльовані: масив FOOTER_PATTERNS (8–21, 12 патернів) і вручну зібрана альтернація в normalizeRecommendation (рядок 31). Уточнення: НАРАЗІ альтернація містить усі 12 патернів, тож match не буває null, коли hasFooterText === true — небезпека «const cutIndex = match?.index ?? 0» (рядок 32) латентна: вона зітре рекомендацію до порожнього рядка (з наступним save() у БД без бекапів) лише якщо два списки розійдуться при майбутній правці. Ризик реальний, але не активний.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Скрипт — разова міграція, що вже відпрацювала: видалити з репозиторію (історія лишиться в git). Якщо потрібен ще: будувати альтернацію з FOOTER_PATTERNS (new RegExp(FOOTER_PATTERNS.map(p =&gt; p.source).join("|"), "iu")), при match === null повертати value без змін замість зрізання від 0, додати dry-run за замовчуванням і виправити шлях dotenv на ../../.env.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Одрук у назві файлу: specialist.contoller.ts</span><code class="f-file">backend/src/controllers/specialist.contoller.ts:1</code></summary>
+<div class="f-body">
+<p>У backend/src/controllers/ файл називається specialist.contoller.ts — єдиний із одруком серед 13 контролерів; specialist.routes.ts:2 імпортує «../controllers/specialist.contoller». Також підтверджені дивні імена експортів у минулому часі: createdSpecialist/updatedSpecialist/deletedSpecialist (рядки 8–10) — на відміну від сусідів. Ламає grep/glob за *.controller.ts.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>git mv backend/src/controllers/specialist.contoller.ts backend/src/controllers/specialist.controller.ts і оновити імпорт у routes/specialist.routes.ts:2. Заразом перейменувати експорти createdSpecialist/updatedSpecialist/deletedSpecialist → createSpecialist/updateSpecialist/deleteSpecialist (використання — лише в specialist.routes.ts).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">listDoctors/deleteDoctor фільтрують role точним збігом всупереч конвенції нечутливості до регістру</span><code class="f-file">backend/src/services/doctors.service.ts:5</code></summary>
+<div class="f-body">
+<p>User.find({ role: "doctor" }) (рядок 5) і User.findOneAndDelete({ _id: id, role: "doctor" }) (рядок 24) — точний рядковий збіг. UserSchema.ts:20 «role: { type: String, default: "user" }» — без enum і без lowercase, тож користувач із role "Doctor" можливий; його токен проходить requireRoles("doctor") (кейс-незалежно), але в адмінці лікарів він невидимий і невидаляємий. Практична ймовірність низька (реєстрація не задає верхній регістр), тож low — адекватна оцінка.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Прибрати першопричину: у UserSchema додати role: { type: String, enum: ["admin", "doctor", "user"], lowercase: true, default: "user" } — з разовою нормалізацією наявних документів (спершу вивести список User з role, що не в нижньому регістрі; будь-який bulk-update — лише з явним підтвердженням, бекапів немає). Мінімальний варіант: { role: { $regex: /^doctor$/i } } у обох запитах.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">HomeCare: бespoke-контролер повз factory, а валідатор приймає поля, яких немає в моделі</span><code class="f-file">backend/src/validators/homeCare.validation.ts:9</code></summary>
+<div class="f-body">
+<p>Підтверджено обидва пункти. 1) homeCareSchema-валідатор дозволяє medicationName (рядок 9) і recommendations (рядок 10), але модель HomeCareSchema має лише name/morning/evening/order (HomeCareSchema.ts:10–15) — Mongoose у strict-режимі (дефолт) мовчки відкидає ці поля при POST/PUT /home-cares; вони належать report-рівневій підсхемі HomeCareSubSchema (ReportSchema.ts:73–86), а не довіднику. 2) homeCareController.ts не використовує createReferenceController і єдиний серед контролерів відповідає res.status(500) з сирим err.message (рядки 16, 25, 38, 51, 61); відмінності від factory (reorder, search-параметр із ensureHomeCareOrder) реальні, тож повний перехід на factory — опція, а не необхідність.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Прибрати medicationName/recommendations з homeCareSchema у homeCare.validation.ts (вони валідні лише в report.validation.ts:27–28). Catch-блоки homeCareController.ts перевести на next(ApiError.internal/notFound(...)) за загальним шаблоном (перекривається з финдингом 8); рефакторинг на createReferenceController з окремими хендлерами reorder/getAll-із-search — за бажанням.</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-export">
+<h2>Експорт листа: HTML і DOCX</h2>
+<p class="sec-blurb">Розбіжності між двома генераторами та ризики конвеєра File System Access API.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Експорт «Домашнього догляду» мовчки губить позиції, якщо категорію перейменували чи видалили ⚡</span><code class="f-file">frontend/src/components/ReportForm/html/generateReportHtml.ts:301</code></summary>
+<div class="f-body">
+<p>І HTML- (рядки 300-309), і DOCX-експорт (buildDocxFragment.ts:282-289) групують вибрані засоби не за самими вибраними елементами, а за поточним довідником: <code>const allCares = await getAllHomeCares(); uniqueCategories = …(trim)…; homeCares.filter((h) =&gt; h.name === category)</code>. Якщо категорію в довіднику з часу збереження звіту перейменували або видалили, збережені засоби цієї категорії просто не потрапляють у файл — без жодного попередження (порівнюється також тримована назва довідника з нетримованою <code>h.name</code>). Плюс зайвий мережевий запит getAllHomeCares, від якого залежить кожен експорт.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Групувати за назвами з самих вибраних елементів: <code>Array.from(new Set(homeCares.map((h) =&gt; h.name.trim())))</code> в обох генераторах — це прибирає і втрату даних, і запит getAllHomeCares. Якщо потрібен порядок категорій з довідника — сортувати за ним, а невідомі категорії додавати в кінець, не викидати.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Експорт із списку пацієнтів дає інший результат, ніж із форми листа: губляться нотатки «Важливо» і «робота з …» ⚡</span><code class="f-file">frontend/src/components/PatientList/PatientItem.tsx:78</code></summary>
+<div class="f-body">
+<p>PatientItem.handleExportHtml (рядки 72-97) і handleAppendToDocx (99-124) не передають <code>medicationsNote</code>, <code>homeCareNote</code>, <code>examsNote</code>, <code>proceduresNote</code>, хоча ці поля є у збереженому звіті (IReport, reportsApi.ts:59-62) — блоки «Важливо» зникають з експорту, зробленого з реєстру пацієнтів. Параметри опціональні в GenerateReportHtmlParams (generateReportHtml.ts:48-51), тож TypeScript не попереджає. Додатково <code>normalizeProcedureStages</code> (lib/normalizeProcedureStages.ts:25-30) повертає лише <code>title</code> і <code>procedures</code>, відкидаючи <code>workWithEnabled</code>/<code>workWith</code> (а також zone/interval/visitCount відсутні в його локальному типі ReportProcedure) — заголовок етапу втрачає «— робота з …». Той самий звіт, експортований з форми листа і зі списку, виглядає по-різному.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Прокинути всі чотири нотатки зі звіту в обидва виклики та доповнити normalizeProcedureStages полями workWithEnabled/workWith (і типізувати процедури через IReportProcedure з reportsApi). Краще — винести спільний маппер <code>reportToExportParams(report, patient, doctorName)</code> і використовувати його і в PatientItem, і в CreateReportForm.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">DOCX-експорт втрачає переноси рядків у багаторядкових текстах ⚡</span><code class="f-file">frontend/src/components/ReportForm/docx/buildDocxFragment.ts:377</code></summary>
+<div class="f-body">
+<p><code>additionalInfo</code> (рядок 377), <code>comments</code> (382), <code>finalNote</code> (386) і коментарі до процедур (356) рендеряться одним <code>run(text)</code> → один <code>&lt;w:t xml:space="preserve"&gt;</code>. Літеральні \n усередині w:t Word показує як пробіли, а не переноси — стандартний DEFAULT_FINAL_NOTE (CreateReportForm.tsx:81-82, дворядковий, з телефоном) у картці склеїться в один рядок. У HTML-версії ті самі поля проходять через plainTextToHtml із заміною \n → &lt;br /&gt; (generateReportHtml.ts:72-73), тобто формати розходяться. Хелпер <code>lineBreakRun()</code> у файлі вже є (рядок 48) і використовується в nodeToRuns для &lt;br&gt;, але для цих полів — ні.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати хелпер <code>multilineRuns(text)</code>: <code>text.split("\n").map((line) =&gt; run(line)).join(lineBreakRun())</code> — і використати його для additionalInfo, comments, finalNote та proc.comment.trim().</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">«Додати в картку (.docx)»: скасування і збої нерозрізненні, а пікер може мовчки не відкритися після довгого збереження ⚡</span><code class="f-file">frontend/src/lib/docxCardLink.ts:39</code></summary>
+<div class="f-body">
+<p>pickPatientDocxFile загортає showOpenFilePicker у catch-all, що повертає null (docxCardLink.ts:22–41): AbortError (скасування), SecurityError (втрачена user activation) і відмова в дозволі (verifyDocxFilePermission → false, рядок 38) нерозрізненні — appendReportToDocx.ts:26–29 трактує null як «cancelled» без жодного повідомлення. Критично: у CreateReportForm пікер викликається ПІСЛЯ await saveReport() (CreateReportForm.tsx:550–553 → appendReportToDocx → pickPatientDocxFile); якщо збереження триває довше за вікно transient user activation Chrome (~5 с), showOpenFilePicker кине SecurityError — лист збережено, пікер не зʼявився, помилки немає. HTML-експорт зроблено правильно: пікер папки викликається ДО збереження (CreateReportForm.tsx:509). Непідтримувані браузери оброблені добре (ReportActions.tsx:119–123, PatientItem.tsx:194–199, тост в appendReportToDocx.ts:19–24).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>1) Викликати pickPatientDocxFile ДО saveReport у handleAppendToDocx (дзеркально до handleExportHtml, рядок 509). 2) У pickPatientDocxFile ловити лише err.name === "AbortError" як «скасовано»; SecurityError і відмову в дозволі повертати окремим статусом і показувати тост («Не вдалося відкрити вибір файлу — спробуйте ще раз», «Немає дозволу на запис у файл»).</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Розбіжність HTML і DOCX: розділ «Засоби» вимкнений у HTML, але друкується в DOCX</span><code class="f-file">frontend/src/components/ReportForm/html/generateReportHtml.ts:288</code></summary>
+<div class="f-body">
+<p>У HTML-експорті стоїть <code>const includeMedicationsSection = false;</code> з коментарем «TEMPORARILY DISABLED: client asked not to include "Засоби"», але DOCX-гілка (buildDocxFragment.ts:271-277) той самий розділ «Засоби» додає безумовно (<code>if (medications.length &gt; 0)</code>). Лист для пацієнта (HTML) і запис у картці (DOCX) розходяться за змістом. Це або недогляд при вимкненні розділу, або невідображене бізнес-рішення — логіка секцій дублюється між двома генераторами і розʼїхалася на першій же зміні (див. також розбіжність по \n у пункті про переноси рядків).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Уточнити в замовника, чи «Засоби» мають лишатись у картці (.docx). Технічно — винести спільну модель секцій звіту (порядок, вміст, прапорці ввімкнення на кшталт includeMedicationsSection) в один модуль, який споживають і html-, і docx-рендерери, щоб перемикачі діяли на обидва формати одночасно.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Імʼя експортованого файлу не санітизується від недопустимих символів</span><code class="f-file">frontend/src/components/ReportForm/html/generateReportHtml.ts:852</code></summary>
+<div class="f-body">
+<p><code>Рекомендаційний_лист_${patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"}.html</code> — замінюються лише пробіли. ПІБ із символами «/», «\», «:», «"» (наприклад, помилково вставлений текст у полі імені) зробить імʼя недопустимим: <code>handle.getFileHandle(fileName, { create: true })</code> у htmlSaveLocation.ts:62 кине помилку, спрацює фолбек-download (htmlSaveLocation.ts:69-73), де браузер обріже або відхилить імʼя — плюс користувач отримає хибний toast «Не вдалося записати… можливо, файл відкритий в іншій програмі».</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати санітизацію: <code>.replace(/[\\/:*?"&lt;&gt;|]/g, "")</code> плюс обрізання довжини (~100 символів), винести в хелпер <code>safeFileName()</code> і використати також для імен у downloadCsv (lib/csv.ts:64, зараз <code>${title}.csv</code> у CRUDManager.tsx:189).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Кожен експортований HTML важить ~0.6 МБ через base64-шрифти і лого</span><code class="f-file">frontend/src/components/ReportForm/html/generateReportHtml.ts:200</code></summary>
+<div class="f-body">
+<p>У кожен файл листа вбудовуються Noah-Regular.ttf (128 292 Б) + Noah-Bold.ttf (135 376 Б) → ~352 КБ у base64, плюс logo.png 159 431 Б → ~212 КБ як data-URL. Разом ~560 КБ службового вмісту на кожен лист. Крім того, fetchAsBase64 (рядки 153-162) конвертує через <code>reduce((data, byte) =&gt; data + String.fromCharCode(byte), "")</code> — O(n²) конкатенація рядків на сотнях тисяч байтів, помітна затримка на кожному експорті.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Субсетнути шрифти до кирилиці+латиниці+пунктуації (pyftsubset/glyphhanger, типово -60-70%) і за можливості перевести у WOFF2; стиснути logo.png (159 КБ надмірно — поруч уже є logo-mark.png на 21 КБ; або SVG). fetchAsBase64 переписати через FileReader.readAsDataURL (fetchAsDataUrl уже є в цьому ж файлі, рядки 164-172) або чанковану конкатенацію.</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-frontend">
+<h2>Фронтенд: код і стан</h2>
+<p class="sec-blurb">React-стан, типізація, мертві файли.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">ReferenceItemModal скидає введений текст при ре-рендері батьківського компонента ⚡</span><code class="f-file">frontend/src/components/ReferenceItemModal.tsx:47</code></summary>
+<div class="f-body">
+<p><code>useEffect(() =&gt; { setForm(item); }, [item])</code> (рядки 47-49) — а всі виклики передають <code>item</code> як новий інлайновий обʼєкт на кожен рендер: CreateReportForm.tsx:857-861, SearchHomeCare.tsx:350-355, CRUDManager.tsx (item: { name: editingItem?.name ?? "", … }), SearchCategories.tsx (item: { name: editingItem?.itemName ?? "", … }). Будь-який ре-рендер батька при відкритій модалці скидає форму до початкових значень. Реальний сценарій: у «Домашньому догляді» триває debounce-пошук (SearchHomeCare.tsx:59-71) — коли запит завершується, setResults/setLoading ре-рендерить компонент, item отримує нову ідентичність, і набране в модалці зникає. У сусідньому PatientFormModal.tsx:29-36 цю саму проблему вже виправили (ресет лише по visible, з коментарем «щоб ре-рендер батька не стирав уже введений текст») — виправлення не перенесли сюди.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Ресетити форму лише при відкритті модалки: <code>useEffect(() =&gt; { if (visible) setForm(item); }, [visible])</code> з eslint-disable для exhaustive-deps — точно за зразком PatientFormModal.tsx:29-36.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Дубльовані типи звіту в трьох місцях і нетипізовані відповіді axios</span><code class="f-file">frontend/src/api/referenceApi.ts:93</code></summary>
+<div class="f-body">
+<p>1) Форми процедур звіту оголошені тричі: reportsApi.ts:12-31 (IReportProcedure/IReportProcedureStage), інлайнові інтерфейси в CreateReportForm.tsx:211-230 і ще раз у lib/normalizeProcedureStages.ts:3-19 — вони вже розійшлися полями (у lib-версії немає zone/interval/visitCount/workWith, що вже дало реальний баг втрати «робота з …» в експорті зі списку пацієнтів). Логіка групування legacy-процедур по етапах теж продубльована (CreateReportForm.tsx:251-271 ≈ normalizeProcedureStages.ts:33-48). 2) У referenceApi.ts частина викликів без дженерика: <code>axios.get(...)</code> → <code>data.categories</code> (рядки 94-95), createCategory/updateCategory/createCategoryItem/updateCategoryItem повертають неявний any (рядки 98-163). 3) authApi.refreshToken (authApi.ts:56-59) без типу — <code>const { accessToken } = await refreshToken()</code> в auth-ланцюжку спирається на any. Спільних із бекендом типів немає.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Використати IReportProcedure/IReportProcedureStage з reportsApi.ts у CreateReportForm і normalizeProcedureStages (видаливши локальні копії й обʼєднавши групування в одну функцію); типізувати всі axios-виклики referenceApi (<code>axios.get&lt;{ categories: ICategory[] }&gt;</code>, <code>axios.post&lt;{ category: ICategory }&gt;</code> тощо) і <code>axios.get&lt;{ accessToken: string }&gt;</code> у refreshToken. Довгостроково — спільний пакет типів для frontend/backend у монорепо.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Мертвий код: router/index.ts → pages/index.ts, порожній App.css, невикористаний green.json</span><code class="f-file">frontend/src/router/index.ts:1</code></summary>
+<div class="f-body">
+<p><code>src/router/index.ts</code> (масив routes) ніде не імпортується — і саме він єдиний тримає живим legacy-барел <code>src/pages/index.ts</code> (grep показує єдине посилання: router/index.ts:1; AppRouter.tsx робить lazy-імпорти напряму з #pages/*). <code>src/App.css</code> — файл на 0 байтів без жодного імпорту. <code>src/assets/green.json</code> (85 599 байтів) не згадується ніде в src/ — залишок старої Lottie-анімації. Файл <code>lib/pdfSaveLocation.ts</code> при цьому НЕ мертвий (імпортується CreateReportForm.tsx:54 і htmlSaveLocation.ts:1-4) — щодо його назви є окремий пункт.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Видалити router/index.ts, pages/index.ts, App.css і assets/green.json одним прибиральним комітом; після цього оновити згадку про «legacy-барел pages/index.ts» у CLAUDE.md.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">pdfSaveLocation.ts: застаріла назва і потрійне дублювання verifyDirectoryPermission</span><code class="f-file">frontend/src/lib/pdfSaveLocation.ts:51</code></summary>
+<div class="f-body">
+<p>PDF-пайплайна більше немає, але модуль зі збереженням handle папки звітів досі зветься pdfSaveLocation.ts (його імпортують CreateReportForm.tsx:54 і htmlSaveLocation.ts:1-4). Крім того, <code>verifyDirectoryPermission</code> реалізований двічі дослівно (pdfSaveLocation.ts:51-61 і htmlSaveLocation.ts:17-27), а третя копія для файлових handle-ів — verifyDocxFilePermission у docxCardLink.ts:5-15; усі три тіла ідентичні (queryPermission → requestPermission з mode: "readwrite") і відрізняються лише типом параметра.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Перейменувати файл на reportsSaveLocation.ts (або fsHandles.ts) і винести одну функцію <code>verifyReadwritePermission(handle: FileSystemHandle)</code> замість трьох копій — queryPermission/requestPermission оголошені на базовому FileSystemHandle.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Деактивація лікаря: window.confirm для асинхронної дії всупереч власній конвенції</span><code class="f-file">frontend/src/components/Admin/DoctorsManager.tsx:36</code></summary>
+<div class="f-body">
+<p>toggle() — асинхронна дія зі станом виконання (togglingId, Spinner у кнопці, рядки 42-56), але підтвердження деактивації зроблено через window.confirm (рядки 36-39). Конвенція проєкту (CLAUDE.md): ConfirmModal — «коли дія асинхронна і потребує in-progress стану». У цьому ж файлі видалення лікаря вже реалізоване через ConfirmModal з isDeleting/loadingLabel (рядки 158-166) — компонент неконсистентний сам із собою.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Перевести підтвердження деактивації на ConfirmModal за зразком сусіднього handleConfirmDelete: стан deactivatingDoctor, isLoading={togglingId !== null}, loadingLabel «Деактивуємо…».</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">SearchHomeCare: набір тексту в одній категорії перезапускає пошук у всіх</span><code class="f-file">frontend/src/components/HomeCare/SearchHomeCare.tsx:46</code></summary>
+<div class="f-body">
+<p>Ефект пошуку залежить від усього обʼєкта searchValues і на кожен keystroke у будь-якому полі перебирає ВСІ категорії: cleanup чистить усі таймери, і setTimeout планується наново для кожної категорії з непорожнім полем (рядки 46-78). Наслідки: (1) повторні запити searchMedicationsByName для категорій, чий текст не змінювався; (2) <code>setResults((prev) =&gt; ({ ...prev, [careId]: undefined }))</code> для всіх порожніх категорій на кожен символ — новий обʼєкт стану і зайві ре-рендери (що, серед іншого, і тригерить скидання форми в ReferenceItemModal — див. окремий пункт). Компонент не використовує спільний SearchPicker/useDebouncedValue, маючи власну реалізацію дебаунсу.</p>
+<p class="merge-note">Аудит продуктивності підтвердив: ідентичні запити повторно летять на сервер після кожної паузи 400 мс у будь-якому полі.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Тримати дебаунс на рівні окремої категорії: винести картку категорії в підкомпонент із useDebouncedValue для власного значення пошуку — це прибере перехресні запити та наблизить код до спільного патерну SearchPicker.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">LoginForm обходить useAuth: useContext(AuthContext) з non-null assertion</span><code class="f-file">frontend/src/components/Auth/LoginForm.tsx:11</code></summary>
+<div class="f-body">
+<p><code>const { login } = useContext(AuthContext)!;</code> — єдине місце в кодовій базі (підтверджено grep-ом), що бере контекст напряму з «!» замість хука useAuth, який кидає зрозумілу помилку поза провайдером (hooks/useAuth.ts:4-10, «useAuth must be used within an AuthProvider»). Порушує власний патерн проєкту «XContext + useX» (зафіксований у CLAUDE.md) і ховає можливий null за assertion.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Замінити на <code>const { login } = useAuth();</code> і прибрати імпорти AuthContext/useContext.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">CreateReportForm не скидає стан при зміні patientId і не має захисту від гонки завантаження</span><code class="f-file">frontend/src/components/ReportForm/CreateReportForm.tsx:169</code></summary>
+<div class="f-body">
+<p>Ефект fetchData ([patientId], рядки 169-283) не має ignore-прапорця/AbortController, а при зміні patientId без розмонтування (перехід /create-report/A → /create-report/B — той самий route AppRouter.tsx:36, react-router збереже елемент, напр. через history back/forward) не скидає: loading (setLoading(true) на початку ефекту не викликається — лишається false, показується стара форма), savedSnapshot (сетиться лише коли null, рядки 286-290 — isDirty рахується від чужого базового знімка), і головне — selected*-стани оновлюються лише в гілці <code>if (reportData)</code> (рядок 191): якщо у нового пацієнта звіту немає, у формі залишаються обстеження/процедури ПОПЕРЕДНЬОГО пацієнта, які можна зберегти в чужий лист. Сьогодні UI не має прямого переходу A→B без розмонтування, тож це latent-баг під майбутню навігацію.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Найпростіше й надійно — <code>&lt;CreateReportForm key={patientId} /&gt;</code> у CreateReportPage.tsx, щоб React перевмонтовував форму на зміну пацієнта. Альтернатива: на початку ефекту скидати все до дефолтів (setLoading(true), setSavedSnapshot(null), очистити selected*) і додати ignore-прапорець у cleanup.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Невикористані devDependencies: autoprefixer і postcss</span><code class="f-file">frontend/package.json:34</code></summary>
+<div class="f-body">
+<p>Tailwind 4 підключено через @tailwindcss/vite (vite.config.ts:1,22), конфігурації PostCSS у проєкті немає (postcss.config.* відсутній, ключа postcss у package.json теж), тож <code>autoprefixer</code> (рядок 34) і <code>postcss</code> (рядок 40) з devDependencies не беруть участі в збірці. <code>baseline-browser-mapping</code> (рядок 35) — транзитивна залежність browserslist, закріплена напряму без явного використання в коді чи конфігах.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Видалити autoprefixer і postcss із devDependencies (Tailwind 4 через @tailwindcss/vite обробляє вендорні префікси Lightning CSS-ом); перевірити, чи baseline-browser-mapping закріплений свідомо (напр. для фіксації даних browserslist) — якщо ні, теж прибрати.</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-ux">
+<h2>UX і доступність</h2>
+<p class="sec-blurb">Стани помилок, підтвердження, контраст, клавіатура і скрінрідери.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Контраст --color-ink-soft #71735f нижчий за WCAG AA на paper і surface-2 ⚡</span><code class="f-file">frontend/src/index.css:44</code></summary>
+<div class="f-body">
+<p>Перерахунок підтверджує цифри аудиту: --color-ink-soft #71735f (index.css:44) дає ≈4.38:1 на --color-paper #f4f3ee (:39) і ≈4.14:1 на --color-surface-2 #eeede5 (:41) — обидва нижчі за поріг AA 4.5:1 для звичайного тексту; на білому surface — 4.86:1, проходить. Цим кольором набрано саме дрібний текст на проблемних фонах: .chip-sub 13.5px (index.css:373–375) у чипах на surface-2, .sub-label 12.5px (323–329), лейбли «Ранок/Вечір»/чекбоксів у stage-card (ProcedureStageCard.tsx:83,170 — фон surface-2, index.css:519), мета-рядки і підказки на paper.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Затемнити токен до ~#63654f: перевірено, це дає ≈5.10:1 на surface-2 і ≈5.39:1 на paper — AA проходить, відтінок лишається в оливковій гамі бренду. Після зміни візуально перевірити шапку, чипи і stage-card.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Поля форми листа без програмних лейблів, секції — не заголовки ⚡</span><code class="f-file">frontend/src/components/ReportForm/NoteField.tsx:22</code></summary>
+<div class="f-body">
+<p>NoteField рендерить видимий лейбл як &lt;p class="sub-label"&gt; і textarea без id/htmlFor/aria-label (NoteField.tsx:22–29) — скрінрідер оголошує поле без назви, клік по лейблу не фокусує. Textarea «Додаткова інформація» — взагалі без лейбла і плейсхолдера (ReportComments.tsx:11–16). Поля «Все, що необхідно знати…» (CreateReportForm.tsx:777–783) і «Текст у кінці листа» (821–827) тримаються лише на placeholder. Заголовки секцій — &lt;p class="section-label"&gt; (ReportSection.tsx:14–19), навігація скрінрідером по заголовках у довгій формі неможлива (єдиний заголовок — h1 «Рекомендаційний лист…»). Правильні зразки вже в проєкті: SettingsManager.tsx:78–83 (htmlFor + id). Дрібниця: активна сторінка пагінації PatientList (кнопка з класом is-active, ~рядок 245–254) без aria-current="page".</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У NoteField згенерувати id через useId і замінити &lt;p&gt; на &lt;label htmlFor={id}&gt;; додати aria-label="Додаткова інформація" у textarea ReportComments; у ReportSection рендерити title як &lt;h2 className="section-label mb-0!"&gt; (стилі не зміняться); додати aria-current="page" активній кнопці пагінації PatientList.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Помилка завантаження у довідниках виглядає як порожній список «Записів ще немає»</span><code class="f-file">frontend/src/components/CRUDManager.tsx:98</code></summary>
+<div class="f-body">
+<p>fetchList (CRUDManager.tsx:98–119) — try/finally БЕЗ catch і без error-стану: при падінні api.getAll() list лишається [], і рендериться «Записів ще немає. Натисніть «Додати запис».» (429–433); користувач бачить лише генеричний тост від unhandledrejection. Той самий патерн підтверджено в DoctorsManager.tsx:19–26 («Немає лікарів», рядок 100), RegistrationRequestsManager.tsx:15–27 («Немає нових запитів на реєстрацію», 71–74 — адмін може пропустити реальні запити), SearchCategories.tsx:41–58 (при помилці показує «Категорій ще немає. Додайте їх у розділі…», 110–116), SearchHomeCare.tsx:32–44 — при помилці allHomeCares=[] і секція «Домашній догляд» у формі листа рендериться повністю порожньою без жодного тексту (map по порожньому масиву, 124). Еталонна реалізація вже є: PatientList.tsx:40 hasError, 164–173 екран з кнопкою «Спробувати ще раз».</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати hasError-стан з екраном «Не вдалося завантажити… [Спробувати ще раз]» за зразком PatientList.tsx:40,164–173 у CRUDManager, DoctorsManager, RegistrationRequestsManager. У SearchHomeCare додати явний порожній/помилковий стан (зараз при 0 категорій не рендериться взагалі нічого), за зразком SearchCategories.tsx:110–116.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Видалення процедури з листа і деактивація лікаря: непослідовні або відсутні підтвердження</span><code class="f-file">frontend/src/components/ReportForm/ProcedureStageCard.tsx:152</code></summary>
+<div class="f-body">
+<p>Хрестик біля процедури видаляє її без підтвердження (ProcedureStageCard.tsx:152–165) — разом із вручну відредагованими рекомендацією (через модалку «Оновити») і памʼяткою (NoteField, 293–302), які не відновити; при цьому видалення етапу підтвердження має (CreateReportForm.tsx:334–346, window.confirm — дозволено конвенцією для синхронних дій). Деактивація лікаря — асинхронна дія зі спінером «Зберігаємо…», але через window.confirm (DoctorsManager.tsx:36–39) всупереч конвенції проєкту «async + isLoading → ConfirmModal»; видалення лікаря поруч уже зроблено через ConfirmModal (158–166).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Для процедури з непорожнім comment/recommendation питати window.confirm з назвою процедури (видалення самого стану — синхронне, confirm за конвенцією допустимий); без кастомного тексту лишити як є. Деактивацію лікаря перевести на ConfirmModal з isLoading і loadingLabel=«Деактивуємо…», за зразком сусіднього видалення (DoctorsManager.tsx:158–166).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Підтвердження видалення пацієнта — генеричне «цей запис», без імені і без згадки про лист</span><code class="f-file">frontend/src/components/CRUDManager.tsx:509</code></summary>
+<div class="f-body">
+<p>Видалення пацієнта йде через загальний CRUDManager (PatientManager — тонка обгортка з apiPath="patients"; кнопка видалення лише для адміна — ReferencePanel.tsx:193 canDelete={isAdmin}). ConfirmModal показує універсальний текст «Ви впевнені, що хочете видалити цей запис?» (CRUDManager.tsx:506–514) — без ПІБ пацієнта і без попередження про лист: на бекенді patient.service.ts remove — це лише Patient.findByIdAndDelete (рядки 26–28), Report не видаляється і стає недосяжним через UI. З огляду на відсутність бекапів БД помилкове видалення не того рядка — незворотна втрата картки.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Зберігати в стані обʼєкт item замість deletingId (у setDeletingId на рядку 477 item уже доступний) і формувати message з імʼям: «Видалити картку пацієнта “{name}”? Разом із нею стане недоступним її рекомендаційний лист. Дію неможливо скасувати.» — для apiPath="patients" можна прокинути кастомний deleteMessage-проп.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Таби довідників мають role="tab" без клавіатурного патерна табів</span><code class="f-file">frontend/src/pages/references/ReferencePanel.tsx:148</code></summary>
+<div class="f-body">
+<p>Кнопки оголошені role="tab" з aria-selected (ReferencePanel.tsx:145–158) усередині role="tablist" (166–171), але патерн не реалізовано: немає onKeyDown зі стрілками, немає roving tabindex (усі кнопки в tab-порядку), немає id/aria-controls, а контент — просто &lt;div class="card"&gt; (рядок 181) без role="tabpanel". Скрінрідер анонсує «вкладка N з 14+», користувач очікує стрілки вліво/вправо — вони не працюють; Tab-ом доводиться проходити крізь усі пілюлі.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Або доімплементувати патерн (onKeyDown ArrowLeft/ArrowRight + tabIndex={activeTab===tab.key ? 0 : -1} на кнопках, id на табах, role="tabpanel" + aria-labelledby на div.card), або прибрати role="tab"/"tablist"/aria-selected і лишити кнопки з aria-current — обидва варіанти валідні, поточний «пів-патерн» вводить в оману.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Фіксовані ширини контролів етапу процедур ламають верстку на вузьких екранах</span><code class="f-file">frontend/src/components/ReportForm/ProcedureStageCard.tsx:98</code></summary>
+<div class="f-body">
+<p>Селект «Робота з» — жорстке <code>h-9 w-[320px] flex-none</code> (ProcedureStageCard.tsx:98), назва етапу — w-[220px] (80), селекти зони/інтервалу — w-[160px] (190, 227), інпути «Інше» — w-[180px] (201, 238). .stage-card має padding 1rem (index.css:518) і лежить у .card всередині main з px-4 — на екрані ~360px доступна ширина всередині картки ≈280–300px, тож 320-піксельний flex-none селект вилазить за межі і породжує горизонтальний скрол. Решта екранів (реєстр пацієнтів, довідники, чипи) адаптовані через flex-wrap/sm:-брейкпоінти — це єдине місце з жорсткими ширинами понад мобільний вьюпорт.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Замінити фіксовані ширини на обмежені: для «Робота з» — <code>h-9 w-full max-w-[320px] min-w-0 flex-1</code>, для назви етапу — <code>max-w-[220px] flex-1 min-w-0</code>, для зони/інтервалу — <code>flex-1 min-w-[140px] max-w-[180px]</code> — на десктопі вигляд не зміниться, на вузьких екранах контроли стискатимуться.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Валідація логіну — тільки транзитними тостами, а перевірка «мінімум 6 символів» блокує і вхід</span><code class="f-file">frontend/src/components/Auth/LoginForm.tsx:31</code></summary>
+<div class="f-body">
+<p>validateForm показує помилки лише через toast.error (LoginForm.tsx:21–36): поля не підсвічуються — класи .is-invalid/.field-error з дизайн-системи (index.css:296–301) не використовуються, немає aria-invalid; PatientFormModal.tsx:81–84 демонструє правильний inline-патерн. Перевірка <code>password.length &lt; 6</code> (31–34) виконується і в режимі входу, хоча бекендна loginSchema вимагає лише required без min (auth.validation.ts:23; min(6) — тільки в registerSchema, :13): користувач зі старим коротким паролем не зможе відправити форму входу, яку бекенд прийняв би.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Перенести перевірку довжини пароля у гілку isRegister; помилки полів показувати inline під полями через наявні .is-invalid/.field-error + aria-invalid/aria-describedby (за зразком PatientFormModal.tsx:81–84), тост лишити для серверних помилок (прокидання serverMessage на рядках 78–81 вже зроблено добре).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Запит на реєстрацію можна лише підтвердити — «Відхилити» немає</span><code class="f-file">frontend/src/components/Admin/RegistrationRequestsManager.tsx:96</code></summary>
+<div class="f-body">
+<p>Єдина дія в менеджері запитів — «Підтвердити» (RegistrationRequestsManager.tsx:96–109). На бекенді роутер реєстраційних запитів має лише GET / і POST /:id/approve (registrationRequests.routes.ts:9–14) — ендпоінта відхилення/видалення не існує. Помилковий чи сторонній запит висітиме вічно, тримаючи бейдж-лічильник на табі «Запити» (ReferencePanel.tsx:154–156) і створюючи ризик випадкового підтвердження, аби «прибрати». (Не дублює відому відкладену задачу про роль "user" — це окрема прогалина адмін-UI.)</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати кнопку «Відхилити» (btn-danger-soft) з ConfirmModal поруч із «Підтвердити»; на бекенді — DELETE /registration-requests/:id у registrationRequests.routes.ts (router.delete з validateObjectIdParams("id") + метод у контролері/сервісі за наявним шаблоном), під тим самим requireRoles("admin").</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-performance">
+<h2>Продуктивність</h2>
+<p class="sec-blurb">Оцінка для реального масштабу практики: сотні пацієнтів, тисячі листів.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">GET /reports віддає всю колекцію звітів без пагінації, projection і .lean() — і фронтендом взагалі не використовується ⚡</span><code class="f-file">backend/src/services/reports.service.ts:123</code></summary>
+<div class="f-body">
+<p><code>export const getAll = async () =&gt; Report.find();</code> (reports.service.ts:123) — без фільтра, пагінації, projection і <code>.lean()</code>. Роут <code>router.get("/", ReportsController.getAll)</code> (reports.routes.ts:11) захищений лише <code>authMiddleware</code> (рядок 10), без requireRoles — доступний будь-якому автентифікованому користувачу. Клієнтська <code>getAllReports</code> (frontend/src/api/reportsApi.ts:70-73) визначена, але grep по всьому frontend/src не знаходить жодного виклику — ендпойнт мертвий. Один випадковий/зловмисний виклик гідрує і віддає всю колекцію звітів разом з editHistory (це ще й privacy-питання: повні дані всіх пацієнтів одним запитом).</p>
+<p class="merge-note">Обʼєднано з окремою бекенд-знахідкою про відсутність .lean() у сервісах.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Видалити роут GET /reports (reports.routes.ts:11), метод getAll у контролері/сервісі та <code>getAllReports</code> у reportsApi.ts як мертвий код. Якщо ендпойнт знадобиться — обовʼязкові <code>page</code>/<code>limit</code> (за зразком getAllPatients), projection без <code>editHistory</code> і <code>.lean()</code>.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Відсутній compression і явний ліміт JSON-тіла в Express ⚡</span><code class="f-file">backend/src/app.ts:19</code></summary>
+<div class="f-body">
+<p>app.ts підключає лише cors (12-17), cookieParser (18), <code>express.json()</code> (19) та <code>express.urlencoded()</code> (20) — пакета compression немає ні в middleware, ні в backend/package.json (dependencies: bcryptjs, cookie-parser, cors, dotenv, express, express-rate-limit, joi, jsonwebtoken, mongodb, mongoose). Відповіді — JSON з довгими українськими markdown-рекомендаціями (getAll довідників віддає всі записи цілком), який gzip/brotli стискає в рази. <code>express.json()</code> без опцій має дефолтний ліміт тіла 100kb — великий лист з десятками markdown-полів і editHistory у payload може з часом упертися в 413 без зрозумілого користувачу повідомлення.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p><code>npm i compression</code> (+ @types/compression) і в app.ts перед роутами <code>app.use(compression())</code>; ліміт задати явно: <code>app.use(express.json({ limit: "1mb" }))</code>. Якщо продакшн стоїть за nginx/проксі, що вже стискає — Node-компресію пропустити, але це перевірити і зафіксувати в README/CLAUDE.md.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Адмін-вкладка «Пацієнти» отримує лише перші 10 пацієнтів — getAll без параметрів проти пагінованого ендпойнта</span><code class="f-file">frontend/src/components/PatientList/PatientManager.tsx:10</code></summary>
+<div class="f-body">
+<p>PatientManager (використовується в pages/references/ReferencePanel.tsx:193, вкладка «patients») обгортає CRUDManager з <code>apiPath="patients"</code> (PatientManager.tsx:10-12). CRUDManager викликає <code>api.getAll()</code> = <code>axios.get(apiUrl)</code> БЕЗ query-параметрів (createReferenceApi.ts:16), а бекенд ставить <code>const limit = Number(req.query.limit) || 10</code> (patient.controller.ts:13). fetchList «знаходить перший масив у відповіді» (CRUDManager.tsx:104-114) — з обгортки <code>{ patients, total, ... }</code> дістає <code>patients</code>, тобто рівно 10 останніх. Наслідки підтверджені кодом: клієнтський пошук фільтрує лише ці 10 (CRUDManager.tsx:88-96), лічильник «Усього: {list.length}» показує 10 (рядок 327), редагування/видалення недоступні для решти. Це передусім функціональна вада, виявлена в перформанс-аудиті; наївний фікс limit=100000 запустив би getLastVisitMap по всій колекції звітів на кожне відкриття вкладки (див. знахідку 1).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Не використовувати CRUDManager для пацієнтів: зробити окремий менеджер поверх наявного <code>patientsApi.getAllPatients(page, limit, query)</code> з серверною пагінацією і серверним пошуком (ендпойнт уже все підтримує — page/limit/query), або додати в CRUDManager опційний режим серверної пагінації. Якщо адмін-операціям потрібен повний список — легкий <code>GET /patients/all</code> з projection <code>_id fullName</code>, <code>.lean()</code> і без getLastVisitMap.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">ensureHomeCareOrder виконується на кожному читанні /home-cares — зайвий повний скан і потенційний bulkWrite на hot-read шляху</span><code class="f-file">backend/src/services/homeCare.service.ts:22</code></summary>
+<div class="f-body">
+<p><code>getAllHomeCaresService</code> (рядки 22-27) першим викликає <code>await ensureHomeCareOrder()</code> (рядки 4-20): <code>HomeCare.find().sort({ order: 1, _id: 1 })</code> + перевірка + можливий <code>bulkWrite</code> — на КОЖЕН GET /home-cares, включно з пошуком (<code>?search=</code>), викликом <code>getAllHomeCares()</code> в кожному HTML-експорті (generateReportHtml.ts:301) і монтуванням SearchHomeCare у формі листа (SearchHomeCare.tsx:36). Кожне читання довідника = мінімум два запити до БД, і читання може писати в базу без бекапів; два паралельні GET можуть одночасно запускати bulkWrite. Мутації вже покривають порядок: delete викликає ensureHomeCareOrder (рядок 50), reorder сам виставляє order (55-62), create ставить nextOrder (34-35). На поточних десятках записів дешево — severity low адекватна.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Прибрати <code>await ensureHomeCareOrder()</code> з getAllHomeCaresService — після мутацій порядок уже підтримується (delete → ensure, reorder → bulkWrite, create → nextOrder). Разову нормалізацію наявних даних виконати окремим кроком лише за явним підтвердженням користувача (БД без бекапів — не запускати самостійно).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Колекція Patient без індексів під сортування і пошук; два повних скани на кожен запит списку</span><code class="f-file">backend/src/models/PatientSchema.ts:8</code></summary>
+<div class="f-body">
+<p>PatientSchema (рядки 8-18) містить лише fullName і createdAt, жодного індексу (і без <code>{ timestamps: true }</code> — createdAt заданий вручну через default). <code>getAllPatients</code> (patient.controller.ts:21-25) на кожен запит виконує <code>count(filter)</code> + <code>getAll(filter).sort({ createdAt: -1 }).skip().limit()</code> — сортування без індексу означає in-memory sort усієї колекції на кожну сторінку/дебаунснутий пошук. Case-insensitive <code>$regex</code> по fullName (рядок 18) індекс би все одно не використав ефективно; на короткодокументній колекції розміру однієї практики це терпимо — severity low адекватна, головна втрата саме сортування.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Додати <code>PatientSchema.index({ createdAt: -1 });</code> перед <code>mongoose.model</code> — sort+skip+limit ходитимуть по індексу. Опційно: collation-індекс <code>{ fullName: 1 }</code> з <code>{ locale: "uk", strength: 2 }</code> і пошук через collation замість regex (на поточному масштабі не критично). Додати <code>.lean()</code> у PatientService.getAll/getOne і прибрати <code>p.toObject()</code> у patient.controller.ts:31.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">jszip і весь код експорту статично зашиті в чанк сторінки рекомендаційного листа</span><code class="f-file">frontend/src/components/ReportForm/CreateReportForm.tsx:38</code></summary>
+<div class="f-body">
+<p><code>import { appendReportToDocx } from "#components/ReportForm/docx/appendReportToDocx"</code> та <code>import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml"</code> (CreateReportForm.tsx:38-39) — статичні. jszip (frontend/package.json:20, <code>"jszip": "^3.10.1"</code>) має єдиного споживача — appendReportToDocx.ts:1 <code>import JSZip from "jszip"</code>. generateReportHtml.ts — 870 рядків. Усе це потрапляє в lazy-чанк CreateReportPage і вантажиться при кожному відкритті форми листа, хоча потрібне лише при натисканні експорту. Шрифти справді не в бандлі — вони імпортуються як asset-URL (generateReportHtml.ts:10-12) і fetch-аться під час експорту.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У handleExportHtml і handleAppendToDocx перейти на динамічний імпорт: <code>const { generateReportHtml } = await import("#components/ReportForm/html/generateReportHtml");</code> та аналогічно для appendReportToDocx. Vite виділить окремі чанки автоматично; поведінка не зміниться (обидва хендлери вже async зі станами isExportingHtml/isAppendingToDocx).</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">JSON.stringify усього стану форми листа на кожне натискання клавіші</span><code class="f-file">frontend/src/components/ReportForm/CreateReportForm.tsx:133</code></summary>
+<div class="f-body">
+<p><code>currentSnapshot</code> (CreateReportForm.tsx:133-165) — useMemo з <code>JSON.stringify</code> усього стану форми (selectedExams/Medications/Specialists/HomeCares/CategoryItems, procedureStages з markdown-рекомендаціями, і всі 7 текстових полів), із залежностями на кожне з них — будь-яке натискання клавіші в comments/additionalInfo/finalNote/notes перераховує серіалізацію повного листа лише щоб порахувати <code>isDirty</code> (рядок 167: <code>savedSnapshot !== null &amp;&amp; currentSnapshot !== savedSnapshot</code>). Кожен keystroke також ре-рендерить усе дерево форми; єдиний мемоізований компонент — ProcedureStageCard (<code>export default React.memo(ProcedureStageCard)</code>, ProcedureStageCard.tsx:307). На типовому листі терпимо, на великому — мікрофризи вводу; low адекватно.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Найдешевше: серіалізувати дефернуті значення — <code>useDeferredValue</code> для полів у deps снапшота, або дебаунс перерахунку (isDirty не мусить оновлюватися на кожну літеру). Альтернатива: булевий <code>dirty</code> — true на першу зміну після завантаження, скидання в saveReport — тоді повна серіалізація потрібна лише в момент збереження/порівняння перед виходом. Заодно обгорнути ReportSection-блоки з Selected*-таблицями в React.memo.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">editHistory звіту росте без обмежень і повертається клієнту цілком; update робить два запити замість одного</span><code class="f-file">backend/src/services/reports.service.ts:139</code></summary>
+<div class="f-body">
+<p><code>update</code> (reports.service.ts:139-164) спершу <code>const existing = await Report.findById(id)</code> (рядок 145), потім <code>Report.findByIdAndUpdate(id, { ...reportData, editHistory }, { new: true })</code> (рядки 156-163) — два роундтрипи на кожне збереження лише щоб дописати елемент в editHistory (масив збирається в JS: рядки 151-154). editHistory необмежений (ReportSchema.ts:153 <code>editHistory: [EditHistorySubSchema]</code> без ліміту), повертається цілком у кожному GET звіту (getById/getByPatientId без projection) і рендериться повним списком у формі (CreateReportForm.tsx:643-666 через <code>.slice().reverse()</code>).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Один атомарний запит: <code>Report.findByIdAndUpdate(id, { ...reportData, $push: { editHistory: { $each: [createHistoryItem("update", actor)], $slice: -50 } } }, { new: true })</code> — усуває і другий роундтрип, і безмежний ріст (число 50 узгодити). Nota bene: зникне перевірка існування через findById — обробляти <code>null</code> від findByIdAndUpdate (контролер уже це вміє). У getById/getByPatientId опційно projection <code>{ editHistory: { $slice: -20 } }</code>.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Шрифти Noah вантажаться як TTF (~529 КБ на 4 накреслення), логотип 159 КБ; HTML-експорти роздуті вбудованими TTF</span><code class="f-file">frontend/src/index.css:3</code></summary>
+<div class="f-body">
+<p>Підтверджено частково, з корекцією. Розміри точні: Noah-Regular 128 КБ, Bold 135 КБ, RegularItalic 130 КБ, BoldItalic 135 КБ (разом ~529 КБ TTF, WOFF2 немає), logo.png 159 КБ (поруч є logo-mark.png 21 КБ). АЛЕ твердження «без font-display» — хибне: усі чотири @font-face уже мають <code>font-display: swap</code> (index.css:8, 16, 24, 32), тож перший рендер НЕ блокується — текст показується фолбеком, втрата лише в байтах і FOUT; після першого візиту файли в кеші. Тому severity знижено з medium до low. Експортна частина підтверджена: generateReportHtml.ts:195-203 вбудовує logo.png через fetchAsDataUrl (~212 КБ base64) і два TTF через fetchAsBase64 (~360 КБ base64) у кожен HTML-файл; fetchAsBase64 (рядки 153-162) конвертує через <code>reduce((data, byte) =&gt; data + String.fromCharCode(byte), "")</code> — побайтова конкатенація рядка, сотні тисяч ітерацій на експорт, хоча поруч є fetchAsDataUrl через FileReader (164-172).</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>1) Конвертувати шрифти у WOFF2 (fonttools/woff2_compress) і в @font-face дати <code>src: url(...woff2) format("woff2"), url(...ttf) format("truetype")</code> — font-display: swap уже є, не чіпати. 2) Оптимізувати logo.png (ресайз до реального розміру в шапці — реально &lt;30 КБ; або перевикористати logo-mark.png 21 КБ, якщо підходить). 3) В експорт вбудовувати WOFF2 замість TTF. 4) fetchAsBase64 замінити на наявний fetchAsDataUrl (FileReader.readAsDataURL) і зрізати префікс data:-URL за потреби.</p></div>
+</div>
+</details>
+<details class="finding f-low">
+<summary><span class="chips"><span class="sev sev-low">низький</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">CSV-імпорт довідника — сотні окремих HTTP-запитів (повне видалення + повторне створення по одному)</span><code class="f-file">frontend/src/components/CRUDManager.tsx:249</code></summary>
+<div class="f-body">
+<p><code>handleConfirmImport</code> (CRUDManager.tsx:249-316) видаляє кожен старий запис окремим <code>api.remove(item._id!)</code> (рядок 268) і створює кожен новий окремим <code>api.create(payload)</code> (рядок 289), пачками по 15 через <code>runInBatches</code> (рядки 19-40, IMPORT_BATCH_SIZE = 15). Імпорт на 300 позицій = ~600 HTTP-запитів з окремими auth/validate/Mongo-роундтрипами; падіння посередині лишає довідник напівпорожнім — код чесно це визнає в catch (рядки 306-310: «Старі записи вже видалено — перевірте список…»). Порядок delete-then-create навмисний через unique-індекс назви (коментар, рядки 252-255). Для БД без бекапів це сотні неатомарних операцій запису. Операція рідкісна (адмінський імпорт) — low адекватно.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>Бекенд: bulk-ендпойнт для reference-ресурсів, напр. <code>PUT /:resource/bulk-replace</code> з масивом записів — у сервісі <code>deleteMany({})</code> + <code>insertMany(items)</code>; транзакція, якщо MongoDB розгорнута як replica set (інакше хоча б одна операція-вікно замість 600). Фронтенд шле один запит з розпарсеним CSV; прогрес звести до одного стану «Замінюємо…». Це усуває і проблему unique-конфліктів, і напівпорожній стан при обриві.</p></div>
+</div>
+</details>
+</section><section class="cat" id="s-reliability">
+<h2>Надійність та експлуатація</h2>
+<p class="sec-blurb">Що станеться, коли щось піде не так — і хто про це дізнається.</p>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Сервер стартує і працює без MongoDB: немає fail-fast, health-check і логування стану зʼєднання ⚡</span><code class="f-file">backend/src/app.ts:28</code></summary>
+<div class="f-body">
+<p>Підтверджено фактично, але high завищено. app.ts:28-31: <code>mongoose.connect(MONGODB_URI).then(...).catch((error) =&gt; console.error(...))</code> — помилка initial connect лише логується, а server.ts:6 викликає app.listen незалежно; mongoose initial connect не ретраїться, тож при недоступній Mongo на старті процес живе «зомбі» — кожен запит висить до буфер-таймауту (~10 с) і падає 500. grep по backend/src: жодного connection.on('disconnected'/'reconnected'), жодного health-ендпоінта (routes/index.ts:17-28 — лише бізнес-роути). Знижено до medium: сценарій вимагає збігу «Mongo лежить саме в момент старту», mid-run обриви драйвер перепідключає сам, а наслідок лікується рестартом.</p>
+<p class="merge-note">Бекенд-аудит додає: підключення — побічний ефект імпорту app.ts; запити висять до buffering-таймаута Mongoose (~10 с) і падають 500.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>1) <code>await mongoose.connect(...)</code> до app.listen, при помилці — process.exit(1). 2) GET /health: 200 лише при <code>mongoose.connection.readyState === 1</code>, інакше 503. 3) Логування на connection.on('disconnected'/'reconnected'). 4) Зовнішній пінгер (UptimeRobot/Healthchecks.io) на /health.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Немає graceful shutdown і глобальних обробників помилок процесу ⚡</span><code class="f-file">backend/src/server.ts:6</code></summary>
+<div class="f-body">
+<p>Підтверджено фактично, але з корекціями. server.ts — 9 рядків, лише app.listen; grep по backend/src не знаходить жодного process.on — немає SIGTERM/SIGINT (in-flight запити при рестарті обриваються, server.close/mongoose.disconnect не викликаються) і немає uncaughtException/unhandledRejection (у Node 15+ unhandled rejection вбиває процес, а процес-менеджера немає — сервіс лежить до ручного рестарту). Корекція прикладу: «fire-and-forget ActivityLog.create» — неточно, всі виклики ActivityLog.create у сервісах await-яться всередині try/catch контролерів, а Express 5 сам передає reject-и async-хендлерів у errorHandler, тож імовірність unhandled rejection нижча, ніж стверджує аудит. Через це high знижено до medium — прогалина реальна, але тригер малоймовірний.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>У server.ts: зберегти <code>const server = app.listen(...)</code>; на SIGTERM/SIGINT — server.close() + mongoose.disconnect() з таймаутом ~10 с; на uncaughtException/unhandledRejection — залогувати стек і process.exit(1). ~20 рядків стандартного коду, цінність повністю розкривається разом із процес-менеджером (див. пункт про деплой-інфраструктуру).</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: до пів дня">S</span></span><span class="f-title">Прогалини у валідації env: CLIENT_URL з непрацюючим CORS-фолбеком, VITE_API_URL без перевірки ⚡</span><code class="f-file">backend/src/app.ts:14</code></summary>
+<div class="f-body">
+<p>config/env.ts валідує лише JWT_SECRET, JWT_REFRESH_SECRET, MONGODB_URI (env.ts:9-11). app.ts:14: <code>origin: process.env.CLIENT_URL || "http://localhost:5173/"</code> — пакет cors порівнює Origin точним рядком, а заголовок Origin ніколи не має трейлінг-слеша, тож фолбек мертвий: без CLIENT_URL навіть локальний фронтенд отримує CORS-помилки. cookieOptions в auth.service.ts:89-94 (secure за NODE_ENV, sameSite:"strict") — мертвий код: контролер їх ігнорує і хардкодить secure:true/sameSite:"none" (auth.controller.ts:33-39), тому refresh-cookie не працюватиме без HTTPS. На фронтенді import.meta.env.VITE_API_URL використовується без перевірки у 6 файлах (authApi.ts:3: <code>import.meta.env.VITE_API_URL + "/auth"</code>) — без змінної на білді всі запити летять на "undefined/auth".</p>
+<p class="merge-note">Сюди ж злито знахідки безпеки і бекенду про CORS-фолбек із трейлінг-слешем: заголовок Origin ніколи не має слеша в кінці, тож дефолт «http://localhost:5173/» мертвий.</p>
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>1) Додати CLIENT_URL у requireEnv в config/env.ts (або лишити дефолт без трейлінг-слеша + console.warn). 2) Видалити мертві cookieOptions з auth.service.login (разом із фіксом розбіжності токен/cookie — див. окремий пункт). 3) У frontend створити src/lib/config.ts: <code>const API_URL = import.meta.env.VITE_API_URL; if (!API_URL) throw new Error("VITE_API_URL не задано");</code> та імпортувати в усі 6 api-файлів.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Нульова спостережуваність: помилки лише в stdout, ActivityLog пише вибірково і його ніхто не читає</span><code class="f-file">backend/src/middlewares/errorHandler.ts:10</code></summary>
+<div class="f-body">
+<p>Єдине логування помилок — <code>console.error("Error:", err)</code> в errorHandler.ts:10 плюс 19 (не 29) console.* у контролерах/сервісах (без seed і scripts). У backend/package.json немає winston/pino/morgan/Sentry — жодного request-логу чи error-трекера. ActivityLog підтверджено write-only: пише категорії (categories.service.ts:27,49,59,78,101,115), реєстраційні запити (registrationRequests.service.ts:31,60) і активацію лікарів (doctors.service.ts:19), але НЕ пише видалення пацієнта (patient.controller.ts:91-104), створення/оновлення листів (reports.service.ts) і видалення довідників (createReferenceController.ts:72-82); жодного роута, що читає ActivityLog, не існує (grep по routes/controllers — нуль). Знижено до medium: це прогалина виявлення інцидентів, а не пряма причина відмови чи втрати даних.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>1) pino + pino-http для request-логів, вивід у файл із ротацією або через процес-менеджер. 2) Sentry (безкоштовний tier) в errorHandler перед console.error. 3) Дописати ActivityLog.create у deletePatient, reports create/update і createReferenceController.remove — для медичних даних аудит «хто/що/коли» обовʼязковий. 4) Адмінський GET /activity-log з пагінацією, бо зараз колекція недосяжна.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Відсутня деплой-інфраструктура: немає CI, процес-менеджера і документованої процедури розгортання</span><code class="f-file">backend/package.json:8</code></summary>
+<div class="f-body">
+<p>find по всьому дереву (поза node_modules): немає .github (навіть перевірки tsc/eslint на PR), Dockerfile/docker-compose, ecosystem-файлів PM2, systemd unit чи nginx конфігів. Єдиний запуск — <code>npm start</code> → <code>node dist/server.js</code> (backend/package.json:8): голий процес без autorestart, тобто після падіння сервіс лежить до ручного втручання (а глобальних обробників немає — див. пункт про graceful shutdown). frontend/dist у робочій копії зібрано локально 7 серпня (ls -la: index.html і assets від Aug 7 18:08) — деплой фронтенду теж ручний. Додатковий аргумент за CI: dev-режим ts-node-dev працює з --transpile-only (package.json:6), тобто без перевірки типів — помилки компіляції видно лише при ручному npm run build.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>(1) PM2 з ecosystem.config.js (autorestart, max_memory_restart, pm2 startup) або systemd unit з Restart=always; (2) GitHub Actions на PR: <code>cd backend &amp;&amp; npm ci &amp;&amp; npm run build</code> + <code>cd frontend &amp;&amp; npm ci &amp;&amp; npm run build &amp;&amp; npm run lint</code>; (3) короткий DEPLOY.md з покроковою процедурою.</p></div>
+</div>
+</details>
+<details class="finding f-medium">
+<summary><span class="chips"><span class="sev sev-medium">середній</span><span class="eff" title="Орієнтовний обсяг: 1–2 дні">M</span></span><span class="f-title">Оновлення листа повністю затирає попередній вміст без версіонування</span><code class="f-file">backend/src/services/reports.service.ts:139</code></summary>
+<div class="f-body">
+<p>На пацієнта існує рівно один лист (getByPatientId — findOne, reports.service.ts:125-126), і update (139-164) будує buildReportPayload з нових даних і findByIdAndUpdate-ом заміняє весь вміст. editHistory зберігає лише метадані action/editedAt/userId/email/name/role (EditHistorySubSchema, ReportSchema.ts:102-112) — попереднього payload ніде немає. Якщо лікар (або збій завантаження форми) збереже порожній/частковий стан — попередня версія листа зникає назавжди. У поєднанні з відсутністю бекапів БД це реальний сценарій втрати медичних даних.</p>
+
+<div class="f-rec"><span class="rec-label">Як виправити</span><p>В update перед findByIdAndUpdate вже читається <code>existing</code> (reports.service.ts:145) — додати в editHistory (або окрему колекцію ReportRevision) snapshot попереднього payload (buildReportPayload(existing)) з обмеженням до ~20 останніх ревізій. Це дає «undo» без нової інфраструктури.</p></div>
+</div>
+</details>
+</section>
+
+<div class="method">
+<h2>Методологія і межі</h2>
+<p>Аудит виконано 12 серпня 2026 мультиагентним аналізом: шість незалежних аудиторів (безпека, бекенд, фронтенд, UX/доступність, продуктивність, надійність) прочитали кодову базу (~14 тис. рядків TypeScript), після чого окремі верифікатори скептично перевірили кожен висновок по коду — підтверджували, уточнювали рядки та коригували завищені оцінки. Всього 16 агентів, 674 звернення до коду. У документ включено лише підтверджені висновки: 99 із 99 знайдених пройшли верифікацію (частину — з пониженням серйозності).</p>
+<p>Свідомо поза межами: відоме відкладене питання доступів ролі «user» (зафіксоване в документації проєкту як окрема задача) і відсутність тестів (свідоме рішення команди). Динамічного тестування не проводилося — всі висновки статичні, по коду.</p>
+</div>
+</main>
+</body>
+</html>

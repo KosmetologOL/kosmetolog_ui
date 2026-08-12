@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Роадмап Kosmetolog</title>
+</head>
+<body>
+<style>
+:root {
+  --paper:#f4f3ee; --surface:#ffffff; --surface2:#eeede5; --line:#d9d7ca;
+  --ink:#26281c; --ink-soft:#5f6150; --brand:#3d4025; --accent:#565a33;
+  --sage:#7c8160; --danger:#96412f; --gold:#8a6f2f;
+  --code-bg:#eceade; --shadow:0 1px 3px rgba(38,40,28,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#16180e; --surface:#1f2114; --surface2:#262919; --line:#3a3d29;
+    --ink:#e7e6da; --ink-soft:#a9ab97; --brand:#cdd1a3; --accent:#b9bd8f;
+    --sage:#9ca078; --danger:#db8a72; --gold:#d3b46b;
+    --code-bg:#2b2e1c; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#16180e; --surface:#1f2114; --surface2:#262919; --line:#3a3d29;
+  --ink:#e7e6da; --ink-soft:#a9ab97; --brand:#cdd1a3; --accent:#b9bd8f;
+  --sage:#9ca078; --danger:#db8a72; --gold:#d3b46b;
+  --code-bg:#2b2e1c; --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+* { box-sizing:border-box; }
+body { background:var(--paper); color:var(--ink); margin:0;
+  font:16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing:antialiased; }
+main { max-width:860px; margin:0 auto; padding:64px 24px 96px; }
+h1,h2,h3 { font-family:Georgia, "Times New Roman", serif; color:var(--brand); text-wrap:balance; line-height:1.22; }
+h1 { font-size:2.6rem; margin:.2em 0 .25em; font-weight:600; }
+h2 { font-size:1.55rem; margin:0 0 .4em; }
+h3 { font-size:1.18rem; margin:0; }
+code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.84em;
+  background:var(--code-bg); padding:.1em .35em; border-radius:4px; word-break:break-word; }
+.eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:.72rem; color:var(--ink-soft); margin:0; }
+.lede { font-size:1.13rem; max-width:62ch; }
+.muted { color:var(--ink-soft); }
+.principles { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:36px 0; }
+.principle { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px 18px; box-shadow:var(--shadow); }
+.principle b { display:block; color:var(--brand); margin-bottom:4px; font-size:.95rem; }
+.principle p { margin:0; font-size:.88rem; color:var(--ink-soft); }
+.chains { margin:8px 0 0; overflow-x:auto; padding-bottom:6px; }
+.chain { display:flex; align-items:center; gap:8px; margin:10px 0; white-space:nowrap; }
+.chain-node { background:var(--surface); border:1px solid var(--line); border-radius:99px;
+  padding:5px 14px; font-size:.85rem; }
+.chain-node.root { border-color:var(--accent); color:var(--brand); font-weight:600; }
+.chain-arrow { color:var(--sage); flex-shrink:0; }
+.phase { margin:72px 0 0; }
+.phase-head { display:flex; align-items:baseline; gap:14px; border-bottom:2px solid var(--brand); padding-bottom:10px; margin-bottom:6px; }
+.phase-num { font-family:Georgia, serif; font-size:2.6rem; color:var(--sage); line-height:1; }
+.phase-sub { color:var(--ink-soft); margin:.3em 0 8px; max-width:64ch; }
+.idea { background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:22px 26px; margin:18px 0; box-shadow:var(--shadow); }
+.idea-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-bottom:10px; }
+.idea-head h3 { flex:1 1 320px; }
+.score { font-family:Georgia, serif; font-size:1.25rem; color:var(--brand); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.score small { font-size:.68rem; color:var(--ink-soft); font-family:-apple-system, sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+.chips { display:inline-flex; gap:6px; align-items:center; }
+.chip { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; padding:2px 10px; border-radius:99px; font-weight:600; white-space:nowrap; }
+.v-game { color:var(--danger); background:color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.v-high { color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.v-med { color:var(--ink-soft); background:var(--surface2); }
+.eff { font-family:ui-monospace, Menlo, monospace; font-size:.72rem; color:var(--ink-soft);
+  border:1px solid var(--line); border-radius:5px; padding:1px 7px; cursor:help; }
+.pain { border-left:3px solid var(--gold); padding:2px 0 2px 14px; margin:12px 0; font-size:.95rem; }
+.pain b { color:var(--gold); font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; display:block; margin-bottom:2px; }
+.idea p { margin:.55em 0; }
+.builds { margin-top:14px; font-size:.82rem; color:var(--ink-soft); line-height:2; }
+.builds b { font-size:.68rem; text-transform:uppercase; letter-spacing:.12em; display:block; color:var(--sage); }
+.dropped { background:var(--surface2); border-radius:12px; padding:22px 26px; margin:18px 0; }
+.dropped h3 { color:var(--ink-soft); }
+.dropped p { margin:.5em 0; font-size:.93rem; }
+.sprint { background:var(--brand); color:var(--paper); border-radius:14px; padding:30px 32px; margin:72px 0 0; }
+.sprint h2 { color:var(--paper); }
+.sprint p { max-width:64ch; }
+.sprint code { background:rgba(255,255,255,.14); color:inherit; }
+.sprint ol { margin:.6em 0; padding-left:1.3em; }
+.sprint li { margin:.35em 0; }
+.method { margin-top:72px; border-top:1px solid var(--line); padding-top:24px; color:var(--ink-soft); font-size:.88rem; max-width:70ch; }
+.method h2 { font-size:1.05rem; color:var(--ink-soft); }
+a { color:var(--accent); }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (max-width:560px) { h1 { font-size:2rem; } main { padding-top:40px; } }
+</style>
+<main>
+<p class="eyebrow">Kosmetolog UI · косметологічна практика Олійник · серпень 2026</p>
+<h1>Роадмап розвитку</h1>
+<p class="lede">Сьогодні застосунок — досконалий конструктор рекомендаційних листів. Наступний горизонт — операційна система практики: пацієнти, які повертаються; лікар, який економить годину на день; власниця, яка бачить свій бізнес у цифрах. Кожна ідея нижче будується на моделях і компонентах, які вже написані.</p>
+
+<h2 style="margin-top:56px">Чотири принципи пріоритезації</h2>
+<div class="principles">
+<div class="principle"><b>Щоденний біль &gt; вау-ефект</b><p>Нагору пішло те, що прибирає хвилини з кожного листа і повертає пацієнтів у крісло — а не ефектні фічі «для презентації».</p></div>
+<div class="principle"><b>Перевикористання &gt; нова розробка</b><p>Фабрика довідників, SearchPicker, CRUDManager, buildReportPayload — ідеї, що «добудовують» наявне, оцінені вище за ті, що вимагають нової інфраструктури.</p></div>
+<div class="principle"><b>Ланцюжки залежностей = фази</b><p>Картка пацієнта відкриває шлях до шерінгу і месенджерів; журнал візитів — до трекера курсу. Фундамент іде першим.</p></div>
+<div class="principle"><b>База без бекапів — фільтр</b><p>Жодних бінарників у MongoDB, компактні снепшоти, нові автоматизації — лише після того, як ручний процес доведе попит. (І спершу — бекапи: див. документ аудиту.)</p></div>
+</div>
+
+<h2>Ланцюжки залежностей</h2>
+<div class="chains">
+<div class="chain"><span class="chain-node root">Картка пацієнта</span><span class="chain-arrow">→</span><span class="chain-node">Захищене посилання + QR</span><span class="chain-arrow">→</span><span class="chain-node">Viber / Telegram</span></div>
+<div class="chain"><span class="chain-node root">Журнал візитів</span><span class="chain-arrow">→</span><span class="chain-node">Трекер курсу</span><span class="chain-arrow">→</span><span class="chain-node">Контрольні огляди 2.0</span></div>
+<div class="chain"><span class="chain-node root">Ціни в довідниках</span><span class="chain-arrow">→</span><span class="chain-node">Кошторис у листі</span><span class="chain-arrow">→</span><span class="chain-node">Місячний CSV і аналітика</span></div>
+</div>
+
+<!-- ФАЗА 1 -->
+<section class="phase">
+<div class="phase-head"><span class="phase-num">1</span><h2>Швидкі перемоги</h2></div>
+<p class="phase-sub">Кожна фіча незалежна від інших, закривається за один–два тижні на наявних патернах — і клієнт відчує ефект одразу. Разом це один спринт-місяць, який змінює відчуття від продукту.</p>
+
+<article class="idea">
+<div class="idea-head"><h3>Повноцінна картка пацієнта</h3><span class="chips"><span class="chip v-game">фундамент</span><span class="eff" title="приблизно тиждень">M</span></span><span class="score">9<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Пацієнт у системі — це лише ПІБ: <code>PatientSchema</code> має тільки <code>fullName</code> і <code>createdAt</code>. Немає телефону («де номер пацієнтки?» — щоденне питання), дати народження (привітання — найдешевший інструмент утримання в бʼюті), нотаток про особливості, поля «звідки прийшли» і згоди на звʼязок.</div>
+<p>Розширити модель полями <code>phone</code>, <code>birthDate</code>, <code>preferredMessenger</code> (Viber/Telegram), <code>communicationConsent</code> (з датою згоди — вимога приватності), <code>notes</code>, <code>source</code>. Усі поля опціональні — старі записи валідні, міграція не потрібна. У формі пацієнта (<code>PatientFormModal</code> уже стоїть на Modal) — нові поля; у реєстрі — клікабельний <code>tel:</code>-лінк та іконка месенджера біля імені. Бонус за пів дня: бейдж «День народження цього тижня».</p>
+<p class="muted">Це фундамент для половини роадмапу: шерінг листів, месенджери й реактивація без контактів неможливі.</p>
+<div class="builds"><b>Будується на</b><code>PatientSchema.ts</code> <code>patient.validation.ts</code> <code>PatientFormModal.tsx</code> <code>PatientItem.tsx</code> <code>Select.tsx</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Протоколи листів — шаблони типових кейсів</h3><span class="chips"><span class="chip v-high">висока цінність</span><span class="eff" title="приблизно тиждень">M</span></span><span class="score">9<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>«Акне, перший курс», «підготовка до літа», «анти-ейдж 40+» — лікар щоразу збирає з нуля ті самі 5–8 процедур зі стандартними зонами, той самий догляд і аналізи. Це 10–20 хвилин рутини на пацієнта і головне джерело розбіжностей між листами.</div>
+<p>Нова модель <code>ReportTemplate</code> — по суті знімок тіла листа без пацієнта; форму даних уже визначає наявний <code>buildReportPayload</code>. Дві кнопки: <strong>«Зберегти як протокол…»</strong> поруч зі «Зберегти» (лікар зібрав вдалий лист — один клік, і це шаблон) та панель <strong>«Почати з протоколу»</strong> на порожньому листі, що заливає процедури/догляд/аналізи в стан форми тим самим шляхом, яким вона завантажує збережений лист. Застосування до непорожнього листа — через ConfirmModal.</p>
+<p class="muted">Найбільший щоденний виграш часу для лікаря, який уже живе в конструкторі листів. Нульовий поріг входу.</p>
+<div class="builds"><b>Будується на</b><code>reports.service.ts (buildReportPayload, normalize*)</code> <code>ReportSchema.ts (сабсхеми)</code> <code>CreateReportForm.tsx</code> <code>ReportActions.tsx</code> <code>SearchPicker.tsx</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Прайс і кошторис курсу в листі</h3><span class="chips"><span class="chip v-game">монетизація</span><span class="eff" title="приблизно тиждень">M</span></span><span class="score">8.5<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Експортований лист уже друкує <em>порожні пунктирні рядки</em> «Орієнтовна вартість» (generateReportHtml.ts:322, 337, 373) — лікар вписує ціни від руки на роздруківці. Поле <code>price</code> в інтерфейсі оголошене, але ніщо його не заповнює. Пацієнт іде додому без чіткої суми курсу — це втрачені продажі.</div>
+<p>Додати <code>price</code> у довідники процедур і домашнього догляду — фабрика <code>createReferenceController</code> вимагає лише розширити <code>createFields</code>; в адмінці ціна редагується наявним CRUDManager, а CSV-імпорт/експорт цін дістається безкоштовно. У формі листа ціна підтягується з довідника (лікар може перекрити вручну), кошторис курсу = <code>price × visitCount</code> — кількість візитів уже є в етапах процедур. У листі замість пунктиру — сума і підсумок «Орієнтовна вартість курсу». Обовʼязковий перемикач «не показувати ціни» для делікатних випадків.</p>
+<p class="muted">Фіча буквально «докручує» те, що в коді вже закладено наполовину.</p>
+<div class="builds"><b>Будується на</b><code>generateReportHtml.ts (порожні .proc-price)</code> <code>ProcedureSchema.ts</code> <code>HomeCareSchema.ts</code> <code>createReferenceController.ts</code> <code>CRUDManager.tsx</code> <code>lib/csv.ts</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Список «Час повернутись»</h3><span class="chips"><span class="chip v-high">реактивація</span><span class="eff" title="кілька днів">S</span></span><span class="score">8<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Косметологія живе з повторних курсів, але ніхто не бачить, хто «випав». Дата останнього візиту вже обчислюється (<code>getLastVisitMap</code>) і показується в реєстрі — але жодного фільтра чи нагадування немає. Пацієнти губляться, крісло стоїть порожнє.</div>
+<p>Нуль нових моделей: ендпоінт <code>GET /patients/overdue</code> фільтрує пацієнтів, які не зʼявлялися понад N днів (N — налаштування у наявній <code>SettingsSchema</code>, редагується поруч із «Важливими текстами»). У реєстрі — вкладка-фільтр «Давно не були» (готовий клас <code>.tab-pill</code>) із сортуванням від найдавніших, кількістю днів і — після картки пацієнта — телефоном для дзвінка одним тапом. Пресети «через 2 тижні / 1 міс» при збереженні листа додаються сюди ж.</p>
+<p class="muted">CRM-реактивація на 100% з даних, які вже пишуться. Повернені пацієнти — пряма монетизація.</p>
+<div class="builds"><b>Будується на</b><code>reports.service.ts (getLastVisitMap)</code> <code>patient.controller.ts (lastVisitAt)</code> <code>SettingsSchema.ts</code> <code>SettingsManager.tsx</code> <code>PatientListPage.tsx</code></div>
+</article>
+</section>
+
+<!-- ФАЗА 2 -->
+<section class="phase">
+<div class="phase-head"><span class="phase-num">2</span><h2>Наступний квартал</h2></div>
+<p class="phase-sub">Значна цінність, кілька тижнів на кожну. Порядок має значення: журнал візитів — головна структурна інвестиція, анамнез — клінічна безпека, шерінг — перший місток до пацієнта.</p>
+
+<article class="idea">
+<div class="idea-head"><h3>Журнал візитів пацієнта</h3><span class="chips"><span class="chip v-game">фундамент</span><span class="eff" title="2–3 тижні">L</span></span><span class="score">8<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>На пацієнта існує рівно один лист, який <em>перезаписується</em> при кожному редагуванні; «останній візит» у реєстрі — насправді <code>updatedAt</code> листа. Реальної хронології немає: невідомо, коли пацієнт приходив, що саме зроблено на кожному сеансі і хто це робив. Для інʼєкційної практики це ще і юридичний ризик.</div>
+<p>Нова модель <code>Visit</code> (пацієнт, дата, лікар, виконані процедури, нотатка) за стандартним шаруванням routes → Joi → controller → service → model. Ключ до 30-секундної фіксації: процедури не вводяться з нуля, а відмічаються чекбоксами з етапів поточного листа — назва й зона вже заповнені. На сторінці листа — вкладка «Візити» з хронологічною стрічкою; «останній візит» у реєстрі переходить на реальні дані.</p>
+<p class="muted">Фундамент для трекера курсу, чесної статистики і контрольних оглядів 2.0.</p>
+<div class="builds"><b>Будується на</b><code>ReportSchema.ts (procedureStages, editHistory як зразок)</code> <code>шаблон шарів patient.*</code> <code>Modal.tsx</code> <code>ConfirmModal.tsx</code> <code>PatientItem.tsx</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Анамнез і протипоказання з попередженнями</h3><span class="chips"><span class="chip v-game">клінічна безпека</span><span class="eff" title="2–3 тижні">L</span></span><span class="score">7.5<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Картка не містить медичних даних — алергії, вагітність, хронічні стани лікар тримає в голові. Ботулотоксин при вагітності, пілінг при активному герпесі — один пропущений випадок дорожчий за всю розробку.</div>
+<p>Два кроки: (1) секція «Анамнез» у картці пацієнта — теги з нового довідника «Протипоказання» (та сама фабрика довідників, ті самі SearchPicker + SelectedChips), прапорець вагітності/лактації, вільна нотатка; (2) поле <code>contraindications</code> у довіднику процедур. Логіка — чиста фронтенд-звірка перетину: при додаванні процедури з конфліктом під нею зʼявляється попереджувальна плашка в danger-токенах, а збереження листа вимагає підтвердження. У шапці форми — постійний бейдж «Алергія: лідокаїн». <strong>Нічого не блокуємо жорстко</strong> — рішення за лікарем, система лише не дає пропустити.</p>
+<div class="builds"><b>Будується на</b><code>PatientSchema.ts</code> <code>ProcedureSchema.ts</code> <code>createReferenceController.ts</code> <code>SearchPicker.tsx + SelectedChips.tsx</code> <code>ProcedureStageCard.tsx</code> <code>danger-токени index.css</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Захищене посилання на лист + QR + Viber/Telegram</h3><span class="chips"><span class="chip v-game">для пацієнта</span><span class="eff" title="2–3 тижні">L</span></span><span class="score">7<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Лист існує лише як роздруківка або файл на компʼютері лікаря. Пацієнти гублять папірці й передзвонюють перепитати схему догляду; пересилати HTML із медичними даними месенджером як вкладення — незручно і небезпечно.</div>
+<p>Кнопка «Поділитися з пацієнтом»: фронтенд уже вміє генерувати самодостатній HTML — він зберігається як снепшот у новій моделі <code>ShareLink</code> з випадковим токеном, ПІН-кодом, терміном дії (60 днів), можливістю відкликання і журналом переглядів. Публічний <code>GET /share/:token</code> — перший маршрут без авторизації, з <code>noindex</code> і <code>no-store</code>. У модалці — посилання, QR-код для сканування прямо в кабінеті, кнопка «Відкликати». Другий шар — «Надіслати у Viber/Telegram»: готовий український текст із шаблону (редагується в Settings) через deep link <code>viber://forward</code> / <code>t.me/share</code> — нуль бот-інфраструктури; ПІН свідомо передається іншим каналом.</p>
+<p class="muted">Залежить від картки пацієнта (телефон, месенджер, згода). Приватність: у посиланні немає ні імені, ні ID.</p>
+<div class="builds"><b>Будується на</b><code>generateReportHtml.ts</code> <code>ReportActions.tsx</code> <code>Modal.tsx</code> <code>SettingsSchema.ts</code> <code>ActivityLog.ts (журнал переглядів)</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Аналітика практики + місячний CSV для бухгалтерії</h3><span class="chips"><span class="chip v-high">для власниці</span><span class="eff" title="почати з CSV за тиждень">M</span></span><span class="score">6.5<small> / 10</small></span></div>
+<div class="pain"><b>Біль</b>Які процедури призначаються найчастіше, скільки нових пацієнтів на місяць, хто повертається — усе це <em>вже накопичується</em> в базі з кожним листом, але побачити неможливо. Рішення про закупівлі і акції приймаються наосліп; наприкінці місяця власниця вручну згадує цифри для бухгалтера.</div>
+<p>Починати з CSV: ендпоінт <code>GET /analytics/monthly-export</code> (тільки admin) агрегує <code>editHistory</code> за місяць у рядки «дата · пацієнт · лікар · процедури · вартість» — файл формується наявним <code>toCsv</code> з BOM для Excel (той самий шлях, яким експортуються довідники). Другим кроком — сторінка аналітики: топ-10 призначень, динаміка нових пацієнтів, листи по лікарях; плитки в брендових токенах, без chart-бібліотек. Перемикач «місяць / квартал / рік».</p>
+<div class="builds"><b>Будується на</b><code>ReportSchema.ts (editHistory, procedureStages)</code> <code>lib/csv.ts (toCsv + BOM)</code> <code>requireRoles("admin")</code> <code>AppRouter.tsx + PrivateRoute.tsx</code></div>
+</article>
+</section>
+
+<!-- ФАЗА 3 -->
+<section class="phase">
+<div class="phase-head"><span class="phase-num">3</span><h2>Пізніше — коли дозріє</h2></div>
+<p class="phase-sub">Класні ідеї, які свідомо чекають: або залежать від фундаменту фази 2, або міняють фізичний робочий процес у кабінеті, або конкурують з інструментами, що вже якось працюють.</p>
+
+<article class="idea">
+<div class="idea-head"><h3>Трекер курсу процедур із прогресом</h3><span class="chips"><span class="chip v-high">клінічний</span><span class="eff" title="1–2 тижні після журналу візитів">M</span></span><span class="score">6<small> / 10</small></span></div>
+<p>Лист уже описує курс (<code>visitCount</code>, інтервал, зона) — трекер зіставляє його з журналом візитів і показує «3 із 6 сеансів · наступний ≈ 26.08» прямо в картці етапу, з підсвіткою прострочених. Прогрес обчислюється, а не дублюється. <strong>Чекає:</strong> запускати після того, як журнал візитів поживе місяць-два і накопичить дані — інакше прогрес-бари показуватимуть нулі.</p>
+<div class="builds"><b>Будується на</b><code>procedureStages (visitCount, interval)</code> <code>procedureStageOptions.ts (INTERVAL_OPTIONS)</code> <code>журнал візитів (фаза 2)</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Інформована згода з підписом на планшеті</h3><span class="chips"><span class="chip v-high">юридичний</span><span class="eff" title="2–3 тижні">L</span></span><span class="score">6<small> / 10</small></span></div>
+<p>Шаблони згод у довіднику (markdown), підпис пальцем на canvas, збереження з незмінним знімком тексту та sha256 для доказу цілісності — і автоматичне дописування у паперову .docx-картку через уже налагоджений конвеєр. <strong>Чекає:</strong> це зміна фізичного процесу в кабінеті (планшет замість паперових бланків) — впровадження важче за розробку; повернутися, коли клієнт сам підтвердить готовність.</p>
+<div class="builds"><b>Будується на</b><code>createReferenceController.ts</code> <code>lib/markdown.ts</code> <code>buildDocxFragment.ts + appendReportToDocx.ts</code> <code>Modal.tsx</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Фотодокументація «до / після» + фото від пацієнта</h3><span class="chips"><span class="chip v-game">доказова база</span><span class="eff" title="місяць+">XL</span></span><span class="score">5<small> / 10</small></span></div>
+<p>Вкладка «Фото» в картці: зйомка прямо з планшета в кабінеті, групування за зоною і датою, екран порівняння «до/після» з експортом; другим етапом — завантаження фото пацієнтом через захищену share-сторінку (замість «чи все нормально?» у особистий Viber лікаря). <strong>Принципово:</strong> файли — на диску сервера з UUID-іменами, в Mongo лише метадані. База без бекапів — класти в неї гігабайти найцінніших і незворотних даних (клінічні фото) неприпустимо. <strong>Чекає:</strong> XL-обсяг при тому, що лікар поки не просив.</p>
+<div class="builds"><b>Будується на</b><code>PatientSchema.ts</code> <code>share-інфраструктура (фаза 2)</code> <code>ZONE_OPTIONS з procedureStageOptions.ts</code> <code>патерн HTML-експорту</code></div>
+</article>
+
+<article class="idea">
+<div class="idea-head"><h3>Журнал записів на прийом</h3><span class="chips"><span class="chip v-med">новий домен</span><span class="eff" title="2–3 тижні">L</span></span><span class="score">4.5<small> / 10</small></span></div>
+<p>Легкий день-планер (вертикальний список слотів, статуси «прийшов / не прийшов», кнопка «Створити лист» з картки запису) — не enterprise-календар. <strong>Чекає:</strong> конкурує з паперовим щоденником і Google-календарем, які вже працюють; цінність звʼязки «запланувала → прийшла → лист» зʼявиться після журналу візитів. Будувати, якщо клієнт попросить сам.</p>
+<div class="builds"><b>Будується на</b><code>нова модель Appointment за зразком ReportSchema</code> <code>SearchPicker.tsx</code> <code>Modal.tsx</code> <code>маршрут /create-report/:patientId</code></div>
+</article>
+</section>
+
+<!-- ВІДКИНУТЕ -->
+<section class="phase">
+<div class="phase-head"><span class="phase-num">✕</span><h2>Свідомо відкинуте</h2></div>
+
+<div class="dropped">
+<h3>Пост-процедурні розсилки за розкладом (день 1 / день 3 / тиждень)</h3>
+<p>Найважча комунікаційна фіча (модель запланованих повідомлень, cron у процесі Express, Telegram-бот), а її перша версія — «черга на сьогодні» з кнопкою «Копіювати» — майже дублює ручну відправку з шерінг-фічі. Для практики, де адміністратор фізично бачить кожного пацієнта, усні настанови + друкований лист + разове повідомлення закривають 80% цінності. Повернутися, лише якщо після запуску шерінгу клієнт сам попросить автоматизацію — і тоді вже одразу з ботом.</p>
+</div>
+<div class="dropped">
+<h3>Зберігання фото в GridFS (у самій MongoDB)</h3>
+<p>Сама фотодокументація вижила (фаза 3), відкинуто саме підхід до зберігання. База не має бекапів — класти в неї гігабайти бінарників означає зробити найцінніші й незворотні дані найвразливішими в системі. Файли на диску з UUID-іменами + метадані в Mongo бекапляться окремо і дешево.</p>
+</div>
+</section>
+
+<!-- СПРИНТ -->
+<div class="sprint">
+<h2>З чого почати завтра</h2>
+<p>Перший спринт — чотири швидкі перемоги фази 1. Вони незалежні одна від одної, кожна закривається за 1–2 тижні, і разом за місяць продукт відчутно виростає для всіх трьох ролей:</p>
+<ol>
+<li><strong>Картка пацієнта</strong> — фундамент, тиждень.</li>
+<li><strong>Протоколи листів</strong> — мінус 10–20 хвилин з кожного типового листа.</li>
+<li><strong>Прайс і кошторис</strong> — пацієнт іде додому з конкретною сумою курсу.</li>
+<li><strong>«Час повернутись»</strong> — кілька днів роботи, і жоден пацієнт більше не «випадає».</li>
+</ol>
+<p>Єдина передумова перед усім цим — закрити перший пункт аудиту: <strong>бекапи бази</strong>. Один вечір роботи, який страхує все інше.</p>
+</div>
+
+<div class="method">
+<h2>Як складено цей роадмап</h2>
+<p>Три продуктові стратеги незалежно генерували ідеї крізь різні лінзи — клінічний воркфлоу, комунікація з пацієнтом, бізнес власниці — попередньо вивчивши кодову базу, щоб кожна ідея спиралася на реальні моделі й компоненти. Суддя-«голова продукту» злив 18 сирих ідей в 11 (перевіряючи твердження по коду), розставив оцінки цінність-до-зусилля під специфіку саме цієї практики і розклав по фазах за ланцюжками залежностей. Оцінки обсягу: S — дні, M — близько тижня, L — 2–3 тижні, XL — місяць+.</p>
+</div>
+</main>
+
+</body>
+</html>
