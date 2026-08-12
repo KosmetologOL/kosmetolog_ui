@@ -7,9 +7,11 @@ import {
   updateHomeCare,
 } from "#api/homeCaresApi";
 import ConfirmModal from "#components/ConfirmModal";
+import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
-import { downloadCsv, parseCsv, toCsv } from "#types/csv";
-import { useEffect, useRef, useState } from "react";
+import { plural } from "#lib/plural";
+import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 const parseCsvBoolean = (value: string) => {
@@ -29,6 +31,18 @@ const moveItem = <T,>(items: T[], fromIndex: number, toIndex: number) => {
   return nextItems;
 };
 
+// Grip-іконка перетягування (два стовпчики крапок)
+const GripIcon = () => (
+  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+    <circle cx="5.5" cy="3.5" r="1.3" />
+    <circle cx="10.5" cy="3.5" r="1.3" />
+    <circle cx="5.5" cy="8" r="1.3" />
+    <circle cx="10.5" cy="8" r="1.3" />
+    <circle cx="5.5" cy="12.5" r="1.3" />
+    <circle cx="10.5" cy="12.5" r="1.3" />
+  </svg>
+);
+
 export default function HomeCaresManager({
   readOnly = false,
 }: {
@@ -38,6 +52,7 @@ export default function HomeCaresManager({
   const [isLoading, setIsLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<IHomeCare | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -49,19 +64,18 @@ export default function HomeCaresManager({
   >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fetchList = async () => {
-    setIsLoading(true);
+  const fetchList = useCallback(async () => {
     try {
       const data = await getAllHomeCares();
       setList(data);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void fetchList();
-  }, []);
+  }, [fetchList]);
 
   const normalizedSearch = search.trim().toLowerCase();
   const filteredList = list.filter((item) =>
@@ -76,23 +90,28 @@ export default function HomeCaresManager({
   }) => {
     if (!form.name.trim()) return;
 
-    if (editingItem?._id) {
-      await updateHomeCare(editingItem._id, {
-        name: form.name,
-        morning: form.morning,
-        evening: form.evening,
-      });
-    } else {
-      await createHomeCare({
-        name: form.name,
-        morning: form.morning,
-        evening: form.evening,
-      });
-    }
+    try {
+      if (editingItem?._id) {
+        await updateHomeCare(editingItem._id, {
+          name: form.name,
+          morning: form.morning,
+          evening: form.evening,
+        });
+      } else {
+        await createHomeCare({
+          name: form.name,
+          morning: form.morning,
+          evening: form.evening,
+        });
+      }
 
-    setIsModalOpen(false);
-    setEditingItem(null);
-    void fetchList();
+      setIsModalOpen(false);
+      setEditingItem(null);
+      toast.success("Запис збережено.");
+      void fetchList();
+    } catch {
+      toast.error("Не вдалося зберегти запис. Спробуйте ще раз.");
+    }
   };
 
   const handleOpenCreate = () => {
@@ -107,9 +126,36 @@ export default function HomeCaresManager({
 
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
-    await deleteHomeCare(deletingId);
-    setDeletingId(null);
-    void fetchList();
+    setIsDeleting(true);
+    try {
+      await deleteHomeCare(deletingId);
+      setDeletingId(null);
+      toast.success("Запис видалено.");
+      void fetchList();
+    } catch {
+      toast.error("Не вдалося видалити запис. Спробуйте ще раз.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Спільне збереження нового порядку — і для drag-and-drop, і для кнопок-стрілок
+  const persistOrder = async (nextList: IHomeCare[]) => {
+    setList(nextList);
+    setIsSavingOrder(true);
+
+    try {
+      const ids = nextList
+        .map((item) => item._id)
+        .filter((id): id is string => Boolean(id));
+
+      await reorderHomeCares(ids);
+    } catch {
+      toast.error("Не вдалося зберегти порядок. Спробуйте ще раз.");
+      void fetchList();
+    } finally {
+      setIsSavingOrder(false);
+    }
   };
 
   const handleDrop = async (targetId: string) => {
@@ -122,29 +168,26 @@ export default function HomeCaresManager({
     const fromIndex = list.findIndex((item) => item._id === draggedId);
     const toIndex = list.findIndex((item) => item._id === targetId);
 
+    setDraggedId(null);
+    setDragOverId(null);
+
     if (fromIndex === -1 || toIndex === -1) {
-      setDraggedId(null);
-      setDragOverId(null);
       return;
     }
 
-    const nextList = moveItem(list, fromIndex, toIndex);
-    setList(nextList);
-    setDraggedId(null);
-    setDragOverId(null);
-    setIsSavingOrder(true);
+    await persistOrder(moveItem(list, fromIndex, toIndex));
+  };
 
-    try {
-      const ids = nextList
-        .map((item) => item._id)
-        .filter((id): id is string => Boolean(id));
+  const handleMove = async (id: string, direction: -1 | 1) => {
+    if (readOnly || isSavingOrder) return;
 
-      await reorderHomeCares(ids);
-    } catch {
-      void fetchList();
-    } finally {
-      setIsSavingOrder(false);
-    }
+    const fromIndex = list.findIndex((item) => item._id === id);
+    if (fromIndex === -1) return;
+
+    const toIndex = fromIndex + direction;
+    if (toIndex < 0 || toIndex >= list.length) return;
+
+    await persistOrder(moveItem(list, fromIndex, toIndex));
   };
 
   const handleExportCsv = () => {
@@ -155,7 +198,7 @@ export default function HomeCaresManager({
       item.evening ? "Так" : "Ні",
     ]);
 
-    downloadCsv("домашній-догляд.csv", toCsv(header, rows));
+    downloadCsv("Домашній догляд.csv", toCsv(header, rows));
   };
 
   const handleImportClick = () => {
@@ -169,7 +212,9 @@ export default function HomeCaresManager({
     }
 
     e.target.value = "";
-    const text = await file.text();
+    const rawText = await file.text();
+    const text =
+      rawText.charCodeAt(0) === 0xfeff ? rawText.slice(1) : rawText;
     const rows = parseCsv(text);
 
     if (rows.length === 0) {
@@ -228,7 +273,12 @@ export default function HomeCaresManager({
       }
 
       await fetchList();
-      toast.success(`Успішно імпортовано ${pendingImport.length} записів!`);
+      toast.success(
+        `Успішно імпортовано ${pendingImport.length} ${plural(
+          pendingImport.length,
+          ["запис", "записи", "записів"],
+        )}.`,
+      );
     } catch {
       toast.error(
         "Під час імпорту сталася помилка. Частина записів могла не оновитися.",
@@ -245,11 +295,11 @@ export default function HomeCaresManager({
     <div className="flex w-full flex-col items-start">
       <div className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[21px] tracking-[0.08em] uppercase font-bold text-ink">
-            Домашній догляд
-          </h1>
+          <h2 className="panel-title">Домашній догляд</h2>
           <p className="mt-0.5 text-xs text-ink-soft">
-            Усього записів: {filteredList.length}
+            {normalizedSearch
+              ? `Знайдено: ${filteredList.length} з ${list.length}`
+              : `Усього: ${list.length}`}
           </p>
         </div>
 
@@ -260,18 +310,7 @@ export default function HomeCaresManager({
               onClick={handleOpenCreate}
               className="btn btn-primary btn-sm"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <path d="M8 2v12M2 8h12" />
-              </svg>
+              <IconPlus />
               Додати запис
             </button>
           )}
@@ -292,7 +331,7 @@ export default function HomeCaresManager({
                 disabled={isImporting}
                 className="btn btn-ghost btn-sm"
               >
-                {isImporting ? "Імпорт..." : "Імпорт CSV"}
+                {isImporting ? "Імпортуємо…" : "Імпорт CSV"}
               </button>
               <input
                 ref={fileInputRef}
@@ -306,22 +345,11 @@ export default function HomeCaresManager({
         </div>
       </div>
 
-      <div className="relative mb-4 w-full max-w-md">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.8-3.8" />
-        </svg>
+      <div className="relative mb-5 w-full max-w-md">
+        <IconSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft pointer-events-none" />
         <input
           type="text"
-          placeholder="Пошук записів..."
+          placeholder="Пошук записів…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="field-input pl-10 pr-9 w-full"
@@ -338,23 +366,53 @@ export default function HomeCaresManager({
         )}
       </div>
 
-      <p className="mb-4 text-xs text-ink-soft">
-        {dragDisabled
-          ? "Перетягування вимкнене під час пошуку або збереження порядку."
-          : "Перетягуйте картки, щоб змінювати порядок у списку."}
-      </p>
+      {!readOnly && (
+        <p className="mb-4 text-xs text-ink-soft">
+          {dragDisabled
+            ? "Перетягування вимкнене під час пошуку або збереження порядку."
+            : "Перетягуйте картки або користуйтеся стрілками, щоб змінювати порядок у списку."}
+        </p>
+      )}
 
       {isLoading ? (
-        <p className="w-full py-8 text-center text-ink-soft">
-          Завантаження...
-        </p>
+        <div className="flex w-full flex-col gap-2.5" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="list-row">
+              <div className="min-w-0 flex-1">
+                <div className="skeleton h-4 w-44 max-w-full" />
+                <div className="skeleton mt-2.5 h-3 w-40 max-w-full" />
+              </div>
+              {!readOnly && (
+                <div className="list-row-actions">
+                  <div className="skeleton h-9.5 w-[110px]" />
+                  <div className="skeleton h-9.5 w-[110px]" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       ) : filteredList.length === 0 ? (
-        <p className="w-full py-8 text-center text-ink-soft">
-          Немає елементів
-        </p>
+        normalizedSearch ? (
+          <div className="w-full py-8 text-center text-ink-soft">
+            <p>Нічого не знайдено за запитом «{search.trim()}».</p>
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="btn btn-ghost btn-sm mt-3"
+            >
+              Очистити пошук
+            </button>
+          </div>
+        ) : (
+          <p className="w-full py-8 text-center text-ink-soft">
+            {readOnly
+              ? "Записів ще немає."
+              : "Записів ще немає. Натисніть «Додати запис»."}
+          </p>
+        )
       ) : (
         <div className="flex w-full flex-col gap-2.5">
-          {filteredList.map((item) => {
+          {filteredList.map((item, index) => {
             const isDragging = draggedId === item._id;
             const isDragOver = dragOverId === item._id;
 
@@ -374,48 +432,89 @@ export default function HomeCaresManager({
                   }
                 }}
                 onDrop={() => item._id && void handleDrop(item._id)}
-                className={`list-row transition-all ${
-                  isDragging ? "opacity-40" : ""
-                } ${isDragOver ? "border-brand bg-brand-soft/20" : ""}`}
+                className={`list-row anim-rise transition-all ${
+                  !dragDisabled ? "cursor-grab active:cursor-grabbing" : ""
+                } ${isDragging ? "opacity-40" : ""} ${
+                  isDragOver ? "border-brand bg-brand-soft/20" : ""
+                }`}
+                style={{ "--stagger": Math.min(index, 10) } as React.CSSProperties}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="list-row-name text-[15.5px] font-bold text-ink">
-                      {item.name}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  {!dragDisabled && (
+                    <span className="shrink-0 text-ink-soft" aria-hidden="true">
+                      <GripIcon />
                     </span>
-                    <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
-                      <span className={`pill ${item.morning ? "is-on" : ""}`}>
-                        Ранок
-                      </span>
-                      <span className={`pill ${item.evening ? "is-on" : ""}`}>
-                        Вечір
-                      </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="list-row-name">{item.name}</span>
+                      <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                        <span className={`pill ${item.morning ? "is-on" : ""}`}>
+                          Ранок
+                        </span>
+                        <span className={`pill ${item.evening ? "is-on" : ""}`}>
+                          Вечір
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
                 {!readOnly && (
                   <div className="list-row-actions mt-3 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-0 border-line/60">
+                    {!normalizedSearch && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => item._id && void handleMove(item._id, -1)}
+                          disabled={isSavingOrder || index === 0}
+                          aria-label="Перемістити вище"
+                          className="icon-btn text-ink-soft hover:bg-surface-2 hover:text-ink"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m6 14 6-6 6 6" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => item._id && void handleMove(item._id, 1)}
+                          disabled={isSavingOrder || index === filteredList.length - 1}
+                          aria-label="Перемістити нижче"
+                          className="icon-btn text-ink-soft hover:bg-surface-2 hover:text-ink"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="m6 10 6 6 6-6" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => handleOpenEdit(item)}
                       className="btn btn-ghost btn-sm flex-1 sm:flex-initial sm:min-w-[110px] justify-center"
                     >
-                      <svg
-                        className="w-3.5 h-3.5 text-ink-soft"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                      </svg>
+                      <IconEdit className="w-3.5 h-3.5 text-ink-soft" />
                       Редагувати
                     </button>
                     <button
                       onClick={() => item._id && setDeletingId(item._id)}
-                      className="btn btn-sm flex-1 sm:flex-initial sm:min-w-[110px] justify-center bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25"
+                      className="btn btn-sm btn-danger-soft flex-1 sm:flex-initial sm:min-w-[110px] justify-center"
                     >
                       Видалити
                     </button>
@@ -432,6 +531,7 @@ export default function HomeCaresManager({
         title={editingItem ? "Редагувати — Домашній догляд" : "Новий запис — Домашній догляд"}
         submitLabel={editingItem ? "Зберегти зміни" : "Додати"}
         showTimeOfDayOptions={true}
+        showRecommendation={false}
         item={{
           name: editingItem?.name ?? "",
           morning: editingItem?.morning ?? false,
@@ -448,6 +548,8 @@ export default function HomeCaresManager({
         visible={Boolean(deletingId)}
         title="Видалити домашній догляд"
         message="Ви впевнені, що хочете видалити цей запис? Цю дію неможливо скасувати."
+        isLoading={isDeleting}
+        loadingLabel="Видаляємо…"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
       />
@@ -455,9 +557,11 @@ export default function HomeCaresManager({
       <ConfirmModal
         visible={Boolean(pendingImport)}
         title="Імпорт CSV"
-        message={`Імпортувати ${pendingImport?.length ?? 0} записів? Записи з існуючою назвою будуть оновлені, решта — додані.`}
+        message={`Імпортувати ${pendingImport?.length ?? 0} ${plural(pendingImport?.length ?? 0, ["запис", "записи", "записів"])}? Записи з існуючою назвою будуть оновлені, решта — додані.`}
         confirmLabel="Імпортувати"
         isDanger={false}
+        isLoading={isImporting}
+        loadingLabel="Імпортуємо…"
         onConfirm={handleConfirmImport}
         onCancel={() => setPendingImport(null)}
       />

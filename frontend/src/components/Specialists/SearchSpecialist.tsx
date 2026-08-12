@@ -1,5 +1,6 @@
 import { searchSpecialistsByName, type ISpecialist } from "#api/specialistsApi";
-import { useEffect, useState } from "react";
+import SearchPicker from "#components/SearchPicker";
+import React from "react";
 
 interface Props {
   selectedSpecialists: ISpecialist[];
@@ -10,69 +11,20 @@ const SearchSpecialist: React.FC<Props> = ({
   selectedSpecialists,
   setSelectedSpecialists,
 }) => {
-  const [search, setSearch] = useState("");
-  const [results, setResults] = useState<ISpecialist[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const delay = setTimeout(async () => {
-      if (!search.trim()) {
-        setResults([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const res = await searchSpecialistsByName(search.trim());
-        setResults(res);
-      } finally {
-        setLoading(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(delay);
-  }, [search]);
-
   const addSpecialist = (specialist: ISpecialist) => {
-    if (!selectedSpecialists.find((e) => e._id === specialist._id)) {
-      setSelectedSpecialists((prev) => [...prev, specialist]);
-      setSearch("");
-      setResults([]);
-    }
+    setSelectedSpecialists((prev) =>
+      prev.some((s) => s._id === specialist._id) ? prev : [...prev, specialist],
+    );
   };
-
-  const availableResults = results.filter(
-    (specialist) => !selectedSpecialists.some((s) => s._id === specialist._id),
-  );
 
   return (
     <div className="mb-3">
-      <input
-        type="text"
+      <SearchPicker<ISpecialist>
+        search={searchSpecialistsByName}
         placeholder="Пошук спеціаліста"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="field-input"
+        onAdd={addSpecialist}
+        selectedIds={selectedSpecialists.map((s) => s._id)}
       />
-
-      {loading && <p className="mt-1.5 text-sm text-ink-soft">Завантаження...</p>}
-
-      {availableResults.length > 0 && !loading && (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {availableResults.map((specialist) => (
-            <button
-              key={specialist._id}
-              type="button"
-              onClick={() => addSpecialist(specialist)}
-              className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2.5 text-left transition-colors hover:border-line-strong hover:bg-surface-2"
-            >
-              <span className="truncate text-sm font-bold">
-                {specialist.name}
-              </span>
-              <span className="btn btn-tint btn-sm flex-none">Додати</span>
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

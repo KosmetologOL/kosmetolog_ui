@@ -1,4 +1,4 @@
-import { markdownToHtml } from "#types/markdown";
+import { markdownToHtml } from "#lib/markdown";
 
 export interface StructuredRow {
   label: string;

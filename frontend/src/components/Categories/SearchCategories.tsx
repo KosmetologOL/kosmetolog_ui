@@ -5,8 +5,9 @@ import {
   type ICategoryItem,
 } from "#api/referenceApi";
 import FormattedText from "#components/FormattedText";
+import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export interface IReportCategoryItem {
   _id: string;
@@ -103,7 +104,7 @@ const SearchCategories: React.FC<Props> = ({
   };
 
   if (loading) {
-    return <p className="text-sm text-ink-soft">Завантаження категорій...</p>;
+    return <p className="text-sm text-ink-soft">Завантаження категорій…</p>;
   }
 
   if (categories.length === 0) {
@@ -137,11 +138,12 @@ const SearchCategories: React.FC<Props> = ({
             key={category._id}
             className="rounded-xl border border-line bg-surface-2 p-4"
           >
-            <p className="mb-3 text-[15px] font-bold">{category.name}</p>
+            <p className="list-row-name mb-3">{category.name}</p>
 
             <input
               type="text"
-              placeholder="Пошук..."
+              placeholder="Пошук запису"
+              aria-label={`Пошук запису: ${category.name}`}
               value={searchValues[category._id] || ""}
               onChange={(e) => handleSearchChange(category._id, e.target.value)}
               className="field-input"
@@ -151,36 +153,39 @@ const SearchCategories: React.FC<Props> = ({
               <p className="mt-2 text-sm text-ink-soft">
                 У цій категорії ще немає записів.
               </p>
-            ) : (
-              filteredItems.length > 0 && (
-                <div className="mt-3 flex flex-col gap-2">
-                  {filteredItems.map((item) => (
-                    <div
-                      key={item._id}
-                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-xl border border-line bg-surface p-3.5 shadow-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[14.5px] font-bold text-ink">
-                          {item.name}
-                        </div>
-                        {item.recommendation && (
-                          <div className="text-xs text-ink-soft mt-1 leading-relaxed whitespace-pre-wrap">
-                            <FormattedText markdown={item.recommendation} />
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => addItem(category, item)}
-                        className="btn btn-tint btn-sm px-4"
-                      >
-                        + Додати
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            ) : filteredItems.length === 0 ? (
+              Boolean(search) && (
+                <p className="mt-2 text-sm text-ink-soft">Нічого не знайдено</p>
               )
+            ) : (
+              <div className="select-content mt-3 flex flex-col gap-2">
+                {filteredItems.map((item) => (
+                  <div
+                    key={item._id}
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-xl border border-line bg-surface p-3.5 shadow-sm"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="min-w-0 truncate text-sm font-bold text-ink">
+                        {item.name}
+                      </div>
+                      {item.recommendation && (
+                        <FormattedText
+                          markdown={item.recommendation}
+                          className="mt-1 text-xs leading-relaxed text-ink-soft"
+                        />
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => addItem(category, item)}
+                      className="btn btn-tint btn-sm px-4"
+                    >
+                      Додати
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
 
             {currentSelected.length > 0 && (
@@ -191,39 +196,27 @@ const SearchCategories: React.FC<Props> = ({
                 {currentSelected.map((item) => (
                   <div
                     key={item._id}
-                    className="chip-row flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-surface rounded-xl border border-line p-3"
+                    className="chip-row anim-rise flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-surface rounded-xl border border-line p-3"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="chip-name font-bold text-ink text-[14.5px]">
-                        {item.itemName}
-                      </div>
+                      <div className="chip-name">{item.itemName}</div>
                       {item.recommendation && (
-                        <div className="chip-sub mt-0.5 text-xs text-ink-soft whitespace-pre-wrap leading-relaxed">
-                          <FormattedText markdown={item.recommendation} />
-                        </div>
+                        <FormattedText
+                          markdown={item.recommendation}
+                          className="chip-sub"
+                        />
                       )}
                     </div>
 
                     <div className="flex items-center gap-3 self-end sm:self-auto">
                       <button
                         type="button"
-                        className="btn btn-ghost btn-sm px-2.5"
+                        className="icon-btn h-8 w-8 text-ink-soft hover:bg-line hover:text-ink"
                         title="Редагувати запис"
                         aria-label="Редагувати запис"
                         onClick={() => setEditingItem(item)}
                       >
-                        <svg
-                          className="w-3.5 h-3.5 text-ink-soft"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                        </svg>
+                        <IconEdit />
                       </button>
                       <button
                         type="button"
@@ -231,7 +224,7 @@ const SearchCategories: React.FC<Props> = ({
                         aria-label="Видалити"
                         onClick={() => removeItem(item._id)}
                       >
-                        ×
+                        <IconClose className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

@@ -183,7 +183,7 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange }) => {
   }
 
   return (
-    <div className="w-full flex-1 overflow-hidden rounded-xl border border-line-strong bg-surface focus-within:ring-1 focus-within:ring-brand">
+    <div className="w-full flex-1 overflow-hidden rounded-xl border border-line-strong bg-surface transition-[border-color,box-shadow] duration-[var(--duration-base)] focus-within:border-brand focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-brand)_18%,transparent)]">
       <div className="flex flex-wrap items-center gap-1 border-b border-line bg-surface-2 p-1.5">
         {toolbarButtons.map((button, index) => (
           <span key={button.title} className="flex items-center gap-1">
@@ -193,8 +193,9 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange }) => {
             <button
               type="button"
               title={button.title}
+              aria-label={button.title}
               onClick={() => button.run(editor)}
-              className={`rounded border px-2 py-1 text-xs whitespace-nowrap transition-all ${
+              className={`toolbar-btn border text-xs whitespace-nowrap ${
                 button.className ?? ""
               } ${
                 button.isActive(editor)

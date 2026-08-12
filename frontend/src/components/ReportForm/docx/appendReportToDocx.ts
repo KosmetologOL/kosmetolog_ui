@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import toast from "react-hot-toast";
-import { isDocxLinkingSupported, pickPatientDocxFile } from "../../../lib/docxCardLink";
+import { isDocxLinkingSupported, pickPatientDocxFile } from "#lib/docxCardLink";
 import type { GenerateReportHtmlParams } from "../html/generateReportHtml";
 import { buildAppendParagraphsXml } from "./buildDocxFragment";
 import { DocxStructureError, insertParagraphsBeforeFinalSectPr } from "./spliceDocumentXml";
