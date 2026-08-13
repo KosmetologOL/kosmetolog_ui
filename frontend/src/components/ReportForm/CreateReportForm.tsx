@@ -6,8 +6,9 @@ import {
   type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
-import { getSettings, type ISettings } from "#api/settingsApi";
+import { getSettings } from "#api/settingsApi";
 import { useAuth } from "#hooks/useAuth";
+import axios from "axios";
 import React, {
   useCallback,
   useEffect,
@@ -114,6 +115,8 @@ const CreateReportForm: React.FC = () => {
   const { user } = useAuth();
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
   const [isAppendingToDocx, setIsAppendingToDocx] = useState(false);
@@ -169,11 +172,21 @@ const CreateReportForm: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (!patientId) return;
+      setLoading(true);
+      setLoadError(false);
       try {
         const [patientData, reportData, settingsData] = await Promise.all([
           getPatientById(patientId),
-          getReportByPatientId(patientId).catch(() => null),
-          getSettings().catch((): ISettings => ({})),
+          // 404 = листа ще немає (новий пацієнт). Будь-який інший збій —
+          // це саме збій, і його не можна плутати з «листа немає»:
+          // інакше форма відкриється порожня і «Зберегти» створить дубль.
+          getReportByPatientId(patientId).catch((err): IReport | null => {
+            if (axios.isAxiosError(err) && err.response?.status === 404) {
+              return null;
+            }
+            throw err;
+          }),
+          getSettings(),
         ]);
         setPatient(patientData);
 
@@ -274,20 +287,22 @@ const CreateReportForm: React.FC = () => {
           }
         }
       } catch {
-        toast.error("Не вдалося завантажити дані пацієнта або листа.");
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [patientId]);
+  }, [patientId, reloadKey]);
 
   // Знімок «чистого» стану — одразу після завантаження даних.
+  // При збої завантаження знімок не робимо: інакше порожня форма
+  // зафіксувалася б як «збережений» стан.
   useEffect(() => {
-    if (!loading && savedSnapshot === null) {
+    if (!loading && !loadError && savedSnapshot === null) {
       setSavedSnapshot(currentSnapshot);
     }
-  }, [loading, savedSnapshot, currentSnapshot]);
+  }, [loading, loadError, savedSnapshot, currentSnapshot]);
 
   // Попередження браузера при закритті вкладки з незбереженими змінами.
   useEffect(() => {
@@ -603,6 +618,23 @@ const CreateReportForm: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+    );
+  if (loadError)
+    return (
+      <div className="py-12 text-center">
+        <p className="mb-1 text-ink">Не вдалося завантажити лист.</p>
+        <p className="mb-5 text-ink-soft">
+          Перевірте зʼєднання та спробуйте ще раз. Форма не відкриється, доки
+          дані не завантажаться, — інакше збереження створило б дубль листа.
+        </p>
+        <button
+          type="button"
+          onClick={() => setReloadKey((key) => key + 1)}
+          className="btn btn-primary"
+        >
+          Спробувати ще раз
+        </button>
       </div>
     );
   if (!patient)
