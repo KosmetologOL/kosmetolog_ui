@@ -8,7 +8,6 @@ import { reportSchema } from "../validators/report.validation";
 const router = Router();
 
 router.use(authMiddleware);
-router.get("/", ReportsController.getAll);
 router.get(
   "/patient/:patientId",
   validateObjectIdParams("patientId"),
