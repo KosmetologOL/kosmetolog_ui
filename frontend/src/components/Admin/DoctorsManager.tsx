@@ -15,6 +15,9 @@ const DoctorsManager: React.FC = () => {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deactivatingDoctor, setDeactivatingDoctor] = useState<IDoctor | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     try {
@@ -29,16 +32,7 @@ const DoctorsManager: React.FC = () => {
     void load();
   }, [load]);
 
-  const toggle = async (doctor: IDoctor) => {
-    const displayName = doctor.name?.trim() || doctor.email;
-
-    if (doctor.active) {
-      const confirmed = window.confirm(
-        `Деактивувати акаунт лікаря ${displayName}? Він втратить доступ до системи.`,
-      );
-      if (!confirmed) return;
-    }
-
+  const performToggle = async (doctor: IDoctor) => {
     setTogglingId(doctor._id);
     try {
       await setUserActive(doctor._id, !doctor.active);
@@ -53,6 +47,20 @@ const DoctorsManager: React.FC = () => {
     } finally {
       setTogglingId(null);
     }
+  };
+
+  const toggle = (doctor: IDoctor) => {
+    if (doctor.active) {
+      setDeactivatingDoctor(doctor);
+      return;
+    }
+    void performToggle(doctor);
+  };
+
+  const handleConfirmDeactivate = async () => {
+    if (!deactivatingDoctor) return;
+    await performToggle(deactivatingDoctor);
+    setDeactivatingDoctor(null);
   };
 
   const handleConfirmDelete = async () => {
@@ -125,7 +133,7 @@ const DoctorsManager: React.FC = () => {
                 </div>
                 <div className="list-row-actions mt-2 sm:mt-0">
                   <button
-                    onClick={() => void toggle(d)}
+                    onClick={() => toggle(d)}
                     disabled={isToggling}
                     className={`btn btn-sm min-w-[130px] justify-center ${
                       d.active ? "btn-ghost" : "btn-primary"
@@ -163,6 +171,19 @@ const DoctorsManager: React.FC = () => {
         loadingLabel="Видаляємо…"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingId(null)}
+      />
+
+      <ConfirmModal
+        visible={Boolean(deactivatingDoctor)}
+        title="Деактивувати лікаря"
+        message={`Деактивувати акаунт лікаря ${
+          deactivatingDoctor?.name?.trim() || deactivatingDoctor?.email
+        }? Він втратить доступ до системи.`}
+        confirmLabel="Деактивувати"
+        isLoading={togglingId !== null}
+        loadingLabel="Деактивуємо…"
+        onConfirm={handleConfirmDeactivate}
+        onCancel={() => setDeactivatingDoctor(null)}
       />
     </div>
   );
