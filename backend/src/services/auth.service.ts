@@ -107,6 +107,14 @@ export const refresh = async (token: string) => {
     const user = await User.findById(decoded.id);
     if (!user) throw new Error("Користувача не знайдено");
 
+    if (user.active === false) throw new Error("Акаунт деактивовано");
+
+    if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
+      throw new Error(
+        "Забагато невдалих спроб входу. Спробуйте пізніше.",
+      );
+    }
+
     const safeUser = toSafeUser(user);
     const { accessToken } = generateTokens(safeUser);
     return { accessToken };
