@@ -100,7 +100,10 @@ const SearchHomeCare: React.FC<Props> = ({
 
     const newItem: IHomeCare = {
       ...care,
-      _id: medication._id || crypto.randomUUID(),
+      // Власний _id для кожного доданого засобу: той самий медикамент можна
+      // додати у дві категорії, і спільний _id з довідника зачіпав би обидва
+      // записи при видаленні/редагуванні.
+      _id: crypto.randomUUID(),
       medicationName: medication.name,
       recommendations: medication.recommendation,
       morning,
