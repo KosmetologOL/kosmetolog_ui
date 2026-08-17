@@ -27,11 +27,11 @@ const initializeAuth = async () => {
 
 ## Критерії приймання
 
-- [ ] Після входу в localStorage немає ключів token і user (токен існує лише в стані React та axios.defaults.headers.common.Authorization)
-- [ ] Перезавантаження сторінки з активною сесією відновлює її через /auth/refresh + /auth/me без миготіння на /login (authReady-гейт працює)
-- [ ] Після logout перезавантаження сторінки не відновлює сесію
-- [ ] Старі значення token/user, що лишилися від попередньої версії, видаляються при першому завантаженні
-- [ ] npm run lint і npm run build проходять без помилок
+- [x] Після входу в localStorage немає ключів token і user (токен існує лише в стані React та axios.defaults.headers.common.Authorization)
+- [x] Перезавантаження сторінки з активною сесією відновлює її через /auth/refresh + /auth/me без миготіння на /login (authReady-гейт працює)
+- [x] Після logout перезавантаження сторінки не відновлює сесію
+- [x] Старі значення token/user, що лишилися від попередньої версії, видаляються при першому завантаженні
+- [x] npm run lint і npm run build проходять без помилок
 
 ## Ручна перевірка
 
