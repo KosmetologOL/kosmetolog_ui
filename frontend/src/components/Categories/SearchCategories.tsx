@@ -9,6 +9,10 @@ import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
 
+// До вводу пошуку показуємо лише перші N записів категорії — інакше форма
+// листа рендерить одразу всі записи всіх категорій.
+const CATEGORY_PREVIEW_LIMIT = 20;
+
 export interface IReportCategoryItem {
   _id: string;
   categoryId?: string;
@@ -122,7 +126,7 @@ const SearchCategories: React.FC<Props> = ({
         const search = (searchValues[category._id] || "").trim().toLowerCase();
         const matchingItems = search
           ? items.filter((item) => item.name.toLowerCase().includes(search))
-          : items;
+          : items.slice(0, CATEGORY_PREVIEW_LIMIT);
 
         const currentSelected = selectedCategoryItems.filter(
           (i) => i.categoryId === category._id,
@@ -186,6 +190,13 @@ const SearchCategories: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
+            )}
+
+            {!search && items.length > CATEGORY_PREVIEW_LIMIT && (
+              <p className="mt-2 text-xs text-ink-soft">
+                Показано перші {CATEGORY_PREVIEW_LIMIT} із {items.length}{" "}
+                записів — скористайтеся пошуком.
+              </p>
             )}
 
             {currentSelected.length > 0 && (
