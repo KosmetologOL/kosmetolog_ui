@@ -64,6 +64,10 @@ export const approveRegistration = async (
   return data;
 };
 
+export const rejectRegistration = async (id: string): Promise<void> => {
+  await axios.delete(`${BASE_URL}/registration-requests/${id}`);
+};
+
 export const CATEGORY_REPORT_POSITIONS = [
   "after_specialists",
   "after_exams",

@@ -1,8 +1,10 @@
 import {
   approveRegistration,
   getRegistrationRequests,
+  rejectRegistration,
   type IRegistrationRequest,
 } from "#api/referenceApi";
+import ConfirmModal from "#components/ConfirmModal";
 import Spinner from "#components/Spinner";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -11,6 +13,9 @@ const RegistrationRequestsManager: React.FC = () => {
   const [requests, setRequests] = useState<IRegistrationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingRequest, setRejectingRequest] =
+    useState<IRegistrationRequest | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +45,21 @@ const RegistrationRequestsManager: React.FC = () => {
       toast.error("Не вдалося підтвердити запит. Спробуйте ще раз.");
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectingRequest) return;
+    setIsRejecting(true);
+    try {
+      await rejectRegistration(rejectingRequest._id);
+      setRejectingRequest(null);
+      toast.success("Запит відхилено.");
+      await load();
+    } catch {
+      toast.error("Не вдалося відхилити запит. Спробуйте ще раз.");
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -107,12 +127,32 @@ const RegistrationRequestsManager: React.FC = () => {
                       "Підтвердити"
                     )}
                   </button>
+                  <button
+                    onClick={() => setRejectingRequest(r)}
+                    className="btn btn-sm btn-danger-soft"
+                  >
+                    Відхилити
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <ConfirmModal
+        visible={Boolean(rejectingRequest)}
+        title="Відхилити запит"
+        message={`Відхилити запит на реєстрацію від ${
+          rejectingRequest?.name?.trim() || rejectingRequest?.email
+        }? Запит буде видалено, акаунт не буде створено.`}
+        confirmLabel="Відхилити"
+        isDanger
+        isLoading={isRejecting}
+        loadingLabel="Відхиляємо…"
+        onConfirm={() => void handleConfirmReject()}
+        onCancel={() => setRejectingRequest(null)}
+      />
     </div>
   );
 };

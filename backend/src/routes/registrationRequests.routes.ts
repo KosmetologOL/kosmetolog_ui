@@ -12,5 +12,10 @@ router.post(
   validateObjectIdParams("id"),
   RegistrationRequestsController.approveRegistrationRequest,
 );
+router.delete(
+  "/:id",
+  validateObjectIdParams("id"),
+  RegistrationRequestsController.rejectRegistrationRequest,
+);
 
 export default router;

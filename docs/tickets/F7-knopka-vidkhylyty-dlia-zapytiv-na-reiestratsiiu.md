@@ -58,11 +58,11 @@ export const rejectRegistration = async (id: string): Promise<void> => {
 
 ## Критерії приймання
 
-- [ ] DELETE /registration-requests/:id вимагає роль admin (для неавторизованих/не-адмінів — 401/403), при невалідному ObjectId — помилка валідації, при неіснуючому id — 400 з «Запит не знайдено».
-- [ ] Відхилення видаляє документ RegistrationRequest і НЕ створює запис у User; в ActivityLog зʼявляється дія rejected-registration.
-- [ ] У кожному рядку запиту в UI є «Відхилити» (btn-danger-soft) з ConfirmModal і станом «Відхиляємо…»; після відхилення запит зникає зі списку, бейдж на табі «Запити» зменшується.
-- [ ] Логін даними відхиленого запиту неможливий.
-- [ ] `npm run build` у backend/ і frontend/ проходить.
+- [x] DELETE /registration-requests/:id вимагає роль admin (для неавторизованих/не-адмінів — 401/403), при невалідному ObjectId — помилка валідації, при неіснуючому id — 400 з «Запит не знайдено».
+- [x] Відхилення видаляє документ RegistrationRequest і НЕ створює запис у User; в ActivityLog зʼявляється дія rejected-registration.
+- [x] У кожному рядку запиту в UI є «Відхилити» (btn-danger-soft) з ConfirmModal і станом «Відхиляємо…»; після відхилення запит зникає зі списку, бейдж на табі «Запити» зменшується.
+- [x] Логін даними відхиленого запиту неможливий.
+- [x] `npm run build` у backend/ і frontend/ проходить.
 
 ## Ручна перевірка
 
