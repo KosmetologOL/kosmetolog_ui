@@ -1,10 +1,13 @@
 const CSV_BOM = "﻿";
 
+const FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
 const escapeCsvField = (value: string): string => {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  const guarded = FORMULA_PREFIX.test(value) ? `'${value}` : value;
+  if (/[",\r\n]/.test(guarded)) {
+    return `"${guarded.replace(/"/g, '""')}"`;
   }
-  return value;
+  return guarded;
 };
 
 export const toCsv = (header: string[], rows: string[][]): string => {
@@ -58,7 +61,14 @@ export const parseCsv = (text: string): string[][] => {
     rows.push(row);
   }
 
-  return rows.filter((cells) => cells.some((cell) => cell.trim() !== ""));
+  const unguard = (cell: string) =>
+    cell.startsWith("'") && FORMULA_PREFIX.test(cell.slice(1))
+      ? cell.slice(1)
+      : cell;
+
+  return rows
+    .map((cells) => cells.map(unguard))
+    .filter((cells) => cells.some((cell) => cell.trim() !== ""));
 };
 
 export const downloadCsv = (filename: string, csv: string) => {
