@@ -151,13 +151,23 @@ const ProcedureStageCard: React.FC<Props> = ({
               </button>
               <button
                 type="button"
-                onClick={() =>
+                onClick={() => {
+                  const hasContent =
+                    proc.comment?.trim() || proc.recommendation?.trim();
+                  if (
+                    hasContent &&
+                    !window.confirm(
+                      `Видалити процедуру «${proc.name}»? Разом з нею буде втрачено памʼятку та відредаговану рекомендацію.`,
+                    )
+                  ) {
+                    return;
+                  }
                   patchStage({
                     procedures: stage.procedures.filter(
                       (p) => p._id !== proc._id,
                     ),
-                  })
-                }
+                  });
+                }}
                 className="chip-remove"
                 aria-label={`Видалити процедуру «${proc.name}»`}
               >
