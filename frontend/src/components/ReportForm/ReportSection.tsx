@@ -11,12 +11,12 @@ interface Props {
 const ReportSection: React.FC<Props> = ({ title, count, actions, children }) => (
   <div className="card">
     <div className="mb-3 flex items-center gap-2">
-      <p className="section-label mb-0!">
+      <h2 className="section-label mb-0!">
         {title}
         {typeof count === "number" && count > 0 && (
           <span className="font-normal text-ink-soft"> · {count}</span>
         )}
-      </p>
+      </h2>
       {actions}
     </div>
     {children}
