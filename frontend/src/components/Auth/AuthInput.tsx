@@ -8,6 +8,8 @@ interface Props {
   name?: string;
   autoComplete?: string;
   "aria-label"?: string;
+  error?: string;
+  errorId?: string;
 }
 
 const AuthInput: React.FC<Props> = ({
@@ -18,17 +20,28 @@ const AuthInput: React.FC<Props> = ({
   name,
   autoComplete,
   "aria-label": ariaLabel,
+  error,
+  errorId,
 }) => (
-  <input
-    type={type}
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    name={name}
-    autoComplete={autoComplete}
-    aria-label={ariaLabel}
-    className="field-input"
-  />
+  <div>
+    <input
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      name={name}
+      autoComplete={autoComplete}
+      aria-label={ariaLabel}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error ? errorId : undefined}
+      className={`field-input${error ? " is-invalid" : ""}`}
+    />
+    {error && (
+      <p id={errorId} className="field-error">
+        {error}
+      </p>
+    )}
+  </div>
 );
 
 export default AuthInput;
