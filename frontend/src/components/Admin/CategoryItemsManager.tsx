@@ -304,7 +304,7 @@ const CategoryItemsManager: React.FC<Props> = ({
             onClick={handleExportCsv}
             className="btn btn-ghost btn-sm"
           >
-            Експорт CSV
+            Вивантажити існуючі
           </button>
 
           <button
@@ -313,7 +313,7 @@ const CategoryItemsManager: React.FC<Props> = ({
             disabled={isImporting}
             className="btn btn-ghost btn-sm"
           >
-            {isImporting ? "Імпортуємо…" : "Імпорт CSV"}
+            {isImporting ? "Імпортуємо…" : "Завантажити нові"}
           </button>
           <input
             ref={fileInputRef}

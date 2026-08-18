@@ -320,7 +320,7 @@ export default function HomeCaresManager({
             onClick={handleExportCsv}
             className="btn btn-ghost btn-sm"
           >
-            Експорт CSV
+            Вивантажити існуючі
           </button>
 
           {!readOnly && (
@@ -331,7 +331,7 @@ export default function HomeCaresManager({
                 disabled={isImporting}
                 className="btn btn-ghost btn-sm"
               >
-                {isImporting ? "Імпортуємо…" : "Імпорт CSV"}
+                {isImporting ? "Імпортуємо…" : "Завантажити нові"}
               </button>
               <input
                 ref={fileInputRef}
