@@ -119,6 +119,7 @@ const CreateReportForm: React.FC = () => {
   const [reloadKey, setReloadKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isAppendingToDocx, setIsAppendingToDocx] = useState(false);
   const isDocxSupported = isDocxLinkingSupported();
   const [additionalInfo, setAdditionalInfo] = useState("");
@@ -557,6 +558,54 @@ const CreateReportForm: React.FC = () => {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!patient) return;
+
+    setIsExportingPdf(true);
+    try {
+      const directoryHandle = await ensureReportsDirectoryHandle();
+
+      const savedReport = await saveReport();
+      if (!savedReport) return;
+
+      // Динамічний імпорт навмисно: @react-pdf/renderer важить близько
+      // 800 КБ і при статичному імпорті потрапляв у чанк сторінки звіту,
+      // подвоюючи його. Тепер вантажиться тільки за натисканням кнопки.
+      const { generateReportPdf } = await import(
+        "#components/ReportForm/pdf/generateReportPdf"
+      );
+
+      await generateReportPdf({
+        patient,
+        exams: selectedExams,
+        medications: selectedMedications,
+        procedures: procedureStages.flatMap((s) => s.procedures),
+        procedureStages,
+        specialists: selectedSpecialists,
+        homeCares: selectedHomeCares,
+        categoryItems: selectedCategoryItems,
+        comments,
+        additionalInfo,
+        finalNote,
+        medicationsNote,
+        homeCareNote,
+        examsNote,
+        proceduresNote,
+        doctorName:
+          getReportCreatorName(savedReport.editHistory ?? []) ||
+          user?.name ||
+          "",
+        directoryHandle,
+      });
+    } catch (error) {
+      if (!isAbortError(error)) {
+        toast.error("Не вдалося експортувати PDF. Спробуйте ще раз.");
+      }
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   const handleAppendToDocx = async () => {
     if (!patient?._id) return;
 
@@ -862,10 +911,12 @@ const CreateReportForm: React.FC = () => {
           <ReportActions
             isSubmitting={isSubmitting}
             isExportingHtml={isExportingHtml}
+            isExportingPdf={isExportingPdf}
             isAppendingToDocx={isAppendingToDocx}
             isDocxSupported={isDocxSupported}
             lastSavedAt={lastSavedAt}
             onExportHtml={handleExportHtml}
+            onExportPdf={handleExportPdf}
             onAppendToDocx={handleAppendToDocx}
             onClose={handleClose}
           />
