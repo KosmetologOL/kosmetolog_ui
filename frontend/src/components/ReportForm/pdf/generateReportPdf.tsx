@@ -6,7 +6,7 @@ import { getCategories } from "#api/referenceApi";
 import logoUrl from "#assets/logo.png";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
 import { pdf } from "@react-pdf/renderer";
-import { toast } from "react-hot-toast/headless";
+import { toast } from "react-hot-toast";
 import type { GenerateReportHtmlParams } from "../html/generateReportHtml";
 import ReportPdfDocument from "./ReportPdfDocument";
 import { registerReportFonts } from "./reportPdfStyles";
