@@ -19,7 +19,6 @@ Run each from its respective directory (`backend/` or `frontend/`); there is no 
 - `npm run dev` — start with ts-node-dev (auto-restart, transpile-only, no type checking on run)
 - `npm run build` — `tsc` compile to `dist/`
 - `npm start` — run compiled `dist/server.js`
-- `npm run seed` — run `src/seed.ts` to seed the database
 
 **Frontend:**
 - `npm run dev` — Vite dev server
