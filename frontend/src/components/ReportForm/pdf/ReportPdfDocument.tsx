@@ -46,7 +46,9 @@ const StructuredBody: React.FC<{
         <View style={styles.det}>
           {content.kv.map((row, i) => (
             <View key={i} style={styles.kvRow} wrap={false}>
-              <Text style={styles.kvKey}>{row.label}</Text>
+              <View style={styles.kvKeyWrap}>
+                <Text style={styles.kvKey}>{row.label}</Text>
+              </View>
               <View style={styles.kvValue}>
                 <RichText html={row.html} />
               </View>
@@ -284,11 +286,11 @@ const ProcedureStages: React.FC<{ stages: IProcedureStage[] }> = ({
             {rows.map((row, i) => (
               <View
                 key={i}
-                style={
-                  i === rows.length - 1
-                    ? [styles.procRow, styles.procRowLast]
-                    : styles.procRow
-                }
+                style={[
+                  styles.procRow,
+                  ...(i === 0 ? [styles.procRowFirst] : []),
+                  ...(i === rows.length - 1 ? [styles.procRowLast] : []),
+                ]}
                 wrap={false}
               >
                 <View style={styles.procRowCells}>
@@ -304,9 +306,7 @@ const ProcedureStages: React.FC<{ stages: IProcedureStage[] }> = ({
                       {row[col.key] || "—"}
                     </Text>
                   ))}
-                  <View style={styles.procPriceCell}>
-                    <View style={styles.procPriceLine} />
-                  </View>
+                  <View style={styles.procPriceCell} />
                 </View>
 
                 {row.comment ? (

@@ -133,20 +133,21 @@ const ReportActions: React.FC<Props> = ({
           {isAppendingToDocx ? "Додаємо…" : "Додати в картку (.docx)"}
         </button>
 
-        {lastSavedAt && (
-          <span className="text-sm text-ink-soft">
-            Збережено о {lastSavedAt}
-          </span>
-        )}
-
         <button
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="btn btn-ghost ml-auto"
+          className="btn btn-ghost"
         >
           Закрити
         </button>
+
+        <span
+          className={`ml-auto text-sm text-ink-soft ${lastSavedAt ? "" : "invisible"}`}
+          aria-hidden={lastSavedAt ? undefined : true}
+        >
+          Збережено о {lastSavedAt ?? "00:00"}
+        </span>
       </div>
 
       {!isDocxSupported && (
