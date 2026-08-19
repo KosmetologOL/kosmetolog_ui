@@ -3,56 +3,53 @@ import { commonMessages } from "./common";
 import { objectId } from "../utils/objectId";
 
 const MAX_ITEMS = 200;
-const NAME_MAX = 200;
-const TEXT_MAX = 100000;
-const FREE_TEXT_MAX = 200000;
 
 const namedItemSchema = Joi.object({
-  name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
-  comment: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
-  stage: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  name: Joi.string().trim().allow("").optional(),
+  recommendation: Joi.string().trim().allow("").optional(),
+  comment: Joi.string().trim().allow("").optional(),
+  stage: Joi.string().trim().allow("").optional(),
 }).messages(commonMessages);
 
 const specialistItemSchema = Joi.object({
-  name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  query: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  name: Joi.string().trim().allow("").optional(),
+  query: Joi.string().trim().allow("").optional(),
 }).messages(commonMessages);
 
 const homeCareItemSchema = Joi.object({
   _id: Joi.string().optional(),
-  name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  name: Joi.string().trim().allow("").optional(),
   morning: Joi.boolean().default(false),
   evening: Joi.boolean().default(false),
-  medicationName: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  recommendations: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+  medicationName: Joi.string().trim().allow("").optional(),
+  recommendations: Joi.string().trim().allow("").optional(),
 }).messages(commonMessages);
 
 const categoryReportItemSchema = Joi.object({
   _id: Joi.string().optional(),
   categoryId: Joi.string().trim().allow("").optional(),
-  categoryName: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  itemName: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+  categoryName: Joi.string().trim().allow("").optional(),
+  itemName: Joi.string().trim().allow("").optional(),
+  recommendation: Joi.string().trim().allow("").optional(),
 }).messages(commonMessages);
 
 const procedureStageItemSchema = Joi.object({
   _id: Joi.string().optional(),
-  name: Joi.string().trim().max(NAME_MAX).allow("").optional(),
-  comment: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
-  recommendation: Joi.string().trim().max(TEXT_MAX).allow("").optional(),
+  name: Joi.string().trim().allow("").optional(),
+  comment: Joi.string().trim().allow("").optional(),
+  recommendation: Joi.string().trim().allow("").optional(),
   zoneEnabled: Joi.boolean().default(false),
-  zone: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  zone: Joi.string().trim().allow("").optional(),
   intervalEnabled: Joi.boolean().default(false),
-  interval: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  interval: Joi.string().trim().allow("").optional(),
   visitCountEnabled: Joi.boolean().default(false),
   visitCount: Joi.number().integer().min(0).allow(null).optional(),
 }).messages(commonMessages);
 
 const procedureStageSchema = Joi.object({
-  stage: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  stage: Joi.string().trim().allow("").optional(),
   workWithEnabled: Joi.boolean().default(false),
-  workWith: Joi.string().trim().max(NAME_MAX).allow("").optional(),
+  workWith: Joi.string().trim().allow("").optional(),
   procedures: Joi.array()
     .items(procedureStageItemSchema)
     .max(MAX_ITEMS)
@@ -80,11 +77,11 @@ export const reportSchema = Joi.object({
     .items(categoryReportItemSchema)
     .max(MAX_ITEMS)
     .default([]),
-  additionalInfo: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  finalNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  comments: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  medicationsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  homeCareNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  examsNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
-  proceduresNote: Joi.string().trim().max(FREE_TEXT_MAX).allow("").optional(),
+  additionalInfo: Joi.string().trim().allow("").optional(),
+  finalNote: Joi.string().trim().allow("").optional(),
+  comments: Joi.string().trim().allow("").optional(),
+  medicationsNote: Joi.string().trim().allow("").optional(),
+  homeCareNote: Joi.string().trim().allow("").optional(),
+  examsNote: Joi.string().trim().allow("").optional(),
+  proceduresNote: Joi.string().trim().allow("").optional(),
 }).messages(commonMessages);
