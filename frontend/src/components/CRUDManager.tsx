@@ -4,6 +4,7 @@ import FormattedText from "#components/FormattedText";
 import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { plural } from "#lib/plural";
+import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -84,7 +85,7 @@ const CRUDManager = <T,>({
   >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizedSearch = search.trim().toLowerCase();
+  const normalizedSearch = search.trim();
   const filteredList = list.filter((item) => {
     if (!normalizedSearch) {
       return true;
@@ -92,7 +93,7 @@ const CRUDManager = <T,>({
 
     return [item.name, item.recommendation]
       .filter(Boolean)
-      .some((value) => value!.toLowerCase().includes(normalizedSearch));
+      .some((value) => matchesNameQuery(value!, normalizedSearch));
   });
 
   const fetchList = useCallback(async () => {

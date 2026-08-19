@@ -9,6 +9,7 @@ import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { matchesNameQuery } from "#lib/translitSearch";
 
 export interface IReportCategoryItem {
   _id: string;
@@ -121,11 +122,11 @@ const SearchCategories: React.FC<Props> = ({
     <div className="flex flex-col gap-3">
       {categories.map((category) => {
         const items = itemsByCategory[category._id] || [];
-        const search = (searchValues[category._id] || "").trim().toLowerCase();
+        const search = (searchValues[category._id] || "").trim();
         // Порожній пошук нічого не показує — записи підтягуються лише за
         // запитом, як у решті довідникових пошуків (SearchPicker).
         const matchingItems = search
-          ? items.filter((item) => item.name.toLowerCase().includes(search))
+          ? items.filter((item) => matchesNameQuery(item.name, search))
           : [];
 
         const currentSelected = selectedCategoryItems.filter(

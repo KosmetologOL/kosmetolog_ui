@@ -10,6 +10,7 @@ import ConfirmModal from "#components/ConfirmModal";
 import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { plural } from "#lib/plural";
+import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -77,9 +78,9 @@ export default function HomeCaresManager({
     void fetchList();
   }, [fetchList]);
 
-  const normalizedSearch = search.trim().toLowerCase();
+  const normalizedSearch = search.trim();
   const filteredList = list.filter((item) =>
-    item.name.toLowerCase().includes(normalizedSearch),
+    matchesNameQuery(item.name, normalizedSearch),
   );
 
   const handleSaveModal = async (form: {

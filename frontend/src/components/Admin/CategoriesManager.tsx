@@ -8,6 +8,7 @@ import {
 import ConfirmModal from "#components/ConfirmModal";
 import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
+import { matchesNameQuery } from "#lib/translitSearch";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -37,9 +38,9 @@ const CategoriesManager: React.FC = () => {
     void load();
   }, [load]);
 
-  const normalizedSearch = search.trim().toLowerCase();
+  const normalizedSearch = search.trim();
   const filteredCats = cats.filter((c) =>
-    c.name.toLowerCase().includes(normalizedSearch),
+    matchesNameQuery(c.name, normalizedSearch),
   );
 
   const handleSaveModal = async (form: { name: string; recommendation?: string }) => {
