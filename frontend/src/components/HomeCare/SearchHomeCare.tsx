@@ -108,6 +108,7 @@ const SearchHomeCare: React.FC<Props> = ({
     };
 
     setSelectedHomeCares((prev) => [...prev, newItem]);
+    toast.success(`Додано: ${medication.name}`, { id: "picker-added" });
     // Пошук і результати не скидаємо — лікар часто додає кілька засобів поспіль.
     setCheckboxes((prev) => ({
       ...prev,

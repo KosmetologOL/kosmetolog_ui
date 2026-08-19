@@ -369,6 +369,29 @@
   .chip-name {
     font-weight: 700;
     font-size: 0.90625rem;
+    line-height: 1.5rem;
+  }
+  /*
+    Іконкові дії чипа. Висота дорівнює рядку .chip-name (1.5rem), тож олівець
+    і хрестик стоять рівно на лінії назви, а не нижче за неї — раніше вони
+    були 2rem і 1.625rem та центрувалися кожен по-своєму.
+  */
+  .chip-action {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    min-height: 0;
+    padding: 0;
+    border-radius: 999px;
+    color: var(--color-ink-soft);
+  }
+  .chip-action:hover:not(:disabled) {
+    background: var(--color-line);
+    color: var(--color-ink);
+    box-shadow: none;
   }
   .chip-sub {
     font-size: 0.84375rem;

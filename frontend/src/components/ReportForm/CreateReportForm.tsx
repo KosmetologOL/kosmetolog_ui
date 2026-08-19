@@ -53,6 +53,7 @@ import {
 import { plural } from "#lib/plural";
 import { isDocxLinkingSupported } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
+import { isAbortError } from "#lib/abortError";
 import toast from "react-hot-toast";
 
 /** Процедура, як вона приходить зі збереженого листа: `_id` може бути відсутнім. */
@@ -84,9 +85,6 @@ const DEFAULT_FINAL_NOTE = `Якщо Вас щось турбує, обовʼя�
 
 const NOTE_PLACEHOLDER =
   "Застереження чи уточнення до цього розділу (необовʼязково)";
-
-const isAbortError = (error: unknown): boolean =>
-  error instanceof DOMException && error.name === "AbortError";
 
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
@@ -129,7 +127,6 @@ const CreateReportForm: React.FC = () => {
   const [examsNote, setExamsNote] = useState("");
   const [proceduresNote, setProceduresNote] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const createdDate = patient?.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
     : "";
@@ -497,12 +494,6 @@ const CreateReportForm: React.FC = () => {
       toast.success("Лист збережено.");
       setReportHistory(savedReport.editHistory ?? []);
       setSavedSnapshot(currentSnapshot);
-      setLastSavedAt(
-        new Date().toLocaleTimeString("uk-UA", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      );
       return savedReport;
     } catch {
       toast.error("Не вдалося зберегти лист. Спробуйте ще раз.");
@@ -550,7 +541,9 @@ const CreateReportForm: React.FC = () => {
         directoryHandle,
       });
     } catch (error) {
-      if (!isAbortError(error)) {
+      if (isAbortError(error)) {
+        toast("Скасовано — нічого не збережено.", { icon: "ℹ️" });
+      } else {
         toast.error("Не вдалося експортувати HTML. Спробуйте ще раз.");
       }
     } finally {
@@ -598,7 +591,9 @@ const CreateReportForm: React.FC = () => {
         directoryHandle,
       });
     } catch (error) {
-      if (!isAbortError(error)) {
+      if (isAbortError(error)) {
+        toast("Скасовано — нічого не збережено.", { icon: "ℹ️" });
+      } else {
         toast.error("Не вдалося експортувати PDF. Спробуйте ще раз.");
       }
     } finally {
@@ -722,7 +717,11 @@ const CreateReportForm: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-4">
           {reportHistory.length > 0 && (
-            <ReportSection title="Історія редагувань">
+            <ReportSection
+              title="Історія редагувань"
+              count={reportHistory.length}
+              collapsible
+            >
               <ul className="flex flex-col gap-2 text-sm text-ink-soft">
                 {reportHistory
                   .slice()
@@ -914,7 +913,6 @@ const CreateReportForm: React.FC = () => {
             isExportingPdf={isExportingPdf}
             isAppendingToDocx={isAppendingToDocx}
             isDocxSupported={isDocxSupported}
-            lastSavedAt={lastSavedAt}
             onExportHtml={handleExportHtml}
             onExportPdf={handleExportPdf}
             onAppendToDocx={handleAppendToDocx}

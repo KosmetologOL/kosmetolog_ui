@@ -9,6 +9,7 @@ import { getReportCreatorName } from "#lib/getReportCreatorName";
 import { normalizeProcedureStages } from "#lib/normalizeProcedureStages";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { isAbortError } from "#lib/abortError";
 import { useNavigate } from "react-router-dom";
 import { isDocxLinkingSupported } from "#lib/docxCardLink";
 
@@ -89,8 +90,12 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit, highlight }) => {
         finalNote: report.finalNote || "",
         doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
       });
-    } catch {
-      toast.error("Не вдалося створити HTML — можливо, звіт ще не створено.");
+    } catch (error) {
+      if (isAbortError(error)) {
+        toast("Скасовано — файл не збережено.", { icon: "ℹ️" });
+      } else {
+        toast.error("Не вдалося створити HTML — можливо, звіт ще не створено.");
+      }
     } finally {
       setIsExportingHtml(false);
     }

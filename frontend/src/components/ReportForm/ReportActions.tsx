@@ -7,8 +7,6 @@ interface Props {
   isExportingPdf: boolean;
   isAppendingToDocx: boolean;
   isDocxSupported: boolean;
-  /** Час останнього успішного збереження (HH:MM) — тихий напис у панелі. */
-  lastSavedAt: string | null;
   onExportHtml: () => void;
   onExportPdf: () => void;
   onAppendToDocx: () => void;
@@ -21,7 +19,6 @@ const ReportActions: React.FC<Props> = ({
   isExportingPdf,
   isAppendingToDocx,
   isDocxSupported,
-  lastSavedAt,
   onExportHtml,
   onExportPdf,
   onAppendToDocx,
@@ -141,13 +138,6 @@ const ReportActions: React.FC<Props> = ({
         >
           Закрити
         </button>
-
-        <span
-          className={`ml-auto text-sm text-ink-soft ${lastSavedAt ? "" : "invisible"}`}
-          aria-hidden={lastSavedAt ? undefined : true}
-        >
-          Збережено о {lastSavedAt ?? "00:00"}
-        </span>
       </div>
 
       {!isDocxSupported && (

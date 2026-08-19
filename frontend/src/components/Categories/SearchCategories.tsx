@@ -8,6 +8,7 @@ import FormattedText from "#components/FormattedText";
 import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 export interface IReportCategoryItem {
   _id: string;
@@ -80,6 +81,7 @@ const SearchCategories: React.FC<Props> = ({
         recommendation: item.recommendation || "",
       },
     ]);
+    toast.success(`Додано: ${item.name}`, { id: "picker-added" });
   };
 
   const removeItem = (id: string) => {
@@ -120,9 +122,11 @@ const SearchCategories: React.FC<Props> = ({
       {categories.map((category) => {
         const items = itemsByCategory[category._id] || [];
         const search = (searchValues[category._id] || "").trim().toLowerCase();
+        // Порожній пошук нічого не показує — записи підтягуються лише за
+        // запитом, як у решті довідникових пошуків (SearchPicker).
         const matchingItems = search
           ? items.filter((item) => item.name.toLowerCase().includes(search))
-          : items;
+          : [];
 
         const currentSelected = selectedCategoryItems.filter(
           (i) => i.categoryId === category._id,
