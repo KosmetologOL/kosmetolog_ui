@@ -7,6 +7,7 @@ import homeCareRoutes from "./homeCareRoutes";
 import medicationsRoutes from "./medications.routes";
 import patientRoutes from "./patient.routes";
 import proceduresRoutes from "./procedures.routes";
+import referenceSyncRoutes from "./referenceSync.routes";
 import registrationRequestsRoutes from "./registrationRequests.routes";
 import reportsRoutes from "./reports.routes";
 import settingsRoutes from "./settings.routes";
@@ -26,5 +27,6 @@ router.use("/registration-requests", registrationRequestsRoutes);
 router.use("/patients", patientRoutes);
 router.use("/home-cares", homeCareRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/reference-sync", referenceSyncRoutes);
 
 export default router;
