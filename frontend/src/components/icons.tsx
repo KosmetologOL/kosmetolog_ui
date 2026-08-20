@@ -61,3 +61,25 @@ export const IconPlus: React.FC<IconProps> = ({
     <path d="M8 2v12M2 8h12" />
   </svg>
 );
+
+export const IconEye: React.FC<IconProps> = ({
+  className = "w-4.5 h-4.5",
+  ...rest
+}) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...strokeDefaults} {...rest}>
+    <path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+export const IconEyeOff: React.FC<IconProps> = ({
+  className = "w-4.5 h-4.5",
+  ...rest
+}) => (
+  <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...strokeDefaults} {...rest}>
+    <path d="M10.7 5.2A10.6 10.6 0 0 1 12 5c6.3 0 10 7 10 7a18.4 18.4 0 0 1-3.3 4.2" />
+    <path d="M6.2 6.7A18.2 18.2 0 0 0 2 12s3.7 7 10 7a10.5 10.5 0 0 0 4.2-.9" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    <line x1="3" y1="3" x2="21" y2="21" />
+  </svg>
+);

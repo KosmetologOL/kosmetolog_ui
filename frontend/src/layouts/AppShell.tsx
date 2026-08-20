@@ -31,15 +31,19 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <div className="min-h-dvh flex flex-col bg-paper text-ink font-brand">
       <header className="bg-surface border-b border-line sticky top-0 z-20">
         <div className="max-w-[960px] mx-auto px-4 sm:px-6 h-[60px] sm:h-17 flex items-center gap-4 sm:gap-8">
-          <div className="flex items-center gap-3 flex-none">
-            <img src={logoMark} alt="Олійник косметологія" className="w-8 h-7 sm:w-9 sm:h-8" />
+          <Link
+            to="/patients"
+            aria-label="Олійник косметологія — на головну"
+            className="flex flex-none items-center gap-3 rounded-lg transition-opacity duration-150 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand active:scale-[0.98]"
+          >
+            <img src={logoMark} alt="" className="w-8 h-7 sm:w-9 sm:h-8" />
             <div className="hidden sm:flex flex-col gap-0.5 leading-none">
               <span className="text-sm tracking-[0.3em]">ОЛІЙНИК</span>
               <span className="text-[10.5px] tracking-[0.18em] text-ink-soft">
                 косметологія
               </span>
             </div>
-          </div>
+          </Link>
 
           <nav className="flex gap-1.5 mr-auto" aria-label="Основна навігація">
             <Link

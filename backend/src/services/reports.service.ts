@@ -71,6 +71,9 @@ const normalizeProcedureStages = (stages: IReport["procedureStages"] = []) =>
       zone: procedure.zone?.trim() || "",
       intervalEnabled: Boolean(procedure.intervalEnabled),
       interval: procedure.interval?.trim() || "",
+      visitCountEnabled: Boolean(procedure.visitCountEnabled),
+      visitCount:
+        typeof procedure.visitCount === "number" ? procedure.visitCount : null,
     })),
   }));
 
@@ -109,6 +112,10 @@ const buildReportPayload = (data: Partial<IReport>) => ({
   additionalInfo: data.additionalInfo?.trim() || "",
   finalNote: data.finalNote?.trim() || "",
   comments: data.comments?.trim() || "",
+  medicationsNote: data.medicationsNote?.trim() || "",
+  homeCareNote: data.homeCareNote?.trim() || "",
+  examsNote: data.examsNote?.trim() || "",
+  proceduresNote: data.proceduresNote?.trim() || "",
 });
 
 export const create = async (data: Partial<IReport>, actor?: ReportActor) => {

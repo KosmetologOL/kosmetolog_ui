@@ -6,8 +6,9 @@ import {
   type IReportEditHistoryItem,
   updateReport,
 } from "#api/reportsApi";
-import { getSettings, type ISettings } from "#api/settingsApi";
+import { getSettings } from "#api/settingsApi";
 import { useAuth } from "#hooks/useAuth";
+import axios from "axios";
 import React, {
   useCallback,
   useEffect,
@@ -52,6 +53,7 @@ import {
 import { plural } from "#lib/plural";
 import { isDocxLinkingSupported } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
+import { isAbortError } from "#lib/abortError";
 import toast from "react-hot-toast";
 
 /** Процедура, як вона приходить зі збереженого листа: `_id` може бути відсутнім. */
@@ -84,9 +86,6 @@ const DEFAULT_FINAL_NOTE = `Якщо Вас щось турбує, обовʼя�
 const NOTE_PLACEHOLDER =
   "Застереження чи уточнення до цього розділу (необовʼязково)";
 
-const isAbortError = (error: unknown): boolean =>
-  error instanceof DOMException && error.name === "AbortError";
-
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
   const [patient, setPatient] = useState<IPatient | null>(null);
@@ -114,8 +113,11 @@ const CreateReportForm: React.FC = () => {
   const { user } = useAuth();
   const [comments, setComments] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingHtml, setIsExportingHtml] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isAppendingToDocx, setIsAppendingToDocx] = useState(false);
   const isDocxSupported = isDocxLinkingSupported();
   const [additionalInfo, setAdditionalInfo] = useState("");
@@ -125,7 +127,6 @@ const CreateReportForm: React.FC = () => {
   const [examsNote, setExamsNote] = useState("");
   const [proceduresNote, setProceduresNote] = useState("");
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const createdDate = patient?.createdAt
     ? new Date(patient.createdAt).toLocaleDateString("uk-UA")
     : "";
@@ -169,11 +170,21 @@ const CreateReportForm: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (!patientId) return;
+      setLoading(true);
+      setLoadError(false);
       try {
         const [patientData, reportData, settingsData] = await Promise.all([
           getPatientById(patientId),
-          getReportByPatientId(patientId).catch(() => null),
-          getSettings().catch((): ISettings => ({})),
+          // 404 = листа ще немає (новий пацієнт). Будь-який інший збій —
+          // це саме збій, і його не можна плутати з «листа немає»:
+          // інакше форма відкриється порожня і «Зберегти» створить дубль.
+          getReportByPatientId(patientId).catch((err): IReport | null => {
+            if (axios.isAxiosError(err) && err.response?.status === 404) {
+              return null;
+            }
+            throw err;
+          }),
+          getSettings(),
         ]);
         setPatient(patientData);
 
@@ -274,20 +285,22 @@ const CreateReportForm: React.FC = () => {
           }
         }
       } catch {
-        toast.error("Не вдалося завантажити дані пацієнта або листа.");
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [patientId]);
+  }, [patientId, reloadKey]);
 
   // Знімок «чистого» стану — одразу після завантаження даних.
+  // При збої завантаження знімок не робимо: інакше порожня форма
+  // зафіксувалася б як «збережений» стан.
   useEffect(() => {
-    if (!loading && savedSnapshot === null) {
+    if (!loading && !loadError && savedSnapshot === null) {
       setSavedSnapshot(currentSnapshot);
     }
-  }, [loading, savedSnapshot, currentSnapshot]);
+  }, [loading, loadError, savedSnapshot, currentSnapshot]);
 
   // Попередження браузера при закритті вкладки з незбереженими змінами.
   useEffect(() => {
@@ -481,12 +494,6 @@ const CreateReportForm: React.FC = () => {
       toast.success("Лист збережено.");
       setReportHistory(savedReport.editHistory ?? []);
       setSavedSnapshot(currentSnapshot);
-      setLastSavedAt(
-        new Date().toLocaleTimeString("uk-UA", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      );
       return savedReport;
     } catch {
       toast.error("Не вдалося зберегти лист. Спробуйте ще раз.");
@@ -534,11 +541,63 @@ const CreateReportForm: React.FC = () => {
         directoryHandle,
       });
     } catch (error) {
-      if (!isAbortError(error)) {
+      if (isAbortError(error)) {
+        toast("Скасовано — нічого не збережено.", { icon: "ℹ️" });
+      } else {
         toast.error("Не вдалося експортувати HTML. Спробуйте ще раз.");
       }
     } finally {
       setIsExportingHtml(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!patient) return;
+
+    setIsExportingPdf(true);
+    try {
+      const directoryHandle = await ensureReportsDirectoryHandle();
+
+      const savedReport = await saveReport();
+      if (!savedReport) return;
+
+      // Динамічний імпорт навмисно: @react-pdf/renderer важить близько
+      // 800 КБ і при статичному імпорті потрапляв у чанк сторінки звіту,
+      // подвоюючи його. Тепер вантажиться тільки за натисканням кнопки.
+      const { generateReportPdf } = await import(
+        "#components/ReportForm/pdf/generateReportPdf"
+      );
+
+      await generateReportPdf({
+        patient,
+        exams: selectedExams,
+        medications: selectedMedications,
+        procedures: procedureStages.flatMap((s) => s.procedures),
+        procedureStages,
+        specialists: selectedSpecialists,
+        homeCares: selectedHomeCares,
+        categoryItems: selectedCategoryItems,
+        comments,
+        additionalInfo,
+        finalNote,
+        medicationsNote,
+        homeCareNote,
+        examsNote,
+        proceduresNote,
+        doctorName:
+          getReportCreatorName(savedReport.editHistory ?? []) ||
+          user?.name ||
+          "",
+        directoryHandle,
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        toast("Скасовано — нічого не збережено.", { icon: "ℹ️" });
+      } else {
+        toast.error("Не вдалося експортувати PDF. Спробуйте ще раз.");
+      }
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -605,6 +664,23 @@ const CreateReportForm: React.FC = () => {
         </div>
       </div>
     );
+  if (loadError)
+    return (
+      <div className="py-12 text-center">
+        <p className="mb-1 text-ink">Не вдалося завантажити лист.</p>
+        <p className="mb-5 text-ink-soft">
+          Перевірте зʼєднання та спробуйте ще раз. Форма не відкриється, доки
+          дані не завантажаться, — інакше збереження створило б дубль листа.
+        </p>
+        <button
+          type="button"
+          onClick={() => setReloadKey((key) => key + 1)}
+          className="btn btn-primary"
+        >
+          Спробувати ще раз
+        </button>
+      </div>
+    );
   if (!patient)
     return (
       <p className="py-12 text-center text-ink-soft">Пацієнта не знайдено.</p>
@@ -641,7 +717,11 @@ const CreateReportForm: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-4">
           {reportHistory.length > 0 && (
-            <ReportSection title="Історія редагувань">
+            <ReportSection
+              title="Історія редагувань"
+              count={reportHistory.length}
+              collapsible
+            >
               <ul className="flex flex-col gap-2 text-sm text-ink-soft">
                 {reportHistory
                   .slice()
@@ -832,10 +912,11 @@ const CreateReportForm: React.FC = () => {
           <ReportActions
             isSubmitting={isSubmitting}
             isExportingHtml={isExportingHtml}
+            isExportingPdf={isExportingPdf}
             isAppendingToDocx={isAppendingToDocx}
             isDocxSupported={isDocxSupported}
-            lastSavedAt={lastSavedAt}
             onExportHtml={handleExportHtml}
+            onExportPdf={handleExportPdf}
             onAppendToDocx={handleAppendToDocx}
             onClose={handleClose}
           />

@@ -5,6 +5,7 @@ import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import { useDebouncedValue } from "#hooks/useDebouncedValue";
 import { plural } from "#lib/plural";
+import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -91,7 +92,7 @@ const CRUDManager = <T,>({
   >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizedSearch = debouncedSearch.trim().toLowerCase();
+  const normalizedSearch = debouncedSearch.trim();
   const filteredList = list.filter((item) => {
     if (!normalizedSearch) {
       return true;
@@ -99,7 +100,7 @@ const CRUDManager = <T,>({
 
     return [item.name, item.recommendation]
       .filter(Boolean)
-      .some((value) => value!.toLowerCase().includes(normalizedSearch));
+      .some((value) => matchesNameQuery(value!, normalizedSearch));
   });
 
   const fetchList = useCallback(async () => {
@@ -358,7 +359,7 @@ const CRUDManager = <T,>({
                 onClick={handleExportCsv}
                 className="btn btn-ghost btn-sm"
               >
-                Експорт CSV
+                Вивантажити існуючі
               </button>
 
               {editable && (
@@ -369,7 +370,7 @@ const CRUDManager = <T,>({
                     disabled={isImporting}
                     className="btn btn-ghost btn-sm"
                   >
-                    {isImporting ? "Імпортуємо…" : "Імпорт CSV"}
+                    {isImporting ? "Імпортуємо…" : "Завантажити нові"}
                   </button>
                   <input
                     ref={fileInputRef}

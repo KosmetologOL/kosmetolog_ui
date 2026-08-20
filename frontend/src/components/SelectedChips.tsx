@@ -48,7 +48,7 @@ function SelectedChips<T extends { _id?: string }>({
             {onEdit && (
               <button
                 type="button"
-                className="icon-btn h-8 w-8 text-ink-soft hover:bg-line hover:text-ink"
+                className="chip-action"
                 title={editLabel}
                 aria-label={editLabel}
                 onClick={() => onEdit(item)}
@@ -58,7 +58,7 @@ function SelectedChips<T extends { _id?: string }>({
             )}
             <button
               type="button"
-              className="chip-remove"
+              className="chip-action"
               aria-label="Видалити"
               onClick={() => onRemove(item)}
             >

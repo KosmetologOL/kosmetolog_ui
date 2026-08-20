@@ -21,8 +21,15 @@ app.use(
   }),
 );
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Масовий імпорт довідників — це книга з тисячами рядків і довгими
+// рекомендаціями, у стандартні 100 КБ вона не влазить. Ліміт піднято точково
+// саме для цього шляху; решта API лишається з дефолтом.
+app.use("/reference-sync", express.json({ limit: "20mb" }));
+// Рекомендації та «важливі тексти» не обмежені за довжиною у валідаторах, тож
+// стандартні 100 КБ на тіло зробили б це обмеження де-факто. Стеля 10 МБ
+// лишається нижчою за ліміт документа MongoDB (16 МБ).
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/", routes);
 

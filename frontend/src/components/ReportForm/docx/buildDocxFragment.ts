@@ -64,6 +64,13 @@ export const bulletParagraph = (runsXml: string): string =>
     "• ",
   )}${runsXml}</w:p>`;
 
+// Нумерація йде звичайним текстом («1. »), як і буліт вище: у документ
+// дописується лише фрагмент body.xml, власних <w:numbering> у ньому немає.
+export const numberedParagraph = (index: number, runsXml: string): string =>
+  `<w:p><w:pPr><w:spacing w:after="60"/><w:ind w:left="360"/></w:pPr>${run(
+    `${index}. `,
+  )}${runsXml}</w:p>`;
+
 export const headingParagraph = (text: string): string =>
   `<w:p><w:pPr><w:spacing w:before="280" w:after="160"/></w:pPr>${run(text, {
     bold: true,
@@ -262,8 +269,14 @@ export const buildAppendParagraphsXml = async (
 
   if (specialists.length > 0) {
     parts.push(headingParagraph("Суміжні спеціалісти"));
-    specialists.forEach((s) =>
-      parts.push(paragraph(run(s.name, { bold: true }))),
+    // Кілька спеціалістів — нумерований список (як і в HTML-звіті),
+    // один — просто рядок без номера.
+    specialists.forEach((s, i) =>
+      parts.push(
+        specialists.length > 1
+          ? numberedParagraph(i + 1, run(s.name, { bold: true }))
+          : paragraph(run(s.name, { bold: true })),
+      ),
     );
   }
   flushCategoriesFor("after_specialists");

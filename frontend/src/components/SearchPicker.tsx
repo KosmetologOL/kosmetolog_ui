@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useState } from "react";
+import toast from "react-hot-toast";
 
 import Spinner from "#components/Spinner";
 import { useDebouncedValue } from "#hooks/useDebouncedValue";
@@ -39,6 +40,16 @@ function SearchPicker<T extends { _id?: string; name: string }>({
   const listboxId = useId();
 
   const debouncedQuery = useDebouncedValue(query, 400);
+
+  /*
+    Список вибраного часто лишається нижче за екран, тож без тосту не видно,
+    чи елемент додався. Спільний id — щоб серія додавань поспіль оновлювала
+    той самий тост, а не громадила стос.
+  */
+  const handleAdd = (item: T) => {
+    onAdd(item);
+    toast.success(`Додано: ${item.name}`, { id: "picker-added" });
+  };
 
   useEffect(() => {
     const q = debouncedQuery.trim();
@@ -100,7 +111,7 @@ function SearchPicker<T extends { _id?: string; name: string }>({
       setHighlighted(activeIndex <= 0 ? available.length - 1 : activeIndex - 1);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (activeIndex >= 0) onAdd(available[activeIndex]);
+      if (activeIndex >= 0) handleAdd(available[activeIndex]);
     }
   };
 
@@ -152,7 +163,7 @@ function SearchPicker<T extends { _id?: string; name: string }>({
                 aria-selected={isActive}
                 onMouseDown={(e) => e.preventDefault()}
                 onMouseEnter={() => setHighlighted(index)}
-                onClick={() => onAdd(item)}
+                onClick={() => handleAdd(item)}
                 className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
                   isActive
                     ? "border-line-strong bg-brand-soft"

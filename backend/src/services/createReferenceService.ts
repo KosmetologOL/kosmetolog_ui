@@ -1,5 +1,5 @@
 import { Document, Model } from "mongoose";
-import { escapeRegex } from "../utils/regex";
+import { buildNameSearchPattern } from "../utils/translitSearch";
 
 export const createReferenceService = <TDoc extends Document>(
   model: Model<TDoc>,
@@ -7,7 +7,7 @@ export const createReferenceService = <TDoc extends Document>(
   getAll: async (): Promise<TDoc[]> => model.find(),
 
   searchByName: async (query: string): Promise<TDoc[]> =>
-    model.find({ name: { $regex: escapeRegex(query), $options: "i" } }).limit(20),
+    model.find({ name: { $regex: buildNameSearchPattern(query), $options: "i" } }).limit(20),
 
   create: async (data: Record<string, unknown>): Promise<TDoc> =>
     model.create(data),

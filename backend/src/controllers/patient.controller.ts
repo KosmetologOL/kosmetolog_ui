@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import * as PatientService from "../services/patient.service";
 import * as ReportService from "../services/reports.service";
 import ApiError from "../utils/ApiError";
-import { escapeRegex } from "../utils/regex";
+import { buildNameSearchPattern } from "../utils/translitSearch";
 
 export const getAllPatients = async (
   req: Request,
@@ -15,7 +15,7 @@ export const getAllPatients = async (
 
   try {
     const filter = query
-      ? { fullName: { $regex: escapeRegex(query), $options: "i" } }
+      ? { fullName: { $regex: buildNameSearchPattern(query), $options: "i" } }
       : {};
 
     const total = await PatientService.count(filter);

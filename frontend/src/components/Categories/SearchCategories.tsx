@@ -8,10 +8,11 @@ import FormattedText from "#components/FormattedText";
 import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import React, { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { matchesNameQuery } from "#lib/translitSearch";
 
 // До вводу пошуку показуємо лише перші N записів категорії — інакше форма
 // листа рендерить одразу всі записи всіх категорій.
-const CATEGORY_PREVIEW_LIMIT = 20;
 
 export interface IReportCategoryItem {
   _id: string;
@@ -84,6 +85,7 @@ const SearchCategories: React.FC<Props> = ({
         recommendation: item.recommendation || "",
       },
     ]);
+    toast.success(`Додано: ${item.name}`, { id: "picker-added" });
   };
 
   const removeItem = (id: string) => {
@@ -123,10 +125,12 @@ const SearchCategories: React.FC<Props> = ({
     <div className="flex flex-col gap-3">
       {categories.map((category) => {
         const items = itemsByCategory[category._id] || [];
-        const search = (searchValues[category._id] || "").trim().toLowerCase();
+        const search = (searchValues[category._id] || "").trim();
+        // Порожній пошук нічого не показує — записи підтягуються лише за
+        // запитом, як у решті довідникових пошуків (SearchPicker).
         const matchingItems = search
-          ? items.filter((item) => item.name.toLowerCase().includes(search))
-          : items.slice(0, CATEGORY_PREVIEW_LIMIT);
+          ? items.filter((item) => matchesNameQuery(item.name, search))
+          : [];
 
         const currentSelected = selectedCategoryItems.filter(
           (i) => i.categoryId === category._id,
@@ -190,13 +194,6 @@ const SearchCategories: React.FC<Props> = ({
                   </div>
                 ))}
               </div>
-            )}
-
-            {!search && items.length > CATEGORY_PREVIEW_LIMIT && (
-              <p className="mt-2 text-xs text-ink-soft">
-                Показано перші {CATEGORY_PREVIEW_LIMIT} із {items.length}{" "}
-                записів — скористайтеся пошуком.
-              </p>
             )}
 
             {currentSelected.length > 0 && (

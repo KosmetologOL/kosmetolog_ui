@@ -1,3 +1,5 @@
+import { isAbortError } from "./abortError";
+
 const DB_NAME = "kosmetolog-fs-handles";
 const STORE_NAME = "handles";
 const DIRECTORY_KEY = "reportsFolder";
@@ -64,16 +66,29 @@ export const chooseReportsDirectory =
   async (): Promise<FileSystemDirectoryHandle | null> => {
     if (!isFileSystemAccessSupported()) return null;
 
+    let handle: FileSystemDirectoryHandle;
     try {
-      const handle = await window.showDirectoryPicker({
+      handle = await window.showDirectoryPicker({
         id: "reports-folder",
         mode: "readwrite",
       });
-      await idbSet(DIRECTORY_KEY, handle);
-      return handle;
-    } catch {
+    } catch (err) {
+      // Натиснули «Скасувати» — пробрасуємо AbortError далі, щоб виклик
+      // згори перервав експорт. Раніше тут поверталося null, і файл усе
+      // одно потрапляв у теку завантажень попри скасування.
+      if (isAbortError(err)) throw err;
+      console.error("Не вдалося відкрити діалог вибору папки:", err);
       return null;
     }
+
+    try {
+      await idbSet(DIRECTORY_KEY, handle);
+    } catch (err) {
+      // Папку не запам'ятали, але експортувати в неї зараз можна.
+      console.error("Не вдалося запам'ятати вибрану папку:", err);
+    }
+
+    return handle;
   };
 
 export const ensureReportsDirectoryHandle =
@@ -87,4 +102,3 @@ export const ensureReportsDirectoryHandle =
 
     return chooseReportsDirectory();
   };
-

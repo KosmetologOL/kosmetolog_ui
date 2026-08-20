@@ -6,6 +6,7 @@ import {
 import CategoriesManager from "#components/Admin/CategoriesManager";
 import CategoryItemsManager from "#components/Admin/CategoryItemsManager";
 import DoctorsManager from "#components/Admin/DoctorsManager";
+import ReferenceImportExport from "#components/Admin/ReferenceImportExport";
 import RegistrationRequestsManager from "#components/Admin/RegistrationRequestsManager";
 import SettingsManager from "#components/Admin/SettingsManager";
 import ExamsManager from "#components/Exams/ExamsManager";
@@ -109,6 +110,7 @@ const ReferencePanel: React.FC = () => {
       !isAdmin &&
       (activeTab === "categories" ||
         activeTab === "doctors" ||
+        activeTab === "import-export" ||
         activeTab === "registration-requests")
     ) {
       setActiveTab("medications");
@@ -140,6 +142,7 @@ const ReferencePanel: React.FC = () => {
           { key: "categories", label: "Категорії" },
           { key: "doctors", label: "Лікарі" },
           { key: "registration-requests", label: "Запити" },
+          { key: "import-export", label: "Імпорт / експорт" },
         ]
       : []),
     { key: "settings", label: "Важливі тексти" },
@@ -241,6 +244,7 @@ const ReferencePanel: React.FC = () => {
         {activeTab === "registration-requests" && (
           <RegistrationRequestsManager />
         )}
+        {activeTab === "import-export" && <ReferenceImportExport />}
 
         {activeTab.startsWith("cat-") && (
           <CategoryItemsManager

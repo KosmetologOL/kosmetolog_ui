@@ -14,6 +14,7 @@ import ReferenceItemModal from "#components/ReferenceItemModal";
 import Select from "#components/Select";
 import { plural } from "#lib/plural";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { matchesNameQuery } from "#lib/translitSearch";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -108,12 +109,12 @@ const CategoryItemsManager: React.FC<Props> = ({
     }
   };
 
-  const normalizedSearch = search.trim().toLowerCase();
+  const normalizedSearch = search.trim();
   const filteredList = items.filter((item) => {
     if (!normalizedSearch) return true;
     return [item.name, item.recommendation]
       .filter(Boolean)
-      .some((value) => value!.toLowerCase().includes(normalizedSearch));
+      .some((value) => matchesNameQuery(value!, normalizedSearch));
   });
 
   const load = useCallback(async () => {
@@ -304,7 +305,7 @@ const CategoryItemsManager: React.FC<Props> = ({
             onClick={handleExportCsv}
             className="btn btn-ghost btn-sm"
           >
-            Експорт CSV
+            Вивантажити існуючі
           </button>
 
           <button
@@ -313,7 +314,7 @@ const CategoryItemsManager: React.FC<Props> = ({
             disabled={isImporting}
             className="btn btn-ghost btn-sm"
           >
-            {isImporting ? "Імпортуємо…" : "Імпорт CSV"}
+            {isImporting ? "Імпортуємо…" : "Завантажити нові"}
           </button>
           <input
             ref={fileInputRef}

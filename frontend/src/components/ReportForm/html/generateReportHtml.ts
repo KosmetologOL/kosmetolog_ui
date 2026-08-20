@@ -139,6 +139,16 @@ const itemBlock = (name: string, content: StructuredContent): string => `
     <div class="item-body">${renderStructuredBody(content)}</div>
   </div>`;
 
+// Категорія з вимкненим «показувати назву в звіті» — та сама картка, але
+// без .item-name. Раніше такі блоки малювались класом .exam (як
+// обстеження) і на друку лишались у рамці; окремий модифікатор дає їм
+// оформлення .item-block (на друку — лінія-роздільник замість рамки) і
+// водночас дозволяє змінювати їх незалежно від іменованих карток.
+const plainItemBlock = (content: StructuredContent): string => `
+  <div class="item-block item-block--plain">
+    <div class="item-body">${renderStructuredBody(content)}</div>
+  </div>`;
+
 const pad2 = (n: number): string => String(n).padStart(2, "0");
 
 const secWrap = (num: number, title: string, inner: string): string => `
@@ -237,7 +247,7 @@ export const generateReportHtml = async ({
           const content = parseStructuredContent(c.recommendation);
           return showName
             ? itemBlock(c.itemName, content)
-            : `<div class="exam"><div class="exam-body">${renderStructuredBody(content)}</div></div>`;
+            : plainItemBlock(content);
         })
         .join("");
 
@@ -253,17 +263,26 @@ export const generateReportHtml = async ({
   };
 
   if (specialists.length > 0) {
-    const cards = specialists
-      .map(
-        (s) => `
+    // Один спеціаліст — картка, як і раніше; кілька — нумерований список
+    // (перелік із двох-трьох карток поспіль читався як набір розрізнених
+    // блоків і не показував, що це один список). Розмітка навмисно та сама,
+    // що й у .rich-content ol, — звідти беруться кружечки з номерами
+    // й готове оформлення для друку.
+    const html =
+      specialists.length === 1
+        ? `
           <div class="stage">
             <div class="stage-h">
-              <span class="stage-name">${escapeHtml(s.name)}</span>
+              <span class="stage-name">${escapeHtml(specialists[0].name)}</span>
             </div>
-          </div>`,
-      )
-      .join("");
-    sectionBodies.push({ title: "Суміжні спеціалісти", html: cards });
+          </div>`
+        : `
+          <div class="rich-content spec-list">
+            <ol>
+              ${specialists.map((s) => `<li>${escapeHtml(s.name)}</li>`).join("")}
+            </ol>
+          </div>`;
+    sectionBodies.push({ title: "Суміжні спеціалісти", html });
   }
   flushCategoriesFor("after_specialists");
 
@@ -381,7 +400,7 @@ export const generateReportHtml = async ({
                 ${
                   zone || interval || visitCount
                     ? `<div class="proc-tags">
-                        ${zone ? `<span class="tag">Зона · ${escapeHtml(zone)}</span>` : ""}
+                        ${zone ? `<span class="tag">Зона · <b>${escapeHtml(zone)}</b></span>` : ""}
                         ${interval ? `<span class="tag">Інтервал · <b>${escapeHtml(interval)}</b></span>` : ""}
                         ${visitCount ? `<span class="tag">Кількість візитів · <b>${escapeHtml(visitCount)}</b></span>` : ""}
                       </div>`
@@ -420,9 +439,12 @@ export const generateReportHtml = async ({
     const blocks = procedures
       .map((p) => itemBlock(p.name, parseStructuredContent(p.recommendation)))
       .join("");
+    // Обгортка потрібна, щоб на друку прибрати лінії саме між цими
+    // картками: клас .item-block спільний із категоріями, і без окремого
+    // контейнера правило зачепило б і їх.
     sectionBodies.push({
       title: "Рекомендації щодо процедур",
-      html: blocks + importantBlock(proceduresNote),
+      html: `<div class="proc-recs">${blocks}</div>` + importantBlock(proceduresNote),
     });
   }
   flushCategoriesFor("after_procedures");
@@ -447,12 +469,7 @@ export const generateReportHtml = async ({
 
   const today = new Date().toLocaleDateString("uk-UA");
 
-  const html = `<!doctype html>
-<html lang="uk">
-<head>
-<meta charset="utf-8" />
-<title>Рекомендаційний лист — ${escapeHtml(patient.fullName || "")}</title>
-<style>
+  const styles = `
   @font-face {
     font-family: "Noah";
     src: url(data:font/truetype;base64,${noahRegularBase64}) format("truetype");
@@ -482,6 +499,12 @@ export const generateReportHtml = async ({
     --accent-soft: var(--secondary);
     --det-bg: #F7F7F7;
     --secondary: #DCDCDC;
+
+    /* Висота рядка одним значенням: нею заданий line-height у body, і
+       вона ж потрібна кружечкам нумерованих списків, щоб порахувати
+       висоту рядка (CSS не дає послатись на неї напряму). Поки це були
+       два окремі числа, вони мовчки розбігались. */
+    --lh: 1.32;
   }
 
   * { box-sizing: border-box; }
@@ -495,7 +518,7 @@ export const generateReportHtml = async ({
     margin: 0;
     font-family: "Noah", -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 11.5pt;
-    line-height: 1.32;
+    line-height: var(--lh);
     color: var(--text);
     background: #E8E8E8;
   }
@@ -693,7 +716,13 @@ export const generateReportHtml = async ({
   }
   .proc-price .line { display: inline-block; width: 26mm; border-bottom: 1px dotted var(--sage-soft); height: .9em; }
 
-  .proc-tags { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 1.8mm; }
+  /* align-items: baseline, а не типовий stretch: мітка набрана дрібним
+     капсом, а значення в <b> — більшим кеглем, тож без цього сусідні
+     мітки вирівнюються по висоті блока й «пливуть» одна відносно одної. */
+  .proc-tags {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 2mm; margin-top: 1.8mm;
+  }
   .tag {
     display: inline-block;
     font-size: 6.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
@@ -745,11 +774,21 @@ export const generateReportHtml = async ({
     border-bottom: 1px solid var(--line-soft);
     break-inside: avoid;
   }
+  /* Розділювач потрібен лише МІЖ товарами — під останнім у категорії
+     він дублює рамку .hc-category. Останнім рядком може бути або
+     звичайний .hc-row, або (коли товар у категорії один) той, що
+     лишився всередині .hc-intro разом із шапкою колонок. */
+  .hc-grid > .hc-row:last-child,
+  .hc-grid > .hc-intro:last-child .hc-row { border-bottom: none; }
   .hc-name { font-weight: 700; color: var(--olive); font-size: 12pt; margin-bottom: 1mm; }
   .hc-price .line { display: inline-block; width: 20mm; border-bottom: 1px dotted var(--sage-soft); height: .9em; }
   .chk { display: inline-block; width: 3.2mm; height: 3.2mm; border: 1.4px solid var(--ink); background: #fff; }
   .chk.is-on { background: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
+  /* .item-block--plain — та сама картка без заголовка (категорія з
+     вимкненим показом назви). Оформлення успадковує від .item-block,
+     окремий клас потрібен, щоб такі блоки можна було стилізувати
+     незалежно від іменованих. */
   .item-block { border: 1px solid var(--line); margin-bottom: 3mm; }
   .item-block:last-child { margin-bottom: 0; }
   .item-name {
@@ -792,16 +831,39 @@ export const generateReportHtml = async ({
   .rich-content ol li::before {
     content: counter(step);
     position: absolute; left: 0;
-    /* Центрує кружечок з номером відносно першого рядка тексту:
-       (висота рядка − діаметр кружечка) / 2. Множник 1.32 має
-       збігатися з line-height у body, щоб не «розʼїжджалось». */
-    top: calc((var(--ol-fs) * 1.32 - 4.6mm) / 2);
-    width: 4.6mm; height: 4.6mm;
+
+    /* Кружечок центрується по ПЕРШОМУ рядку тексту: пів рядка вниз, пів
+       кружечка вгору. Обидві величини, від яких це залежить, мають одне
+       джерело — --num-size тут і --lh у :root (той самий, яким заданий
+       line-height у body), тож розбігтися вони більше не можуть.
+
+       Чому саме так, а не простіше:
+       • top: 50% рахується від висоти всього <li> — у пункті на два
+         рядки номер поїхав би в середину абзацу;
+       • вирівнювання флексом по базовій лінії ставить центр кружечка на
+         висоту «базова лінія + пів цифри», тобто на ~0.45mm нижче
+         оптичного центру рядка. */
+    --num-size: 4.6mm;
+    top: calc((var(--ol-fs) * var(--lh) - var(--num-size)) / 2);
+    width: var(--num-size); height: var(--num-size);
+
     background: var(--accent);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 6.5pt; font-weight: 700; color: #fff;
+  }
+
+  /* Список суміжних спеціалістів: та сама механіка, що й у нумерованих
+     списках рекомендацій, але кегль і накреслення — як у назви спеціаліста
+     в картці (.stage-name), щоб перехід «одна картка → список» не змінював
+     вагу тексту. --ol-fs мусить дорівнювати font-size: від нього
+     рахується зміщення кружечка з номером. */
+  .spec-list ol li {
+    --ol-fs: 12pt;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.8mm;
   }
 
   .rich-content hr { border: none; border-top: 1px solid var(--line-soft); margin: 0.5em 0; }
@@ -868,9 +930,13 @@ export const generateReportHtml = async ({
       color: var(--ink);
     }
 
+    /* Кільце навмисно в мм, а не 1px: на колі 2.6–3mm піксельний бордер
+       зʼїдав понад пʼяту частину діаметра, тиснув цифру й на екранному
+       прев'ю рвався в еліпс (на десяток пікселів немає з чого малювати
+       рівне коло). 0.15mm на 600 dpi — це ~3.5 точки, друкується чисто. */
     .rich-content ol li::before {
       background: none;
-      border: 1px solid var(--ink);
+      border: .15mm solid var(--ink);
       color: var(--ink);
     }
 
@@ -882,6 +948,219 @@ export const generateReportHtml = async ({
     .item-name {
       background: none;
     }
+
+
+    /* ——— Оформлення для друку ———————————————————————————
+       Взято з еталонного листа: жодних рамок, плашок і заливок —
+       структуру тримають тонкі лінії-роздільники, дрібні капсові
+       мітки та різниця кеглів. Рамка кожної картки зʼїдає 2–3 мм
+       по периметру й перетворює аркуш на «сітку з коробок», тому
+       на друку її замінено лінією зверху блоку. Кольори лишаються
+       ті самі, що й на екрані. */
+
+    /* 1. Шапка: логотип + назва листа, під ними лінія; далі
+       «Пацієнт | Дата» у дві колонки з вертикальним роздільником
+       і замикальною лінією знизу — замість рамки-таблиці. */
+    .letterhead {
+      align-items: center;
+      padding-bottom: 2.5mm;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .lh-logo { width: 18mm; }
+    .lh-kind {
+      font-size: 7.5pt;
+      letter-spacing: .22em;
+      padding: 0;
+      border-radius: 0;
+    }
+    .meta {
+      grid-template-columns: 1fr 1fr;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 4.5mm;
+    }
+    .meta .cell {
+      padding: 2.2mm 0 2.2mm 6mm;
+      border-left: 1px solid var(--line-soft);
+    }
+    .meta .cell:first-child { padding-left: 0; }
+    .meta .k { font-size: 6pt; margin-bottom: .6mm; }
+    .meta .v { font-size: 11pt; }
+
+    /* 2. Відступи між секціями та між заголовком і тілом секції.
+       Відступ між секціями лишається помітно більшим за внутрішній
+       (4.5 проти 1.6 мм) — інакше заголовок «прилипає» до попередньої
+       секції і межа між розділами зчитується гірше. */
+    .sec { margin-bottom: 4.5mm; }
+    .sec-head {
+      gap: 2.5mm;
+      margin-bottom: 1.6mm;
+      padding: 0;
+    }
+    .sub-h { margin: 1.6mm 0 .8mm; }
+
+    /* Ієрархія розмірів при друку. Кроки навмисно великі (1–1.5pt):
+       з різницею 0.5pt рівні зливаються в суцільну сіру масу.
+         назва секції        12pt   (великі літери, розрядка)
+         назва групи/етапу   10.5pt
+         назва засобу/процедури 9.5pt
+         підзаголовок        9pt
+         текст рекомендацій  8.5pt  (звичайне накреслення)
+         блок «важливо»      7.5pt
+         технічні мітки      6.5pt  (ЗАСІБ, ЗОНА, ОРІЄНТОВНА ВАРТІСТЬ)
+       На екрані розміри лишаються попередніми. */
+    .sec-num { font-size: 12pt; }
+    .sec-title { font-size: 12pt; letter-spacing: .1em; }
+    .stage-name, .item-name, .hc-cat-h { font-size: 11pt; }
+    .hc-name, .proc-name { font-size: 11pt; }
+    .sub-h { font-size: 10pt; }
+    .plain, .rich-content, .hc-grid { font-size: 9pt; }
+    .tag b { font-size: 7pt; }
+    .stage-n { width: 5.4mm; height: 5.4mm; font-size: 9pt; }
+
+    /* Пропорція цифри до кола має лишатися такою ж, як на екрані, де
+       все виглядає правильно: там цифра займає близько третини
+       внутрішнього діаметра. На друку кільце ще й зʼїдає частину
+       простору, тож рахувати треба від внутрішнього діаметра:
+         кільце 0.15mm × 2  → внутрішній діаметр 3 − 0.3 = 2.7mm
+         цифра 4pt          → висота знака 0.68 × 4pt = 0.96mm
+         0.96 / 2.7         = 36%   (на екрані 34% — збігається)
+       Попередня пара 2.6mm + 4.5pt давала 52%: цифра тиснулась у кільце,
+       і будь-який зсув у частку міліметра ліз у вічі. */
+    .rich-content ol li {
+      --ol-fs: 8pt;
+      padding-left: 5.4mm;
+      margin-bottom: 1mm;
+    }
+    .rich-content ol li::before {
+      --num-size: 2.5mm;
+      font-size: 4pt;
+    }
+
+    /* Спеціалісти лишаються помітнішими за текст рекомендацій, але вже
+       не на рівні назв секцій-етапів (11pt було завелико поряд зі
+       зменшеними списками). Правило мусить стояти після
+       .rich-content ol li вище — специфічність однакова, вирішує
+       порядок. */
+    .spec-list ol li { --ol-fs: 9.5pt; margin-bottom: 1.2mm; }
+
+    /* На друку заголовок секції втрачає плашку, тож роль роздільника
+       бере на себе лінія зверху першого блока (див. .item-block, .stage
+       нижче). Список спеціалістів такого блока не має — лінія потрібна
+       на самому .spec-list, інакше секція «Суміжні спеціалісти»
+       залишається єдиною без відбивки під назвою. */
+    .spec-list {
+      border-top: 1px solid var(--line-soft);
+      padding-top: 1.8mm;
+    }
+    .spec-list ol { margin: 0; }
+
+    /* Обстеження, категорії домашнього догляду та блоки «мітка —
+       текст» лишаються в рамках, як і було, — без рамок тільки те,
+       що прямо перелічено нижче (засоби, спеціалісти, етапи процедур). */
+    .exam, .hc-category { margin-bottom: 2mm; }
+    .exam-body, .hc-cat-b { padding: 2mm 3mm 2.2mm; }
+    .hc-cat-h { padding: 1.4mm 3mm; }
+    .det, .det-box { margin: 1.2mm 0; padding: 1.8mm 3mm; }
+
+    /* Блок «Не можна» відбитий від попереднього тексту не рамкою, а
+       пунктирною лінією зверху — з загальним для .det-box відступом
+       1.2mm вона майже торкалася тексту вище і читалась як частина
+       того ж абзацу. Правило мусить стояти після .det, .det-box —
+       специфічність однакова, вирішує порядок. */
+    .det-box--warn { margin-top: 3mm; }
+
+    /* 3. Секція засобів і назви спеціалістів — без рамок: роздільник
+       між сусідніми блоками це тонка лінія зверху, тож жирнішої лінії
+       під назвою спеціаліста більше немає. Внутрішні падінги обнулено,
+       щоб текст ішов від лівого поля рівно під заголовком секції. */
+    .item-block, .stage {
+      border: none;
+      border-top: 1px solid var(--line-soft);
+      margin-bottom: 0;
+      padding-top: 1.8mm;
+    }
+    /* «Рекомендації щодо процедур» читаються як суцільний перелік, тож
+       ліній між картками там немає — сусідні відбиваються тільки
+       відступом. Лінію першої картки лишаємо: на друку саме вона
+       відбиває секцію від заголовка (плашки-заголовка тут немає). */
+    .proc-recs .item-block + .item-block { border-top: none; }
+
+    .item-name, .stage-h {
+      border-bottom: none;
+      padding: 0 0 1.2mm;
+    }
+    .item-body, .stage-b { padding: 0 0 2.2mm; }
+
+    /* 4. Протокол процедур: назва процедури й «орієнтовна вартість» в
+       один рядок, теги (Зона · Інтервал) — пігулки під назвою,
+       процедури розділені пунктирною лінією.
+       padding-bottom тут — це відбивка від тексту процедури до
+       пунктиру під нею, margin-bottom — від пунктиру до наступної
+       процедури. Вони навмисно різні: над лінією стоїть рядок
+       пігулок, і при однакових відступах пунктир «прилипав» до нього. */
+    .stage-b { padding: 0; }
+    .proc-card {
+      border: none;
+      border-bottom: 1px dashed var(--line-soft);
+      padding: 0 0 2.8mm;
+      margin-bottom: 1.6mm;
+    }
+    .proc-card:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+    .proc-tags { gap: 3mm; margin-top: 1.8mm; }
+
+    /* Обведено тільки значення: мітка (ЗОНА, ІНТЕРВАЛ) лишається голим
+       дрібним капсом, а в пігулку взято те, що читач шукає очима.
+       display: inline-block обовʼязковий — у звичайного інлайнового <b>
+       вертикальні падінги не збільшують рядковий бокс, і рамка налазила
+       б на назву процедури зверху. */
+    .tag { border: none; border-radius: 0; padding: 0; }
+    .tag b {
+      display: inline-block;
+      border: 1px solid var(--accent);
+      border-radius: 2.5mm;
+      padding: .4mm 2.2mm;
+    }
+
+    /* 5. Блоки «важливо»: без рамки й акцентної смуги — лише знак «!»
+       і дрібний текст під тонкою лінією. Змінну --ol-fs теж треба
+       перевизначити: нумеровані списки рахують від неї і розмір
+       шрифту, і зміщення кружечка з номером. */
+    .important {
+      border: none;
+      border-top: 1px solid var(--line-soft);
+      gap: 1.8mm;
+      margin: 1.8mm 0 0;
+      padding: 1.5mm 0 0;
+    }
+    .important .mark { font-size: 8pt; }
+    .important .plain,
+    .important .rich-content { font-size: 7pt; }
+    .important .rich-content ol li { --ol-fs: 7pt; }
+
+    /* 6. Нотатка та лікар лишаються в рамках; притискаються до низу
+       аркуша завдяки тому, що .sheet стає flex-колонкою заввишки
+       щонайменше зі сторінку, а margin-top: auto віддає підпису весь
+       вільний простір, що лишився знизу. */
+    .sheet {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .bottom {
+      margin-top: auto;
+      padding-top: 3mm;
+      gap: 3mm;
+    }
+    .contact { padding: 2mm 3mm; font-size: 7.5pt; }
+    .sig { padding: 2mm 3mm; }
+    .sig .k { font-size: 6pt; margin-bottom: .8mm; }
+    .sig .name { font-size: 9.5pt; }
   }
 
   @media screen and (max-width: 760px) {
@@ -891,11 +1170,9 @@ export const generateReportHtml = async ({
     .meta .cell:first-child { border-top: none; }
     .bottom { flex-direction: column; }
   }
-</style>
-</head>
-<body>
-<div class="sheet">
+`;
 
+  const bodyHtml = `
   <header class="letterhead">
     ${logoDataUrl ? `<img class="lh-logo" src="${logoDataUrl}" alt="Логотип" />` : "<span></span>"}
     <div class="lh-kind">Рекомендаційний лист</div>
@@ -906,16 +1183,28 @@ export const generateReportHtml = async ({
     <div class="cell"><span class="k">Дата</span><span class="v">${today}</span></div>
   </div>
 
-  ${sectionsHtml}
+  ${sectionsHtml}`;
 
+  const footerHtml = `
   <div class="bottom">
     <div class="contact">${finalNote?.trim() ? escapeHtml(finalNote.trim()) : ""}</div>
     <div class="sig">
       <div class="k">Лікар</div>
       <div class="name">${escapeHtml(doctorName?.trim() || "—")}</div>
     </div>
-  </div>
+  </div>`;
 
+  const html = `<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<title>Рекомендаційний лист — ${escapeHtml(patient.fullName || "")}</title>
+<style>${styles}</style>
+</head>
+<body>
+<div class="sheet">
+${bodyHtml}
+${footerHtml}
 </div>
 </body>
 </html>`;

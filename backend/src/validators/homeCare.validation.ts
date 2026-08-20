@@ -3,11 +3,11 @@ import { commonMessages } from "./common";
 import { objectId } from "../utils/objectId";
 
 export const homeCareSchema = Joi.object({
-  name: Joi.string().trim().min(1).max(200).required().messages(commonMessages),
+  name: Joi.string().trim().min(1).required().messages(commonMessages),
   morning: Joi.boolean().default(false).messages(commonMessages),
   evening: Joi.boolean().default(false).messages(commonMessages),
-  medicationName: Joi.string().trim().max(200).allow("").optional().messages(commonMessages),
-  recommendations: Joi.string().trim().max(100000).allow("").optional().messages(commonMessages),
+  medicationName: Joi.string().trim().allow("").optional().messages(commonMessages),
+  recommendations: Joi.string().trim().allow("").optional().messages(commonMessages),
 });
 
 export const homeCareSearchQuerySchema = Joi.object({
