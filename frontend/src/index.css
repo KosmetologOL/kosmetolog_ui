@@ -2,7 +2,9 @@
 
 @font-face {
   font-family: "Noah";
-  src: url("./fonts/Noah-Regular.ttf") format("truetype");
+  src:
+    url("./fonts/Noah-Regular.woff2") format("woff2"),
+    url("./fonts/Noah-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -10,7 +12,9 @@
 
 @font-face {
   font-family: "Noah";
-  src: url("./fonts/Noah-Bold.ttf") format("truetype");
+  src:
+    url("./fonts/Noah-Bold.woff2") format("woff2"),
+    url("./fonts/Noah-Bold.ttf") format("truetype");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -18,7 +22,9 @@
 
 @font-face {
   font-family: "Noah";
-  src: url("./fonts/Noah-RegularItalic.ttf") format("truetype");
+  src:
+    url("./fonts/Noah-RegularItalic.woff2") format("woff2"),
+    url("./fonts/Noah-RegularItalic.ttf") format("truetype");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -26,7 +32,9 @@
 
 @font-face {
   font-family: "Noah";
-  src: url("./fonts/Noah-BoldItalic.ttf") format("truetype");
+  src:
+    url("./fonts/Noah-BoldItalic.woff2") format("woff2"),
+    url("./fonts/Noah-BoldItalic.ttf") format("truetype");
   font-weight: 700;
   font-style: italic;
   font-display: swap;

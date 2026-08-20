@@ -7,8 +7,8 @@ import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type { ISpecialist } from "#api/specialistsApi";
 import type { IReportCategoryItem } from "#components/Categories/SearchCategories";
 import logoUrl from "#assets/logo.png";
-import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
-import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
+import NoahBoldWoff2Url from "#fonts/Noah-Bold.woff2";
+import NoahWoff2Url from "#fonts/Noah-Regular.woff2";
 import toast from "react-hot-toast";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
 import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
@@ -160,17 +160,6 @@ const secWrap = (num: number, title: string, inner: string): string => `
     ${inner}
   </section>`;
 
-const fetchAsBase64 = async (url: string): Promise<string> => {
-  const res = await fetch(url);
-  const arrayBuffer = await res.arrayBuffer();
-  return btoa(
-    new Uint8Array(arrayBuffer).reduce(
-      (data, byte) => data + String.fromCharCode(byte),
-      "",
-    ),
-  );
-};
-
 const fetchAsDataUrl = async (url: string): Promise<string> => {
   const res = await fetch(url);
   const blob = await res.blob();
@@ -207,9 +196,9 @@ export const generateReportHtml = async ({
     toast.error("Не вдалося завантажити логотип для звіту.");
   }
 
-  const [noahRegularBase64, noahBoldBase64] = await Promise.all([
-    fetchAsBase64(NoahTTFUrl),
-    fetchAsBase64(NoahBoldTTFUrl),
+  const [noahRegularDataUrl, noahBoldDataUrl] = await Promise.all([
+    fetchAsDataUrl(NoahWoff2Url),
+    fetchAsDataUrl(NoahBoldWoff2Url),
   ]);
 
   const sectionBodies: { title: string; html: string }[] = [];
@@ -475,13 +464,13 @@ export const generateReportHtml = async ({
   const styles = `
   @font-face {
     font-family: "Noah";
-    src: url(data:font/truetype;base64,${noahRegularBase64}) format("truetype");
+    src: url(${noahRegularDataUrl}) format("woff2");
     font-weight: 400;
     font-style: normal;
   }
   @font-face {
     font-family: "Noah";
-    src: url(data:font/truetype;base64,${noahBoldBase64}) format("truetype");
+    src: url(${noahBoldDataUrl}) format("woff2");
     font-weight: 700;
     font-style: normal;
   }
