@@ -19,16 +19,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = useCallback((newToken: string, nextUser: AuthUser | null) => {
     setToken(newToken);
     setUser(nextUser);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(nextUser));
     axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
   }, []);
 
   const clearLocalSession = useCallback(() => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
     delete axios.defaults.headers.common.Authorization;
   }, []);
 
@@ -46,7 +42,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     registerAuthHandlers({
       updateToken: (newToken: string) => {
         setToken(newToken);
-        localStorage.setItem("token", newToken);
         axios.defaults.headers.common.Authorization = `Bearer ${newToken}`;
       },
       onSessionExpired: () => {
@@ -57,21 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const savedToken = localStorage.getItem("token");
-      const savedUser = localStorage.getItem("user");
-
-      if (savedToken) {
-        setToken(savedToken);
-        axios.defaults.headers.common.Authorization = `Bearer ${savedToken}`;
-      }
-
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser) as AuthUser);
-        } catch {
-          localStorage.removeItem("user");
-        }
-      }
+      // Одноразово прибираємо значення, збережені попередніми версіями
+      // застосунку: токен і user більше не потрапляють у localStorage.
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
 
       const tryRefresh = async () => {
         try {
@@ -86,16 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       };
 
-      if (!savedToken) {
-        await tryRefresh();
-      } else {
-        try {
-          const { user } = await getCurrentUser();
-          login(savedToken, user);
-        } catch {
-          await tryRefresh();
-        }
-      }
+      await tryRefresh();
 
       setAuthReady(true);
     };

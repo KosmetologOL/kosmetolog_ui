@@ -1,0 +1,59 @@
+name: CI
+
+# У проєкті свідомо немає тест-сьюти (див. CLAUDE.md), тому CI перевіряє те, що
+# реально є джерелом правди: типи, збірку і ESLint. Ті самі команди, що локальні гейти.
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend · типи і збірка
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - name: tsc --noEmit
+        run: npx tsc --noEmit
+        working-directory: backend
+      - name: npm run build
+        run: npm run build
+        working-directory: backend
+
+  frontend:
+    name: frontend · типи, збірка, ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: tsc -b
+        run: npx tsc -b --force
+        working-directory: frontend
+      - name: vite build
+        run: npx vite build
+        working-directory: frontend
+        env:
+          # Збірці потрібна лише наявність змінної; справжній URL задається при деплої.
+          VITE_API_URL: http://localhost:5000
+      - name: ESLint
+        run: npm run lint
+        working-directory: frontend

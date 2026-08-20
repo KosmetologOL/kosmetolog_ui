@@ -32,3 +32,16 @@ export const approveRegistrationRequest = async (
     res.status(400).json({ message: (err as Error).message });
   }
 };
+
+export const rejectRegistrationRequest = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params;
+    await RegistrationRequestsService.rejectRegistration(id);
+    res.json({ message: "Запит відхилено" });
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+};

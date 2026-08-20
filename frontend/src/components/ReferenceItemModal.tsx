@@ -44,9 +44,14 @@ export default function ReferenceItemModal({
   const commentRef = useRef<HTMLTextAreaElement | null>(null);
   const titleId = useId();
 
+  // Ресет форми лише при відкритті модалки (false→true) — щоб ре-рендер
+  // батька не стирав уже введений текст.
   useEffect(() => {
-    setForm(item);
-  }, [item]);
+    if (visible) {
+      setForm(item);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   useEffect(() => {
     if (commentRef.current) {

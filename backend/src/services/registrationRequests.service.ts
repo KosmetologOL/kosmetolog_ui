@@ -65,3 +65,17 @@ export const approveRegistration = async (
 
   return createdUser;
 };
+
+export const rejectRegistration = async (requestId: string) => {
+  const request = await RegistrationRequest.findByIdAndDelete(requestId);
+  if (!request) {
+    throw new Error("Запит не знайдено");
+  }
+
+  await ActivityLog.create({
+    action: "rejected-registration",
+    meta: { email: request.email },
+  });
+
+  return request;
+};

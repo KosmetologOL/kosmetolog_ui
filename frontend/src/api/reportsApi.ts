@@ -67,11 +67,6 @@ export interface IReport {
 
 const API_URL = import.meta.env.VITE_API_URL + "/reports";
 
-export const getAllReports = async (): Promise<IReport[]> => {
-  const response = await axios.get<IReport[]>(API_URL);
-  return response.data;
-};
-
 export const getReportById = async (id: string): Promise<IReport> => {
   const response = await axios.get<IReport>(`${API_URL}/${id}`);
   return response.data;

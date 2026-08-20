@@ -20,7 +20,6 @@ const ensureHomeCareOrder = async () => {
 };
 
 export const getAllHomeCaresService = async (search?: string) => {
-  await ensureHomeCareOrder();
   const query: any = {};
   if (search) query.name = { $regex: escapeRegex(search), $options: "i" };
   return await HomeCare.find(query).sort({ order: 1, _id: 1 });

@@ -9,6 +9,11 @@ import routes from "./routes";
 
 const app = express();
 
+// За реверс-проксі (nginx/Cloudflare) довіряємо першому хопу,
+// щоб req.ip був IP клієнта, а не проксі (потрібно для rate-limit).
+// Якщо хопів більше — виставити фактичну кількість.
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173/",
