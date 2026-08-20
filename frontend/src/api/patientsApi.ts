@@ -1,3 +1,4 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
 export interface IPatient {
@@ -13,7 +14,7 @@ interface ApiResponse {
   totalPages: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL + "/patients";
+const API_URL = BASE_URL + "/patients";
 
 export const getAllPatients = async (
   page: number,

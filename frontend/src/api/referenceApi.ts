@@ -1,6 +1,5 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
-
-const BASE_URL = import.meta.env.VITE_API_URL;
 
 // Форма відповіді бекенда: User без пароля (див. backend/src/services/doctors.service.ts)
 export interface IDoctor {
