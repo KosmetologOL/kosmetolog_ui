@@ -8,6 +8,7 @@ import {
 } from "#api/reportsApi";
 import { getSettings } from "#api/settingsApi";
 import { useAuth } from "#hooks/useAuth";
+import { useUnsavedChanges } from "#hooks/useUnsavedChanges";
 import axios from "axios";
 import React, {
   useCallback,
@@ -15,7 +16,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import SearchCategories, {
   type IReportCategoryItem,
@@ -88,6 +89,8 @@ const NOTE_PLACEHOLDER =
 
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
+  const navigate = useNavigate();
+  const { setIsDirty } = useUnsavedChanges();
   const [patient, setPatient] = useState<IPatient | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
 
@@ -166,6 +169,14 @@ const CreateReportForm: React.FC = () => {
   );
 
   const isDirty = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
+
+  // Шапка (навігація і «Вийти») питає підтвердження через цей прапорець.
+  // Скидання на розмонтуванні обовʼязкове: інакше після виходу з листа
+  // застосунок і далі вважав би, що є незбережені зміни.
+  useEffect(() => {
+    setIsDirty(isDirty);
+    return () => setIsDirty(false);
+  }, [isDirty, setIsDirty]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -319,8 +330,10 @@ const CreateReportForm: React.FC = () => {
     ) {
       return;
     }
-    window.history.back();
-  }, [isDirty]);
+    // Не history.back(): лист могли відкрити прямим посиланням у новій
+    // вкладці, і «назад» повів би за межі застосунку.
+    navigate("/patients");
+  }, [isDirty, navigate]);
 
   const addStage = () => {
     setProcedureStages((prev) => [
