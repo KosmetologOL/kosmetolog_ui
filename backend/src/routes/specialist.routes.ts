@@ -1,5 +1,5 @@
 import { Router } from "express";
-import * as SpecialistController from "../controllers/specialist.contoller";
+import * as SpecialistController from "../controllers/specialist.controller";
 import { authMiddleware, requireRoles } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import { validateObjectIdParams } from "../utils/objectId";
@@ -18,20 +18,20 @@ router.post(
   "/",
   requireRoles("admin"),
   validate(nameOnlySchema),
-  SpecialistController.createdSpecialist,
+  SpecialistController.createSpecialist,
 );
 router.put(
   "/:id",
   requireRoles("admin"),
   validateObjectIdParams("id"),
   validate(nameOnlySchema),
-  SpecialistController.updatedSpecialist,
+  SpecialistController.updateSpecialist,
 );
 router.delete(
   "/:id",
   requireRoles("admin"),
   validateObjectIdParams("id"),
-  SpecialistController.deletedSpecialist,
+  SpecialistController.deleteSpecialist,
 );
 
 export default router;
