@@ -3,7 +3,7 @@ import {
   isFileSystemAccessSupported,
 } from "./pdfSaveLocation";
 
-const downloadBlob = (fileName: string, blob: Blob): void => {
+export const downloadBlob = (fileName: string, blob: Blob): void => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

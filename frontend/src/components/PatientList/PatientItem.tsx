@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { isAbortError } from "#lib/abortError";
 import { useNavigate } from "react-router-dom";
-import { isDocxLinkingSupported } from "#lib/docxCardLink";
+import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 
 interface Props {
   patient: IPatient;
@@ -103,24 +103,34 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit, highlight }) => {
 
   const handleAppendToDocx = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Пікер — до завантаження звіту: showOpenFilePicker вимагає свіжої
+    // взаємодії користувача, а після довгого запиту вона вже прострочена.
+    const handle = await pickPatientDocxCard(patient.fullName);
+    if (!handle) return;
+
     setIsAppendingToDocx(true);
     try {
       const report = await getReportByPatientId(patient._id!);
       const procedureStages = normalizeProcedureStages(report);
-      await appendReportToDocx({
-        patient,
-        exams: report.exams || [],
-        medications: report.medications || [],
-        procedures: report.procedures || [],
-        procedureStages: procedureStages,
-        specialists: report.specialists || [],
-        homeCares: report.homeCares || [],
-        categoryItems: normalizeCategoryItems(report),
-        additionalInfo: report.additionalInfo || "",
-        comments: report.comments || "",
-        finalNote: report.finalNote || "",
-        doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
-      });
+      await appendReportToDocx(
+        {
+          patient,
+          exams: report.exams || [],
+          medications: report.medications || [],
+          procedures: report.procedures || [],
+          procedureStages: procedureStages,
+          specialists: report.specialists || [],
+          homeCares: report.homeCares || [],
+          categoryItems: normalizeCategoryItems(report),
+          additionalInfo: report.additionalInfo || "",
+          comments: report.comments || "",
+          finalNote: report.finalNote || "",
+          doctorName:
+            getReportCreatorName(report.editHistory) || user?.name || "",
+        },
+        handle,
+      );
     } catch {
       toast.error("Не вдалося додати в картку — можливо, звіт ще не створено.");
     } finally {

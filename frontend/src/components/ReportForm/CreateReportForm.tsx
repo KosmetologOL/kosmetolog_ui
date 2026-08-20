@@ -51,7 +51,7 @@ import {
   ZONE_OPTIONS,
 } from "#components/ReportForm/procedureStageOptions";
 import { plural } from "#lib/plural";
-import { isDocxLinkingSupported } from "#lib/docxCardLink";
+import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
 import { isAbortError } from "#lib/abortError";
 import toast from "react-hot-toast";
@@ -604,32 +604,40 @@ const CreateReportForm: React.FC = () => {
   const handleAppendToDocx = async () => {
     if (!patient?._id) return;
 
+    // Пікер — до збереження: showOpenFilePicker вимагає свіжої взаємодії
+    // користувача, а після довгого saveReport() вона вже прострочена.
+    const handle = await pickPatientDocxCard(patient.fullName);
+    if (!handle) return;
+
     setIsAppendingToDocx(true);
     try {
       const savedReport = await saveReport();
       if (!savedReport) return;
 
-      await appendReportToDocx({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
-      });
+      await appendReportToDocx(
+        {
+          patient,
+          exams: selectedExams,
+          medications: selectedMedications,
+          procedures: procedureStages.flatMap((s) => s.procedures),
+          procedureStages,
+          specialists: selectedSpecialists,
+          homeCares: selectedHomeCares,
+          categoryItems: selectedCategoryItems,
+          comments,
+          additionalInfo,
+          finalNote,
+          medicationsNote,
+          homeCareNote,
+          examsNote,
+          proceduresNote,
+          doctorName:
+            getReportCreatorName(savedReport.editHistory ?? []) ||
+            user?.name ||
+            "",
+        },
+        handle,
+      );
     } catch (error) {
       if (!isAbortError(error)) {
         toast.error(
