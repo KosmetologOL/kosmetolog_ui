@@ -77,6 +77,10 @@ const normalizeProcedureStages = (stages: IReport["procedureStages"] = []) =>
     })),
   }));
 
+// Скільки останніх записів історії редагувань лишається в документі:
+// $slice обрізає масив на боці MongoDB, тож він не росте безмежно.
+const EDIT_HISTORY_LIMIT = 50;
+
 const createHistoryItem = (
   action: "create" | "update",
   actor?: ReportActor,
@@ -156,16 +160,16 @@ export const update = async (
     return null;
   }
 
-  const editHistory = [
-    ...(existing.editHistory || []),
-    createHistoryItem("update", actor),
-  ];
-
   return Report.findByIdAndUpdate(
     id,
     {
-      ...reportData,
-      editHistory,
+      $set: reportData,
+      $push: {
+        editHistory: {
+          $each: [createHistoryItem("update", actor)],
+          $slice: -EDIT_HISTORY_LIMIT,
+        },
+      },
     },
     { new: true },
   );
