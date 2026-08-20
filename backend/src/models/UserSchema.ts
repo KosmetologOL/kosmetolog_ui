@@ -17,7 +17,12 @@ const UserSchema: Schema<IUser> = new Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     name: { type: String },
-    role: { type: String, default: "user" },
+    role: {
+      type: String,
+      enum: ["admin", "doctor", "user"],
+      lowercase: true,
+      default: "user",
+    },
     active: { type: Boolean, default: true },
     failedLoginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date },
