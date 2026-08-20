@@ -43,15 +43,34 @@ export const approveRegistration = async (
     throw ApiError.notFound("Запит не знайдено");
   }
 
-  const inserted = await User.collection.insertOne({
-    email: request.email,
-    password: request.passwordHash,
-    role: request.role || "doctor",
-    name: request.name || "",
-    active: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  // Перевірка на зайнятий email робиться і тут, а не лише при створенні заявки:
+  // між створенням і підтвердженням хтось міг самозареєструватися з тим самим email.
+  const existingUser = await User.findOne({ email: request.email });
+  if (existingUser) {
+    await RegistrationRequest.findByIdAndDelete(requestId);
+    throw ApiError.badRequest("Користувач з таким email вже існує");
+  }
+
+  // Свідомо пишемо повз Mongoose: passwordHash у заявці вже захешований,
+  // а pre-save хук UserSchema захешував би його вдруге.
+  const inserted = await User.collection
+    .insertOne({
+      email: request.email,
+      password: request.passwordHash,
+      role: request.role || "doctor",
+      name: request.name || "",
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .catch(async (err: { code?: number }): Promise<never> => {
+      // гонка, що просочилася повз перевірку вище: unique-індекс на email
+      if (err?.code === 11000) {
+        await RegistrationRequest.findByIdAndDelete(requestId);
+        throw ApiError.badRequest("Користувач з таким email вже існує");
+      }
+      throw err;
+    });
 
   const createdUser = await User.findById(inserted.insertedId).select(
     "-password",
