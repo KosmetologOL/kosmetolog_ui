@@ -1,6 +1,7 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL + "/auth";
+const API_URL = BASE_URL + "/auth";
 
 axios.defaults.withCredentials = true;
 

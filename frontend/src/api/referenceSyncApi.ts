@@ -1,6 +1,5 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
-
-const BASE_URL = import.meta.env.VITE_API_URL;
 
 export interface SyncItem {
   id?: string;

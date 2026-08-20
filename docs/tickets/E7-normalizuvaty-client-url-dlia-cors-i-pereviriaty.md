@@ -18,10 +18,10 @@ app.ts:14 задає CORS origin як `process.env.CLIENT_URL || "http://localho
 
 ## Критерії приймання
 
-- [ ] Без CLIENT_URL у backend/.env локальний фронтенд (http://localhost:5173) працює без CORS-помилок; у логах бекенда — попередження.
-- [ ] CLIENT_URL, заданий зі слешем у кінці (наприклад, "https://example.com/"), не ламає CORS — значення нормалізується.
-- [ ] Запуск фронтенду без VITE_API_URL падає одразу зі зрозумілою помилкою «VITE_API_URL не задано…», а не тихими запитами на undefined/…
-- [ ] grep по frontend/src знаходить import.meta.env.VITE_API_URL лише в lib/config.ts.
+- [x] Без CLIENT_URL у backend/.env локальний фронтенд (http://localhost:5173) працює без CORS-помилок; у логах бекенда — попередження.
+- [x] CLIENT_URL, заданий зі слешем у кінці (наприклад, "https://example.com/"), не ламає CORS — значення нормалізується.
+- [x] Запуск фронтенду без VITE_API_URL падає одразу зі зрозумілою помилкою «VITE_API_URL не задано…», а не тихими запитами на undefined/…
+- [x] grep по frontend/src знаходить import.meta.env.VITE_API_URL лише в lib/config.ts.
 
 ## Ручна перевірка
 
