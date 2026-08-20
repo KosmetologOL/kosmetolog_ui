@@ -6,8 +6,6 @@ export const homeCareSchema = Joi.object({
   name: Joi.string().trim().min(1).required().messages(commonMessages),
   morning: Joi.boolean().default(false).messages(commonMessages),
   evening: Joi.boolean().default(false).messages(commonMessages),
-  medicationName: Joi.string().trim().allow("").optional().messages(commonMessages),
-  recommendations: Joi.string().trim().allow("").optional().messages(commonMessages),
 });
 
 export const homeCareSearchQuerySchema = Joi.object({

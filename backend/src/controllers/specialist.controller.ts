@@ -5,6 +5,6 @@ const controller = createReferenceController(specialistService, ["name"]);
 
 export const getAll = controller.getAll;
 export const searchSpecialists = controller.search;
-export const createdSpecialist = controller.create;
-export const updatedSpecialist = controller.update;
-export const deletedSpecialist = controller.remove;
+export const createSpecialist = controller.create;
+export const updateSpecialist = controller.update;
+export const deleteSpecialist = controller.remove;
