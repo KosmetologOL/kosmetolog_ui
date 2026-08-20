@@ -1,16 +1,35 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import crypto from "node:crypto";
 import { JWT_REFRESH_SECRET, JWT_SECRET } from "../config/env";
+import RefreshSession from "../models/RefreshSessionSchema";
 import User, { IUser } from "../models/UserSchema";
 import ApiError from "../utils/ApiError";
 import * as RegistrationRequestsService from "./registrationRequests.service";
 
-const generateTokens = (user: { id: string; email: string; role: string }) => {
+// sha256, а не bcrypt: сесію треба знаходити за хешем токена одним запитом.
+const hashToken = (token: string) =>
+  crypto.createHash("sha256").update(token).digest("hex");
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Скільки стара сесія ще живе після ротації: паралельний refresh із другої
+// вкладки не повинен розлогінювати користувача.
+const ROTATION_GRACE_MS = 60_000;
+
+const generateTokens = (
+  user: { id: string; email: string; role: string },
+  rememberMe: boolean,
+) => {
   const accessToken = jwt.sign(user, JWT_SECRET, { expiresIn: "15m" });
-  const refreshToken = jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-  return { accessToken, refreshToken };
+  // jti робить кожен refresh-токен унікальним: без нього два запити в межах
+  // однієї секунди дали б байт-у-байт однаковий JWT і колізію tokenHash.
+  const refreshToken = jwt.sign(
+    { id: user.id, jti: crypto.randomUUID() },
+    JWT_REFRESH_SECRET,
+    { expiresIn: rememberMe ? "30d" : "7d" },
+  );
+  const refreshTtlMs = (rememberMe ? 30 : 7) * DAY_MS;
+  return { accessToken, refreshToken, refreshTtlMs };
 };
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 10;
@@ -86,19 +105,22 @@ export const login = async (
   await user.save();
 
   const safeUser = toSafeUser(user);
-  const { accessToken, refreshToken } = generateTokens(safeUser);
+  const { accessToken, refreshToken, refreshTtlMs } = generateTokens(
+    safeUser,
+    Boolean(rememberMe),
+  );
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
-    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
-  };
+  await RefreshSession.create({
+    userId: user._id,
+    tokenHash: hashToken(refreshToken),
+    rememberMe: Boolean(rememberMe),
+    expiresAt: new Date(Date.now() + refreshTtlMs),
+  });
 
   return {
     accessToken,
     refreshToken,
-    cookieOptions,
+    refreshTtlMs,
     user: safeUser,
   };
 };
@@ -117,13 +139,43 @@ export const refresh = async (token: string) => {
       );
     }
 
+    const session = await RefreshSession.findOne({
+      tokenHash: hashToken(token),
+    });
+    // Сесії немає — токен відкликано (logout, деактивація) або вже витіснено
+    // ротацією. expiresAt звіряємо явно: TTL-монітор Mongo прибирає документи
+    // із запізненням до ~60 с.
+    if (!session || session.expiresAt.getTime() <= Date.now()) {
+      throw new Error("Сесію відкликано або прострочено");
+    }
+
     const safeUser = toSafeUser(user);
-    const { accessToken } = generateTokens(safeUser);
-    return { accessToken };
+    const { accessToken, refreshToken, refreshTtlMs } = generateTokens(
+      safeUser,
+      session.rememberMe,
+    );
+
+    await RefreshSession.create({
+      userId: user._id,
+      tokenHash: hashToken(refreshToken),
+      rememberMe: session.rememberMe,
+      expiresAt: new Date(Date.now() + refreshTtlMs),
+    });
+
+    // Стару сесію не видаляємо одразу — лишаємо grace-період.
+    await RefreshSession.updateOne(
+      { _id: session._id },
+      { $set: { expiresAt: new Date(Date.now() + ROTATION_GRACE_MS) } },
+    );
+
+    return { accessToken, refreshToken, refreshTtlMs };
   } catch (err) {
     throw ApiError.forbidden("Недійсний або прострочений refresh-токен");
   }
 };
+
+export const revokeRefreshToken = (token: string) =>
+  RefreshSession.deleteOne({ tokenHash: hashToken(token) });
 
 export const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select("-password");
