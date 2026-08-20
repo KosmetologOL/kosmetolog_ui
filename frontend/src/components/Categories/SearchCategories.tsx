@@ -39,6 +39,7 @@ const SearchCategories: React.FC<Props> = ({
   >({});
   const [searchValues, setSearchValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [editingItem, setEditingItem] = useState<IReportCategoryItem | null>(
     null,
   );
@@ -46,6 +47,7 @@ const SearchCategories: React.FC<Props> = ({
   const loadCategories = async () => {
     try {
       setLoading(true);
+      setHasError(false);
       const cats = await getCategories();
       setCategories(cats || []);
 
@@ -57,6 +59,8 @@ const SearchCategories: React.FC<Props> = ({
       );
 
       setItemsByCategory(Object.fromEntries(itemsEntries));
+    } catch {
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -111,6 +115,21 @@ const SearchCategories: React.FC<Props> = ({
 
   if (loading) {
     return <p className="text-sm text-ink-soft">Завантаження категорій…</p>;
+  }
+
+  if (hasError) {
+    return (
+      <p className="text-sm text-ink-soft">
+        Не вдалося завантажити категорії.{" "}
+        <button
+          type="button"
+          onClick={() => void loadCategories()}
+          className="btn-link"
+        >
+          Спробувати ще раз
+        </button>
+      </p>
+    );
   }
 
   if (categories.length === 0) {

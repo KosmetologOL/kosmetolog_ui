@@ -12,6 +12,7 @@ import { toast } from "react-hot-toast";
 const DoctorsManager: React.FC = () => {
   const [doctors, setDoctors] = useState<IDoctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -21,12 +22,22 @@ const DoctorsManager: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
+      setHasError(false);
       const d = await getDoctors();
       setDoctors(d || []);
+    } catch {
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Ретрай показує скелетони, щоб між скиданням hasError і відповіддю сервера
+  // не блимнув фальшивий порожній стан «Немає лікарів».
+  const handleRetry = useCallback(() => {
+    setIsLoading(true);
+    void load();
+  }, [load]);
 
   useEffect(() => {
     void load();
@@ -103,6 +114,20 @@ const DoctorsManager: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      ) : hasError ? (
+        <div className="w-full py-8 text-center">
+          <p className="font-bold mb-1.5">Не вдалося завантажити список лікарів</p>
+          <p className="text-ink-soft mb-4">
+            Перевірте зʼєднання з інтернетом і спробуйте ще раз.
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="btn btn-tint btn-sm"
+          >
+            Спробувати ще раз
+          </button>
         </div>
       ) : doctors.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">Немає лікарів</p>
