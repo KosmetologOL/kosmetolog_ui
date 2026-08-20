@@ -1,6 +1,7 @@
 import ActivityLog from "../models/ActivityLog";
 import Category, { CategoryReportPosition } from "../models/Category";
 import CategoryItem from "../models/CategoryItem";
+import ApiError from "../utils/ApiError";
 
 export const listCategories = async () => {
   return Category.find();
@@ -14,7 +15,7 @@ export const createCategory = async (
 ) => {
   const existing = await Category.findOne({ name });
   if (existing) {
-    throw new Error("Категорія вже існує");
+    throw ApiError.badRequest("Категорія вже існує");
   }
 
   const category = new Category({
@@ -43,7 +44,7 @@ export const updateCategory = async (
 
   const category = await Category.findByIdAndUpdate(id, update, { new: true });
   if (!category) {
-    throw new Error("Категорію не знайдено");
+    throw ApiError.notFound("Категорію не знайдено");
   }
 
   await ActivityLog.create({ action: "update-category", meta: { id, name } });
@@ -53,7 +54,7 @@ export const updateCategory = async (
 export const deleteCategory = async (id: string) => {
   const category = await Category.findByIdAndDelete(id);
   if (!category) {
-    throw new Error("Категорію не знайдено");
+    throw ApiError.notFound("Категорію не знайдено");
   }
 
   await ActivityLog.create({
@@ -95,7 +96,7 @@ export const updateCategoryItem = async (
   );
 
   if (!item) {
-    throw new Error("Елемент не знайдено");
+    throw ApiError.notFound("Елемент не знайдено");
   }
 
   await ActivityLog.create({
@@ -109,7 +110,7 @@ export const updateCategoryItem = async (
 export const deleteCategoryItem = async (itemId: string) => {
   const item = await CategoryItem.findByIdAndDelete(itemId);
   if (!item) {
-    throw new Error("Елемент не знайдено");
+    throw ApiError.notFound("Елемент не знайдено");
   }
 
   await ActivityLog.create({
