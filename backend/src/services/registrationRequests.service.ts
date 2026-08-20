@@ -57,7 +57,9 @@ export const approveRegistration = async (
     .insertOne({
       email: request.email,
       password: request.passwordHash,
-      role: request.role || "doctor",
+      // insertOne пише повз Mongoose, тож сеттер lowercase зі схеми тут не
+      // спрацює — нормалізуємо роль явно.
+      role: (request.role || "doctor").toLowerCase(),
       name: request.name || "",
       active: true,
       createdAt: new Date(),
