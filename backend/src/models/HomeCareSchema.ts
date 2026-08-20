@@ -8,7 +8,7 @@ export interface IHomeCare extends Document {
 }
 
 const HomeCareSchema = new Schema<IHomeCare>({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   morning: { type: Boolean, default: false },
   evening: { type: Boolean, default: false },
   order: { type: Number, default: 0 },

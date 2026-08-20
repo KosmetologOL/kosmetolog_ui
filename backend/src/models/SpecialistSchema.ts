@@ -6,7 +6,7 @@ export interface ISpecialist extends Document {
 }
 
 const SpecialistSchema: Schema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true, unique: true },
   query: { type: String },
 });
 
