@@ -28,11 +28,11 @@ export const refreshToken = async () => {
 
 ## Критерії приймання
 
-- [ ] grep по frontend/src не знаходить interface ReportProcedure / ReportProcedureStage поза api/reportsApi.ts.
-- [ ] Групування legacy-процедур по етапах існує в одному місці (groupProceduresByStage) і використовується і формою листа, і normalizeProcedureStages.
-- [ ] Усі виклики в referenceApi.ts і authApi.refreshToken мають явні типи відповіді; повернення функцій — не неявний any (перевіряється наведенням у редакторі або tsc).
-- [ ] `npm run build` проходить без помилок типів; `npm run lint` чистий.
-- [ ] HTML-експорт зі списку пацієнтів для звіту зі старим форматом procedures має доступ до всіх полів етапу (zone/interval/visitCount/workWith) через типізований результат normalizeProcedureStages.
+- [x] grep по frontend/src не знаходить interface ReportProcedure / ReportProcedureStage поза api/reportsApi.ts.
+- [x] Групування legacy-процедур по етапах існує в одному місці (groupProceduresByStage) і використовується і формою листа, і normalizeProcedureStages.
+- [x] Усі виклики в referenceApi.ts і authApi.refreshToken мають явні типи відповіді; повернення функцій — не неявний any (перевіряється наведенням у редакторі або tsc).
+- [x] `npm run build` проходить без помилок типів; `npm run lint` чистий.
+- [x] HTML-експорт зі списку пацієнтів для звіту зі старим форматом procedures має доступ до всіх полів етапу (zone/interval/visitCount/workWith) через типізований результат normalizeProcedureStages.
 
 ## Ручна перевірка
 

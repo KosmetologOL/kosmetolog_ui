@@ -4,6 +4,8 @@ import {
   getReportByPatientId,
   type IReport,
   type IReportEditHistoryItem,
+  type IReportProcedure,
+  type IReportProcedureStage,
   updateReport,
 } from "#api/reportsApi";
 import { getSettings } from "#api/settingsApi";
@@ -51,6 +53,7 @@ import {
   INTERVAL_OPTIONS,
   ZONE_OPTIONS,
 } from "#components/ReportForm/procedureStageOptions";
+import { groupProceduresByStage } from "#lib/normalizeProcedureStages";
 import { plural } from "#lib/plural";
 import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
@@ -230,32 +233,12 @@ const CreateReportForm: React.FC = () => {
           setComments(reportData.comments ?? "");
           setReportHistory(reportData.editHistory ?? []);
 
-          interface ReportProcedure {
-            _id?: string;
-            name: string;
-            recommendation?: string;
-            comment?: string;
-            stage?: string;
-            zoneEnabled?: boolean;
-            zone?: string;
-            intervalEnabled?: boolean;
-            interval?: string;
-            visitCountEnabled?: boolean;
-            visitCount?: number;
-          }
-
-          interface ReportProcedureStage {
-            stage: string;
-            workWithEnabled?: boolean;
-            workWith?: string;
-            procedures: ReportProcedure[];
-          }
           if (
             Array.isArray(reportData.procedureStages) &&
             reportData.procedureStages.length > 0
           ) {
             const stages = (
-              reportData.procedureStages as ReportProcedureStage[]
+              reportData.procedureStages as IReportProcedureStage[]
             ).map((s) => ({
               id: crypto.randomUUID(),
               title: s.stage,
@@ -270,25 +253,15 @@ const CreateReportForm: React.FC = () => {
             Array.isArray(reportData.procedures) &&
             reportData.procedures.length > 0
           ) {
-            const grouped = (reportData.procedures as ReportProcedure[]).reduce(
-              (acc, proc) => {
-                const stageName = proc.stage || "Етап 1";
-                if (!acc[stageName]) acc[stageName] = [];
-                acc[stageName].push(proc);
-                return acc;
-              },
-              {} as Record<string, ReportProcedure[]>,
-            );
-
-            const stages = Object.entries(grouped).map(
-              ([stageName, procs]) => ({
-                id: crypto.randomUUID(),
-                title: stageName,
-                workWithEnabled: false,
-                workWith: "",
-                procedures: withOtherFlags(procs as RawStageProcedure[]),
-              }),
-            );
+            const stages = groupProceduresByStage(
+              reportData.procedures as IReportProcedure[],
+            ).map(({ title, procedures }) => ({
+              id: crypto.randomUUID(),
+              title,
+              workWithEnabled: false,
+              workWith: "",
+              procedures: withOtherFlags(procedures as RawStageProcedure[]),
+            }));
 
             setProcedureStages(stages);
           } else {

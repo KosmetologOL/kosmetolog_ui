@@ -55,7 +55,9 @@ export const registerUser = async (
 };
 
 export const refreshToken = async () => {
-  const { data } = await axios.get(`${API_URL}/refresh`);
+  const { data } = await axios.get<{ accessToken: string }>(
+    `${API_URL}/refresh`,
+  );
   return data;
 };
 
