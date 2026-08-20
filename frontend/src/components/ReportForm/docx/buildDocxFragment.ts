@@ -3,6 +3,7 @@ import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type {
   GenerateReportHtmlParams,
 } from "../html/generateReportHtml";
+import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
   type StructuredContent,
@@ -290,7 +291,9 @@ export const buildAppendParagraphsXml = async (
   }
   flushCategoriesFor("after_exams");
 
-  if (medications.length > 0) {
+  // Той самий прапорець, що й у HTML-листі: розділ або є в обох форматах,
+  // або його немає в жодному — див. ../reportSectionFlags.
+  if (INCLUDE_MEDICATIONS_SECTION && medications.length > 0) {
     parts.push(headingParagraph("Засоби"));
     medications.forEach((m) =>
       parts.push(itemParagraphs(m.name, parseStructuredContent(m.recommendation))),

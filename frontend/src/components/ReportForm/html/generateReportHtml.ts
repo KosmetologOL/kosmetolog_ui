@@ -12,6 +12,7 @@ import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
 import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
 import toast from "react-hot-toast";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
+import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
   type StructuredContent,
@@ -303,9 +304,9 @@ export const generateReportHtml = async ({
   }
   flushCategoriesFor("after_exams");
 
-  // TEMPORARILY DISABLED: client asked not to include "Засоби" in the report for now.
-  const includeMedicationsSection = false;
-  if (includeMedicationsSection && medications.length > 0) {
+  // Розділ «Засоби» вмикається одним прапорцем на всі формати експорту —
+  // див. ../reportSectionFlags.
+  if (INCLUDE_MEDICATIONS_SECTION && medications.length > 0) {
     const blocks = medications
       .map((m) => itemBlock(m.name, parseStructuredContent(m.recommendation)))
       .join("");
