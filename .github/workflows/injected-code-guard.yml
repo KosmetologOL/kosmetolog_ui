@@ -1,0 +1,79 @@
+# Пошук коду, впровадженого у файли, які виконуються під час збірки.
+#
+# Це найсильніший із трьох шарів: єдиний, який не омине заражена локальна
+# машина. Хук можна обійти через --no-verify, локальний скрипт — відредагувати
+# тим самим комітом; крок на CI виконується вже після того, як код потрапив
+# на сервер.
+#
+# Нічого не встановлює: checkout і кілька grep-кроків, кілька секунд на push.
+#
+# Патерни свідомо продубльовані з scripts/check-injected-code.sh, а не викликані
+# звідти: CI не повинен залежати від файлу, який зловмисник редагує тим самим
+# комітом. Змінюєш патерн — зміни в обох місцях (про це сказано і в
+# docs/injected-code-guard.md).
+#
+# Сам цей файл має розширення .yml і у власну вибірку не потрапляє — pathspec
+# нижче обмежений розширеннями джерел JS-родини.
+
+name: Захист від впровадженого коду
+
+on: [push]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Зібрати список відстежуваних джерел
+        run: |
+          git ls-files -z -- \
+            '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' \
+            ':(exclude)*.min.js' \
+            ':(exclude)*.d.ts' > files.z
+          echo "Файлів до сканування: $(tr '\0' '\n' < files.z | grep -c .)"
+
+      - name: 1. Рядок довший за 2000 символів
+        run: |
+          out=$(xargs -0 awk '
+            length($0) > 2000 {
+              printf "%s:%d: рядок довжиною %d символів\n", FILENAME, FNR, length($0)
+            }' < files.z || true)
+          if [ -n "$out" ]; then echo "$out" | cut -c 1-200; exit 1; fi
+          echo "чисто"
+
+      - name: 2. Виконання розкодованого рядка
+        run: |
+          out=$(xargs -0 grep -nHE \
+            '(eval|Function)[[:space:]]*\(.*(atob|Buffer[[:space:]]*\.[[:space:]]*from|decodeURIComponent|fromCharCode)' \
+            < files.z || true)
+          if [ -n "$out" ]; then echo "$out" | cut -c 1-200; exit 1; fi
+          echo "чисто"
+
+      - name: 3. createRequire у джерелах
+        run: |
+          out=$(xargs -0 grep -nHE 'createRequire[[:space:]]*\(' < files.z || true)
+          if [ -n "$out" ]; then echo "$out" | cut -c 1-200; exit 1; fi
+          echo "чисто"
+
+      - name: 4. Динамічне виконання коду (eval / конструктор Function)
+        run: |
+          out=$(xargs -0 grep -nHE \
+            '(^|[^A-Za-z0-9_$.])eval[[:space:]]*\(|new[[:space:]]+Function[[:space:]]*\(|(^|[^A-Za-z0-9_$.])Function[[:space:]]*\(' \
+            < files.z || true)
+          if [ -n "$out" ]; then echo "$out" | cut -c 1-200; exit 1; fi
+          echo "чисто"
+
+      - name: 5. Код після довгого блоку пробілів усередині рядка
+        run: |
+          out=$(xargs -0 grep -nHE '[^[:space:]][[:space:]]{40,}[^[:space:]]' < files.z || true)
+          if [ -n "$out" ]; then echo "$out" | cut -c 1-200; exit 1; fi
+          echo "чисто"
+
+      - name: Якщо щось із наведеного впало
+        if: failure()
+        run: |
+          echo "Якщо ці рядки написані не тобою — вважай ключі середовища скомпрометованими."
+          echo "Що робити: docs/injected-code-guard.md"
