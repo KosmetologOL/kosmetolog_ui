@@ -1,13 +1,12 @@
 import JSZip from "jszip";
 import toast from "react-hot-toast";
-import { isDocxLinkingSupported, pickPatientDocxFile } from "#lib/docxCardLink";
+import { downloadBlob } from "#lib/htmlSaveLocation";
 import type { GenerateReportHtmlParams } from "../html/generateReportHtml";
 import { buildAppendParagraphsXml } from "./buildDocxFragment";
 import { DocxStructureError, insertParagraphsBeforeFinalSectPr } from "./spliceDocumentXml";
 
 export type AppendDocxResult =
   | { status: "appended" }
-  | { status: "skipped"; reason: "unsupported" | "cancelled" }
   | { status: "failed"; reason: "read-failed" | "invalid-structure" | "write-failed" };
 
 const DOCX_MIME =
@@ -15,19 +14,8 @@ const DOCX_MIME =
 
 export const appendReportToDocx = async (
   params: GenerateReportHtmlParams,
+  handle: FileSystemFileHandle,
 ): Promise<AppendDocxResult> => {
-  if (!isDocxLinkingSupported()) {
-    toast.error(
-      "Автоматичне додавання в картку доступне лише в Chrome або Edge.",
-    );
-    return { status: "skipped", reason: "unsupported" };
-  }
-
-  const handle = await pickPatientDocxFile();
-  if (!handle) {
-    return { status: "skipped", reason: "cancelled" };
-  }
-
   let file: File;
   try {
     file = await handle.getFile();
@@ -69,11 +57,17 @@ export const appendReportToDocx = async (
       mimeType: DOCX_MIME,
     });
 
+    // Резервна копія ДО перезапису: jszip пересеріалізує весь архів, і
+    // попередньої версії картки в клієнта більше нізвідки взяти.
+    downloadBlob(`${handle.name}.bak`, file);
+
     const writable = await handle.createWritable();
     await writable.write(blob);
     await writable.close();
 
-    toast.success(`Звіт додано в кінець файлу «${handle.name}».`);
+    toast.success(
+      `Звіт додано в кінець файлу «${handle.name}». Попередню версію збережено в «Завантаження» як «${handle.name}.bak».`,
+    );
     return { status: "appended" };
   } catch (err) {
     if (err instanceof DocxStructureError) {
