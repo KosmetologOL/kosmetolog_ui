@@ -29,12 +29,12 @@ const ReportSection: React.FC<Props> = ({
       <div
         className={`flex items-center gap-2 ${isContentVisible ? "mb-3" : ""}`}
       >
-        <p className="section-label mb-0!">
+        <h2 className="section-label mb-0!">
           {title}
           {typeof count === "number" && count > 0 && (
             <span className="font-normal text-ink-soft"> · {count}</span>
           )}
-        </p>
+        </h2>
         {actions}
         {collapsible && (
           <button

@@ -15,3 +15,11 @@ export const registerRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Забагато спроб реєстрації. Спробуйте пізніше." },
 });
+
+export const refreshRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Забагато запитів. Спробуйте пізніше." },
+});

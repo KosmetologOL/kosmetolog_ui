@@ -127,7 +127,8 @@ export const create = async (data: Partial<IReport>, actor?: ReportActor) => {
   });
 };
 
-export const getAll = async () => Report.find();
+export const removeByPatientId = async (patientId: string) =>
+  Report.deleteMany({ patient: patientId });
 export const getById = async (id: string) => Report.findById(id);
 export const getByPatientId = async (patientId: string) =>
   Report.findOne({ patient: patientId });
@@ -138,7 +139,7 @@ export const getLastVisitMap = async (
   const reports = await Report.find(
     { patient: { $in: patientIds } },
     { patient: 1, updatedAt: 1 },
-  );
+  ).lean();
 
   return new Map(reports.map((r) => [r.patient.toString(), r.updatedAt]));
 };

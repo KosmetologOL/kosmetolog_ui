@@ -855,6 +855,7 @@ const CreateReportForm: React.FC = () => {
 
           <ReportSection title="Все, що необхідно знати про ваш стан">
             <textarea
+              aria-label="Все, що необхідно знати про ваш стан"
               value={additionalInfo}
               onChange={(e) => setAdditionalInfo(e.target.value)}
               placeholder="Необхідна інформація"
@@ -899,6 +900,7 @@ const CreateReportForm: React.FC = () => {
             }
           >
             <textarea
+              aria-label="Текст у кінці рекомендаційного листа"
               value={finalNote}
               onChange={(e) => setFinalNote(e.target.value)}
               placeholder="Текст, який буде додано в кінці листа"

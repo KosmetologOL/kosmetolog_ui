@@ -96,6 +96,7 @@ export const deletePatient = async (
   try {
     const patient = await PatientService.remove(req.params.id);
     if (!patient) return next(ApiError.notFound("Пацієнт не знайдено"));
+    await ReportService.removeByPatientId(req.params.id);
     res.status(204).send();
   } catch (err) {
     console.error(err);

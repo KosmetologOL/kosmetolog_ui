@@ -243,6 +243,7 @@ const PatientList: React.FC = () => {
                   <button
                     key={item}
                     onClick={() => setPage(item)}
+                    aria-current={item === page ? "page" : undefined}
                     className={`pager-btn text-[15px] tabular-nums ${
                       item === page
                         ? "is-active"

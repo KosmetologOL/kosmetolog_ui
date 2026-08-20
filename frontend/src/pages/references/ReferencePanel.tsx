@@ -148,11 +148,37 @@ const ReferencePanel: React.FC = () => {
     { key: "settings", label: "Важливі тексти" },
   ];
 
+  // Порядок табів у DOM — по ньому ходять стрілки і від нього залежить
+  // roving tabindex. Поки категорії вантажаться, динамічних табів у DOM немає.
+  const allTabKeys = [
+    ...referenceTabs,
+    ...(isCategoriesLoading ? [] : dynamicTabs),
+    ...trailingTabs,
+  ].map((t) => t.key);
+  // activeTab може вказувати на ще не відрендерений таб (перезавантаження на
+  // ?tab=cat-…, або лікар на адмінському табі до редіректу) — тоді фокус і
+  // aria-labelledby прив'язуємо до першої пілюлі, щоб tablist не лишився без
+  // жодного tabbable елемента, а aria-labelledby — без цілі.
+  const focusTabKey = allTabKeys.includes(activeTab) ? activeTab : allTabKeys[0];
+
+  const handleTabKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const idx = Math.max(0, allTabKeys.indexOf(focusTabKey));
+    const delta = e.key === "ArrowRight" ? 1 : -1;
+    const next = allTabKeys[(idx + delta + allTabKeys.length) % allTabKeys.length];
+    setActiveTab(next);
+    document.getElementById(`tab-${next}`)?.focus();
+  };
+
   const renderTab = (tab: TabItem) => (
     <button
       key={tab.key}
+      id={`tab-${tab.key}`}
       role="tab"
       aria-selected={activeTab === tab.key}
+      aria-controls="reference-tabpanel"
+      tabIndex={focusTabKey === tab.key ? 0 : -1}
       onClick={() => setActiveTab(tab.key)}
       className={`tab-pill whitespace-nowrap ${activeTab === tab.key ? "is-active" : ""}`}
     >
@@ -173,6 +199,7 @@ const ReferencePanel: React.FC = () => {
         ref={tabListRef}
         role="tablist"
         aria-label="Довідники"
+        onKeyDown={handleTabKeyDown}
         className="mb-5 flex w-full items-center overflow-x-auto pb-1 gap-1.5 scrollbar-none sm:flex-wrap"
       >
         {referenceTabs.map(renderTab)}
@@ -192,7 +219,12 @@ const ReferencePanel: React.FC = () => {
         {trailingTabs.map(renderTab)}
       </div>
 
-      <div className="card">
+      <div
+        className="card"
+        role="tabpanel"
+        id="reference-tabpanel"
+        aria-labelledby={`tab-${focusTabKey}`}
+      >
         {activeTab === "medications" && (
           <MedicationsManager readOnly={readOnly} />
         )}

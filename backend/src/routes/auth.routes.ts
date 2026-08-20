@@ -9,6 +9,7 @@ import {
 import { authMiddleware } from "../middlewares/auth.middleware";
 import {
   loginRateLimiter,
+  refreshRateLimiter,
   registerRateLimiter,
 } from "../middlewares/rateLimiters";
 import { validate } from "../middlewares/validate.middleware";
@@ -23,7 +24,7 @@ router.post(
   registerUser,
 );
 router.post("/login", loginRateLimiter, validate(loginSchema), loginUser);
-router.get("/refresh", refreshToken);
+router.get("/refresh", refreshRateLimiter, refreshToken);
 router.post("/logout", logoutUser);
 router.get("/me", authMiddleware, getCurrentUser);
 

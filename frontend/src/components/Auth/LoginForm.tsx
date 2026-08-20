@@ -2,13 +2,13 @@ import { loginUser, registerUser } from "#api/authApi";
 import AuthButton from "#components/Auth/AuthButton";
 import AuthInput from "#components/Auth/AuthInput";
 import Spinner from "#components/Spinner";
-import { AuthContext } from "#context/AuthContext";
+import { useAuth } from "#hooks/useAuth";
 import axios from "axios";
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import toast from "react-hot-toast";
 
 const LoginForm: React.FC = () => {
-  const { login } = useContext(AuthContext)!;
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -17,22 +17,28 @@ const LoginForm: React.FC = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
 
   const validateForm = () => {
-    if (!email.trim() || !password.trim()) {
-      toast.error("Заповніть усі поля");
-      return false;
+    const errors: { email?: string; password?: string } = {};
+
+    if (!email.trim()) {
+      errors.email = "Поле обовʼязкове";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Некоректний email";
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Некоректний email");
-      return false;
+
+    if (!password.trim()) {
+      errors.password = "Поле обовʼязкове";
+    } else if (isRegister && password.length < 6) {
+      errors.password = "Пароль має бути не менше 6 символів";
     }
-    if (password.length < 6) {
-      toast.error("Пароль має бути не менше 6 символів");
-      return false;
-    }
-    return true;
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -125,7 +131,12 @@ const LoginForm: React.FC = () => {
               autoComplete="email"
               aria-label="Email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              error={fieldErrors.email}
+              errorId="login-email-error"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
             />
             <AuthInput
               type="password"
@@ -134,7 +145,12 @@ const LoginForm: React.FC = () => {
               autoComplete={isRegister ? "new-password" : "current-password"}
               aria-label="Пароль"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              error={fieldErrors.password}
+              errorId="login-password-error"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, password: undefined }));
+              }}
             />
 
             {isRegister && (
@@ -202,7 +218,10 @@ const LoginForm: React.FC = () => {
           <div className="mt-5 text-center text-[14.5px]">
             <button
               type="button"
-              onClick={() => setIsRegister(!isRegister)}
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setFieldErrors({});
+              }}
               className="btn-link"
             >
               {isRegister ? "Повернутися до входу" : "Зареєструватись"}

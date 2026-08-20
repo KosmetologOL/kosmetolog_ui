@@ -10,7 +10,7 @@ import type { IReportCategoryItem } from "#components/Categories/SearchCategorie
 import logoUrl from "#assets/logo.png";
 import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
 import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
-import { toast } from "react-hot-toast/headless";
+import toast from "react-hot-toast";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
 import {
   parseStructuredContent,
@@ -1226,5 +1226,7 @@ ${footerHtml}
     toast.error(
       "Немає дозволу на запис у вибрану папку. Файл завантажено звичайним способом.",
     );
+  } else {
+    toast.success("HTML-файл завантажено у папку «Завантаження».");
   }
 };

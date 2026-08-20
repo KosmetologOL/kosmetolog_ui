@@ -3,6 +3,7 @@ import ConfirmModal from "#components/ConfirmModal";
 import FormattedText from "#components/FormattedText";
 import { IconEdit, IconPlus, IconSearch } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
+import { useDebouncedValue } from "#hooks/useDebouncedValue";
 import { plural } from "#lib/plural";
 import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
@@ -18,6 +19,10 @@ interface CRUDItem {
 }
 
 const IMPORT_BATCH_SIZE = 15;
+
+// Довідники бувають на сотні записів — рендеримо їх порціями, щоб відкриття
+// вкладки не впиралося в разовий рендер усього списку.
+const VISIBLE_STEP = 50;
 
 // Виконує worker для кожного item пачками по IMPORT_BATCH_SIZE замість
 // повністю послідовно — на сотнях записів це в рази швидше, а onProgress
@@ -72,6 +77,8 @@ const CRUDManager = <T,>({
   const [list, setList] = useState<CRUDItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP);
   const [editingItem, setEditingItem] = useState<CRUDItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -85,7 +92,7 @@ const CRUDManager = <T,>({
   >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizedSearch = search.trim();
+  const normalizedSearch = debouncedSearch.trim();
   const filteredList = list.filter((item) => {
     if (!normalizedSearch) {
       return true;
@@ -118,6 +125,10 @@ const CRUDManager = <T,>({
       setIsLoading(false);
     }
   }, [api, mapItem]);
+
+  useEffect(() => {
+    setVisibleCount(VISIBLE_STEP);
+  }, [normalizedSearch]);
 
   useEffect(() => {
     void fetchList();
@@ -417,7 +428,7 @@ const CRUDManager = <T,>({
       ) : filteredList.length === 0 ? (
         normalizedSearch ? (
           <div className="w-full py-8 text-center text-ink-soft">
-            <p>Нічого не знайдено за запитом «{search.trim()}».</p>
+            <p>Нічого не знайдено за запитом «{debouncedSearch.trim()}».</p>
             <button
               type="button"
               onClick={() => setSearch("")}
@@ -434,58 +445,72 @@ const CRUDManager = <T,>({
           </p>
         )
       ) : (
-        <div className="flex w-full flex-col gap-2.5">
-          {filteredList.map((item, index) => (
-            <div
-              key={item._id}
-              className="list-row anim-rise"
-              style={{ "--stagger": Math.min(index, 10) } as React.CSSProperties}
-            >
-              <div className="min-w-0">
-                <div className="list-row-name">{item.name}</div>
-                {hasRecommendation && item.recommendation && (
-                  <div className="list-row-sub">
-                    <FormattedText
-                      markdown={item.recommendation}
-                      className="text-[13.5px]"
-                    />
-                  </div>
-                )}
-                {hasMorningEvening && (
-                  <div className="mt-2 flex gap-1.5">
-                    <span className={`pill ${item.morning ? "is-on" : ""}`}>
-                      Ранок
-                    </span>
-                    <span className={`pill ${item.evening ? "is-on" : ""}`}>
-                      Вечір
-                    </span>
+        <>
+          <div className="flex w-full flex-col gap-2.5">
+            {filteredList.slice(0, visibleCount).map((item, index) => (
+              <div
+                key={item._id}
+                className="list-row anim-rise"
+                style={
+                  { "--stagger": Math.min(index, 10) } as React.CSSProperties
+                }
+              >
+                <div className="min-w-0">
+                  <div className="list-row-name">{item.name}</div>
+                  {hasRecommendation && item.recommendation && (
+                    <div className="list-row-sub">
+                      <FormattedText
+                        markdown={item.recommendation}
+                        className="text-[13.5px]"
+                      />
+                    </div>
+                  )}
+                  {hasMorningEvening && (
+                    <div className="mt-2 flex gap-1.5">
+                      <span className={`pill ${item.morning ? "is-on" : ""}`}>
+                        Ранок
+                      </span>
+                      <span className={`pill ${item.evening ? "is-on" : ""}`}>
+                        Вечір
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {showActions && (
+                  <div className="list-row-actions">
+                    {editable && (
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="btn btn-ghost btn-sm min-w-[110px] justify-center"
+                      >
+                        <IconEdit className="w-3.5 h-3.5 text-ink-soft" />
+                        Редагувати
+                      </button>
+                    )}
+                    {deletable && (
+                      <button
+                        onClick={() => setDeletingId(item._id || null)}
+                        className="btn btn-sm btn-danger-soft min-w-[110px] justify-center"
+                      >
+                        Видалити
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
-              {showActions && (
-                <div className="list-row-actions">
-                  {editable && (
-                    <button
-                      onClick={() => handleOpenEdit(item)}
-                      className="btn btn-ghost btn-sm min-w-[110px] justify-center"
-                    >
-                      <IconEdit className="w-3.5 h-3.5 text-ink-soft" />
-                      Редагувати
-                    </button>
-                  )}
-                  {deletable && (
-                    <button
-                      onClick={() => setDeletingId(item._id || null)}
-                      className="btn btn-sm btn-danger-soft min-w-[110px] justify-center"
-                    >
-                      Видалити
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {filteredList.length > visibleCount && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((c) => c + VISIBLE_STEP)}
+              className="btn btn-ghost btn-sm mt-3 self-center"
+            >
+              Показати ще ({filteredList.length - visibleCount})
+            </button>
+          )}
+        </>
       )}
 
       <ReferenceItemModal

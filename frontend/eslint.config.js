@@ -19,5 +19,19 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-hot-toast/headless',
+              message:
+                'Імпортуйте toast з "react-hot-toast" — headless-стор не рендериться нашим <Toaster />.',
+            },
+          ],
+        },
+      ],
+    },
   },
 ])

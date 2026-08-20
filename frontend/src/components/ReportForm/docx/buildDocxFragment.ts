@@ -47,6 +47,15 @@ export const run = (text: string, options: RunOptions = {}): string => {
 
 const lineBreakRun = (): string => "<w:r><w:br/></w:r>";
 
+// Плоскі багаторядкові поля (коментарі, додаткова інформація, фінальний текст)
+// приходять із textarea з літеральними \n — усередині <w:t> Word показує їх як
+// пробіли, тож кожен перенос стає окремим <w:br/>, як <br /> у HTML-версії.
+const multilineRuns = (text: string): string =>
+  text
+    .split("\n")
+    .map((line) => run(line))
+    .join(lineBreakRun());
+
 export const paragraph = (runsXml: string): string =>
   `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr>${runsXml}</w:p>`;
 
@@ -366,7 +375,7 @@ export const buildAppendParagraphsXml = async (
           ),
         );
         if (proc.comment?.trim()) {
-          parts.push(paragraph(run(proc.comment.trim())));
+          parts.push(paragraph(multilineRuns(proc.comment.trim())));
         }
       });
     });
@@ -387,16 +396,16 @@ export const buildAppendParagraphsXml = async (
 
   if (additionalInfo?.trim()) {
     parts.push(headingParagraph("Все, що необхідно знати про ваш стан"));
-    parts.push(paragraph(run(additionalInfo.trim())));
+    parts.push(paragraph(multilineRuns(additionalInfo.trim())));
   }
 
   if (comments?.trim()) {
     parts.push(headingParagraph("Додаткова інформація"));
-    parts.push(paragraph(run(comments.trim())));
+    parts.push(paragraph(multilineRuns(comments.trim())));
   }
 
   if (finalNote?.trim()) {
-    parts.push(paragraph(run(finalNote.trim())));
+    parts.push(paragraph(multilineRuns(finalNote.trim())));
   }
 
   return parts.join("");

@@ -11,6 +11,9 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { matchesNameQuery } from "#lib/translitSearch";
 
+// До вводу пошуку показуємо лише перші N записів категорії — інакше форма
+// листа рендерить одразу всі записи всіх категорій.
+
 export interface IReportCategoryItem {
   _id: string;
   categoryId?: string;

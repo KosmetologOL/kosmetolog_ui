@@ -17,20 +17,6 @@ export const create = async (
   }
 };
 
-export const getAll = async (
-  _req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const reports = await ReportService.getAll();
-    res.json(reports);
-  } catch (err) {
-    console.error(err);
-    next(ApiError.internal("Помилка сервера"));
-  }
-};
-
 export const getById = async (
   req: AuthenticatedRequest,
   res: Response,
