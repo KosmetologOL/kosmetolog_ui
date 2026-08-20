@@ -1,4 +1,5 @@
 import ActivityLog from "../models/ActivityLog";
+import RefreshSession from "../models/RefreshSessionSchema";
 import User from "../models/UserSchema";
 import ApiError from "../utils/ApiError";
 
@@ -17,6 +18,11 @@ export const toggleUserActive = async (id: string, active: boolean) => {
     throw ApiError.notFound("Користувача не знайдено");
   }
 
+  // Деактивація має діяти негайно, а не через час життя refresh-токена.
+  if (active === false) {
+    await RefreshSession.deleteMany({ userId: user._id });
+  }
+
   await ActivityLog.create({ user: user._id, action: `set-active:${active}` });
   return user;
 };
@@ -27,4 +33,6 @@ export const deleteDoctor = async (id: string) => {
   if (!doctor) {
     throw ApiError.notFound("Лікаря не знайдено");
   }
+
+  await RefreshSession.deleteMany({ userId: doctor._id });
 };
