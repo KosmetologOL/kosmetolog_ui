@@ -1,3 +1,4 @@
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
@@ -8,6 +9,10 @@ import { notFound } from "./middlewares/notFound";
 import routes from "./routes";
 
 const app = express();
+
+// Довідники та листи — це довгі українські тексти, gzip стискає такий JSON у
+// рази. Відповіді менші за 1 КБ compression пропускає без стиснення.
+app.use(compression());
 
 // За реверс-проксі (nginx/Cloudflare) довіряємо першому хопу,
 // щоб req.ip був IP клієнта, а не проксі (потрібно для rate-limit).
