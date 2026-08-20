@@ -2,6 +2,7 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
 import mongoose from "mongoose";
 import { CLIENT_URL, MONGODB_URI } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
@@ -9,6 +10,10 @@ import { notFound } from "./middlewares/notFound";
 import routes from "./routes";
 
 const app = express();
+
+// CSP для чистого JSON-API не потрібна; решта заголовків (nosniff, HSTS,
+// frameguard) — за замовчуванням.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Довідники та листи — це довгі українські тексти, gzip стискає такий JSON у
 // рази. Відповіді менші за 1 КБ compression пропускає без стиснення.

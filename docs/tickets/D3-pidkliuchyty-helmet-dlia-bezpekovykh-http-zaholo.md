@@ -19,10 +19,10 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 ## Критерії приймання
 
-- [ ] helmet присутній у dependencies backend/package.json і підключений першим middleware у app.ts
-- [ ] Відповіді API містять X-Content-Type-Options: nosniff, Strict-Transport-Security та X-Frame-Options
-- [ ] Заголовок Content-Security-Policy відсутній (вимкнено свідомо для JSON-API)
-- [ ] Фронтенд працює без регресій: login, довідники, звіти — CORS-запити не блокуються
+- [x] helmet присутній у dependencies backend/package.json і підключений першим middleware у app.ts
+- [x] Відповіді API містять X-Content-Type-Options: nosniff, Strict-Transport-Security та X-Frame-Options
+- [x] Заголовок Content-Security-Policy відсутній (вимкнено свідомо для JSON-API)
+- [x] Фронтенд працює без регресій: login, довідники, звіти — CORS-запити не блокуються
 
 ## Ручна перевірка
 
