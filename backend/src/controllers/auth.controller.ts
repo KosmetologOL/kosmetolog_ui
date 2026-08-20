@@ -46,6 +46,11 @@ export const loginUser = async (
   try {
     const { accessToken, refreshToken, refreshTtlMs, user } =
       await AuthService.login(email, password, rememberMe);
+    // Кука, видана до цього релізу, лежить на path "/" і не зникає сама.
+    // На старті застосунку невдалий /auth/refresh лише чистить локальний стан
+    // (AuthProvider), тож без цього рядка вона дожила б поруч із новою і при
+    // кожному refresh конкурувала б із нею у заголовку Cookie.
+    res.clearCookie("refreshToken", { ...REFRESH_COOKIE_OPTIONS, path: "/" });
     res.cookie("refreshToken", refreshToken, {
       ...REFRESH_COOKIE_OPTIONS,
       maxAge: refreshTtlMs,
