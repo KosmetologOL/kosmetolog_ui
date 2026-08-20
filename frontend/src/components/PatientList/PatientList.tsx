@@ -4,6 +4,7 @@ import { IconPlus, IconSearch } from "#components/icons";
 import PatientFormModal from "#components/PatientList/PatientFormModal";
 import PatientItem from "#components/PatientList/PatientItem";
 import { useDebouncedValue } from "#hooks/useDebouncedValue";
+import { getPageItems } from "#lib/pagination";
 import { plural } from "#lib/plural";
 import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
@@ -11,21 +12,6 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 10;
-
-/** Вікно пагінації: 1 … (current±1) … total, коли сторінок більше за 7. */
-const getPageItems = (current: number, totalPages: number): (number | "…")[] => {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
-  }
-  const items: (number | "…")[] = [1];
-  const start = Math.max(2, current - 1);
-  const end = Math.min(totalPages - 1, current + 1);
-  if (start > 2) items.push("…");
-  for (let n = start; n <= end; n++) items.push(n);
-  if (end < totalPages - 1) items.push("…");
-  items.push(totalPages);
-  return items;
-};
 
 const PatientList: React.FC = () => {
   const navigate = useNavigate();
