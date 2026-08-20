@@ -22,13 +22,14 @@ export const getAllPatients = async (
     const patients = await PatientService.getAll(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     const lastVisitMap = await ReportService.getLastVisitMap(
       patients.map((p) => String(p._id)),
     );
     const patientsWithVisit = patients.map((p) => ({
-      ...p.toObject(),
+      ...p,
       lastVisitAt: lastVisitMap.get(String(p._id)) ?? p.createdAt,
     }));
 

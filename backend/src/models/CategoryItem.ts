@@ -17,6 +17,10 @@ const CategoryItemSchema = new Schema<ICategoryItem>(
   { timestamps: true },
 );
 
+// Позиції завжди читаються в межах категорії, а назва в межах категорії
+// має бути унікальною — один індекс покриває і фільтр, і захист від дублів.
+CategoryItemSchema.index({ category: 1, name: 1 }, { unique: true });
+
 export default mongoose.model<ICategoryItem>(
   "CategoryItem",
   CategoryItemSchema,
