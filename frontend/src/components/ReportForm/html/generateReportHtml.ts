@@ -1,6 +1,5 @@
 import type { IExam } from "#api/examsApi";
 import type { IHomeCare } from "#api/homeCaresApi";
-import { getAllHomeCares } from "#api/homeCaresApi";
 import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
@@ -318,14 +317,17 @@ export const generateReportHtml = async ({
   flushCategoriesFor("after_medications");
 
   if (homeCares.length > 0) {
-    const allCares = await getAllHomeCares();
+    // Групи беруться з назв категорій у самих вибраних засобах, а не з
+    // поточного довідника: інакше засіб, чию категорію після збереження
+    // звіту перейменували чи видалили, мовчки зникав би з листа. Порядок
+    // груп — порядок додавання засобів у звіт.
     const uniqueCategories = Array.from(
-      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
+      new Set(homeCares.map((h) => h.name?.trim()).filter(Boolean)),
     );
 
     const groups = uniqueCategories
       .map((category) => {
-        const items = homeCares.filter((h) => h.name === category);
+        const items = homeCares.filter((h) => h.name?.trim() === category);
         if (items.length === 0) return "";
 
         const rowHtml = (h: (typeof items)[number]): string => {
