@@ -45,7 +45,7 @@ export const getByPatientId = async (
     const report = await ReportService.getByPatientId(req.params.patientId);
 
     if (!report) {
-      return res.status(404).json({ message: "Звіт не знайдено" });
+      return next(ApiError.notFound("Звіт не знайдено"));
     }
 
     res.json(report);

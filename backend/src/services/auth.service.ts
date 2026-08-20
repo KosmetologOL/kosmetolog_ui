@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { JWT_REFRESH_SECRET, JWT_SECRET } from "../config/env";
 import User, { IUser } from "../models/UserSchema";
+import ApiError from "../utils/ApiError";
 import * as RegistrationRequestsService from "./registrationRequests.service";
 
 const generateTokens = (user: { id: string; email: string; role: string }) => {
@@ -29,7 +30,7 @@ export const register = async (
   role = "user",
 ) => {
   const existing = await User.findOne({ email });
-  if (existing) throw new Error("Користувач вже існує");
+  if (existing) throw ApiError.badRequest("Користувач вже існує");
 
   if ((role ?? "").toString().toLowerCase() === "doctor") {
     const req = await RegistrationRequestsService.createRegistrationRequest(
@@ -56,14 +57,15 @@ export const login = async (
   const user = await User.findOne({ email });
   if (!user) {
     const pending = await RegistrationRequest.findOne({ email });
-    if (pending) throw new Error("Запит на реєстрацію очікує підтвердження");
-    throw new Error("Неправильний email або пароль");
+    if (pending)
+      throw ApiError.badRequest("Запит на реєстрацію очікує підтвердження");
+    throw ApiError.badRequest("Неправильний email або пароль");
   }
 
-  if (user.active === false) throw new Error("Акаунт деактивовано");
+  if (user.active === false) throw ApiError.badRequest("Акаунт деактивовано");
 
   if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
-    throw new Error(
+    throw ApiError.badRequest(
       "Забагато невдалих спроб входу. Спробуйте пізніше.",
     );
   }
@@ -76,7 +78,7 @@ export const login = async (
       user.lockUntil = new Date(Date.now() + LOCK_DURATION_MS);
     }
     await user.save();
-    throw new Error("Неправильний email або пароль");
+    throw ApiError.badRequest("Неправильний email або пароль");
   }
 
   user.failedLoginAttempts = 0;
@@ -119,12 +121,12 @@ export const refresh = async (token: string) => {
     const { accessToken } = generateTokens(safeUser);
     return { accessToken };
   } catch (err) {
-    throw new Error("Недійсний або прострочений refresh-токен");
+    throw ApiError.forbidden("Недійсний або прострочений refresh-токен");
   }
 };
 
 export const getCurrentUser = async (userId: string) => {
   const user = await User.findById(userId).select("-password");
-  if (!user) throw new Error("Користувача не знайдено");
+  if (!user) throw ApiError.notFound("Користувача не знайдено");
   return user;
 };

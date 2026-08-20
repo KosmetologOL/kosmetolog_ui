@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import ActivityLog from "../models/ActivityLog";
 import RegistrationRequest from "../models/RegistrationRequest";
 import User from "../models/UserSchema";
+import ApiError from "../utils/ApiError";
 
 export const listRegistrationRequests = async () => {
   return RegistrationRequest.find().select("-passwordHash");
@@ -15,12 +16,12 @@ export const createRegistrationRequest = async (
 ) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    throw new Error("Користувач з таким email вже існує");
+    throw ApiError.badRequest("Користувач з таким email вже існує");
   }
 
   const existingRequest = await RegistrationRequest.findOne({ email });
   if (existingRequest) {
-    throw new Error("Запит на реєстрацію вже існує");
+    throw ApiError.badRequest("Запит на реєстрацію вже існує");
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -39,7 +40,7 @@ export const approveRegistration = async (
 ) => {
   const request = await RegistrationRequest.findById(requestId);
   if (!request) {
-    throw new Error("Запит не знайдено");
+    throw ApiError.notFound("Запит не знайдено");
   }
 
   const inserted = await User.collection.insertOne({
@@ -69,7 +70,7 @@ export const approveRegistration = async (
 export const rejectRegistration = async (requestId: string) => {
   const request = await RegistrationRequest.findByIdAndDelete(requestId);
   if (!request) {
-    throw new Error("Запит не знайдено");
+    throw ApiError.notFound("Запит не знайдено");
   }
 
   await ActivityLog.create({
