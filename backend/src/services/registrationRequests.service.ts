@@ -8,6 +8,10 @@ export const listRegistrationRequests = async () => {
   return RegistrationRequest.find().select("-passwordHash");
 };
 
+// Тексти «вже існує» розкривають наявність заявки — усвідомлений компроміс для
+// внутрішнього продукту, симетричний коментарю над register() в auth.service.
+// Нейтралізувати їх без email-розсилки означало б зробити реєстрацію німою.
+// Гілку login вирівняно (D7), бо там інформативність нічого не давала.
 export const createRegistrationRequest = async (
   email: string,
   password: string,

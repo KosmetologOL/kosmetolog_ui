@@ -42,6 +42,11 @@ const toSafeUser = (user: IUser) => ({
   role: (user.role ?? "user").toString().trim().toLowerCase(),
 });
 
+// Тексти «вже існує» розкривають наявність акаунта — усвідомлений компроміс
+// для внутрішнього продукту: без них реєстрація стає німою, а перебір стримує
+// rate-limit. На відміну від login, тут нейтральний текст зламав би UX:
+// користувач не зрозумів би, чому заявку «прийнято», а листа немає (розсилки
+// пошти в проєкті теж немає).
 export const register = async (
   email: string,
   password: string,
@@ -66,7 +71,6 @@ export const register = async (
   return user;
 };
 
-import RegistrationRequest from "../models/RegistrationRequest";
 
 export const login = async (
   email: string,
@@ -74,12 +78,10 @@ export const login = async (
   rememberMe: boolean,
 ) => {
   const user = await User.findOne({ email });
-  if (!user) {
-    const pending = await RegistrationRequest.findOne({ email });
-    if (pending)
-      throw ApiError.badRequest("Запит на реєстрацію очікує підтвердження");
-    throw ApiError.badRequest("Неправильний email або пароль");
-  }
+  // Один текст на всі гілки «входу немає»: неіснуючий email, email із
+  // pending-заявкою і правильний email із хибним паролем відповідають
+  // однаково, щоб перебором не можна було зʼясувати, хто зареєстрований.
+  if (!user) throw ApiError.badRequest("Неправильний email або пароль");
 
   if (user.active === false) throw ApiError.badRequest("Акаунт деактивовано");
 
