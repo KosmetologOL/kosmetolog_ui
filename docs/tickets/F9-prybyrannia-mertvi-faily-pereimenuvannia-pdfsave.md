@@ -6,6 +6,17 @@
 
 ## Контекст
 
+> ⚠️ **Уточнення до контексту (додано 2026-08-20 при виконанні C7).**
+> Речення нижче каже «PDF-пайплайна давно немає» — **це вже не так**. PDF-експорт
+> повернувся: `CreateReportForm.tsx` робить lazy-import
+> `#components/ReportForm/pdf/generateReportPdf` (@react-pdf/renderer), тека
+> `frontend/src/components/ReportForm/pdf/` — **живий код, видаляти її не можна**.
+> На кроки цього тікета це не впливає: `pdfSaveLocation.ts` — це хелпер
+> збереження handle папки, який використовують і HTML-, і PDF-експорт, тож
+> перейменування на `reportsSaveLocation.ts` лишається правильним (назва стає
+> точнішою, а не навпаки). Але перед видаленням будь-чого — перевір `git grep`,
+> а не покладайся на слово «мертвий» у цьому абзаці.
+
 Накопичився мертвий код і залишки старих пайплайнів. src/router/index.ts (масив routes) ніде не імпортується — і саме він єдиний тримає живим legacy-барел src/pages/index.ts (AppRouter робить lazy-імпорти напряму); src/App.css — файл на 0 байтів; src/assets/green.json (85 КБ) — залишок старої Lottie-анімації без жодної згадки в коді. Модуль збереження handle папки звітів досі зветься pdfSaveLocation.ts, хоча PDF-пайплайна давно немає, а функція verifyDirectoryPermission продубльована дослівно тричі (pdfSaveLocation, htmlSaveLocation, docxCardLink — тіла ідентичні, відрізняється лише тип параметра). У package.json висять autoprefixer і postcss, які не беруть участі в збірці (Tailwind 4 підключено через @tailwindcss/vite, конфігурації PostCSS немає), і baseline-browser-mapping — транзитивна залежність browserslist, закріплена напряму без видимої причини.
 
 ## Кроки реалізації

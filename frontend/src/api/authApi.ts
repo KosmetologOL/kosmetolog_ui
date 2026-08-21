@@ -1,6 +1,7 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL + "/auth";
+const API_URL = BASE_URL + "/auth";
 
 axios.defaults.withCredentials = true;
 
@@ -54,7 +55,9 @@ export const registerUser = async (
 };
 
 export const refreshToken = async () => {
-  const { data } = await axios.get(`${API_URL}/refresh`);
+  const { data } = await axios.get<{ accessToken: string }>(
+    `${API_URL}/refresh`,
+  );
   return data;
 };
 

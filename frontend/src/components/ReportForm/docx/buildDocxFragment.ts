@@ -1,8 +1,9 @@
-import { getAllHomeCares } from "#api/homeCaresApi";
 import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type {
   GenerateReportHtmlParams,
 } from "../html/generateReportHtml";
+import { groupHomeCaresByCategory } from "../homeCareGroups";
+import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
   type StructuredContent,
@@ -290,7 +291,9 @@ export const buildAppendParagraphsXml = async (
   }
   flushCategoriesFor("after_exams");
 
-  if (medications.length > 0) {
+  // Той самий прапорець, що й у HTML-листі: розділ або є в обох форматах,
+  // або його немає в жодному — див. ../reportSectionFlags.
+  if (INCLUDE_MEDICATIONS_SECTION && medications.length > 0) {
     parts.push(headingParagraph("Засоби"));
     medications.forEach((m) =>
       parts.push(itemParagraphs(m.name, parseStructuredContent(m.recommendation))),
@@ -301,16 +304,9 @@ export const buildAppendParagraphsXml = async (
 
   if (homeCares.length > 0) {
     parts.push(headingParagraph("Домашній догляд"));
-    const allCares = await getAllHomeCares();
-    const uniqueCategories = Array.from(
-      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
-    );
 
-    uniqueCategories.forEach((category) => {
-      const items = homeCares.filter((h) => h.name === category);
-      if (items.length === 0) return;
-
-      parts.push(paragraph(run(category as string, { bold: true })));
+    groupHomeCaresByCategory(homeCares).forEach(({ category, items }) => {
+      parts.push(paragraph(run(category, { bold: true })));
       items.forEach((h) => {
         const when = [h.morning ? "день" : "", h.evening ? "вечір" : ""]
           .filter(Boolean)

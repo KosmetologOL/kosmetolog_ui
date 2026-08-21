@@ -1,6 +1,5 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
-
-const BASE_URL = import.meta.env.VITE_API_URL;
 
 // Форма відповіді бекенда: User без пароля (див. backend/src/services/doctors.service.ts)
 export interface IDoctor {
@@ -95,7 +94,9 @@ export interface ICategoryItem {
 }
 
 export const getCategories = async (): Promise<ICategory[]> => {
-  const { data } = await axios.get(`${BASE_URL}/categories`);
+  const { data } = await axios.get<{ categories: ICategory[] }>(
+    `${BASE_URL}/categories`,
+  );
   return data.categories;
 };
 
@@ -104,13 +105,16 @@ export const createCategory = async (
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
   importantNote?: string,
-) => {
-  const { data } = await axios.post(`${BASE_URL}/categories`, {
-    name,
-    showNameInReport,
-    reportPosition,
-    importantNote,
-  });
+): Promise<ICategory> => {
+  const { data } = await axios.post<{ category: ICategory }>(
+    `${BASE_URL}/categories`,
+    {
+      name,
+      showNameInReport,
+      reportPosition,
+      importantNote,
+    },
+  );
   return data.category;
 };
 
@@ -120,25 +124,34 @@ export const updateCategory = async (
   showNameInReport?: boolean,
   reportPosition?: CategoryReportPosition,
   importantNote?: string,
-) => {
-  const { data } = await axios.patch(`${BASE_URL}/categories/${id}`, {
-    name,
-    showNameInReport,
-    reportPosition,
-    importantNote,
-  });
+): Promise<ICategory> => {
+  const { data } = await axios.patch<{ category: ICategory }>(
+    `${BASE_URL}/categories/${id}`,
+    {
+      name,
+      showNameInReport,
+      reportPosition,
+      importantNote,
+    },
+  );
   return data.category;
 };
 
-export const deleteCategory = async (id: string) => {
-  const { data } = await axios.delete(`${BASE_URL}/categories/${id}`);
+export const deleteCategory = async (
+  id: string,
+): Promise<{ message: string }> => {
+  const { data } = await axios.delete<{ message: string }>(
+    `${BASE_URL}/categories/${id}`,
+  );
   return data;
 };
 
 export const listCategoryItems = async (
   categoryId: string,
 ): Promise<ICategoryItem[]> => {
-  const { data } = await axios.get(`${BASE_URL}/categories/${categoryId}/items`);
+  const { data } = await axios.get<{ items: ICategoryItem[] }>(
+    `${BASE_URL}/categories/${categoryId}/items`,
+  );
   return data.items;
 };
 
@@ -146,8 +159,8 @@ export const createCategoryItem = async (
   categoryId: string,
   name: string,
   recommendation?: string,
-) => {
-  const { data } = await axios.post(
+): Promise<ICategoryItem> => {
+  const { data } = await axios.post<{ item: ICategoryItem }>(
     `${BASE_URL}/categories/${categoryId}/items`,
     { name, recommendation },
   );
@@ -158,16 +171,21 @@ export const updateCategoryItem = async (
   itemId: string,
   name: string,
   recommendation?: string,
-) => {
-  const { data } = await axios.patch(`${BASE_URL}/categories/items/${itemId}`, {
-    name,
-    recommendation,
-  });
+): Promise<ICategoryItem> => {
+  const { data } = await axios.patch<{ item: ICategoryItem }>(
+    `${BASE_URL}/categories/items/${itemId}`,
+    {
+      name,
+      recommendation,
+    },
+  );
   return data.item;
 };
 
-export const deleteCategoryItem = async (itemId: string) => {
-  const { data } = await axios.delete(
+export const deleteCategoryItem = async (
+  itemId: string,
+): Promise<{ message: string }> => {
+  const { data } = await axios.delete<{ message: string }>(
     `${BASE_URL}/categories/items/${itemId}`,
   );
   return data;

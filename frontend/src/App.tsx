@@ -1,5 +1,6 @@
 import ErrorBoundary from "#components/ErrorBoundary";
 import { AuthProvider } from "#context/AuthProvider";
+import { UnsavedChangesProvider } from "#context/UnsavedChangesProvider";
 import { AppRouter } from "#router/AppRouter";
 import React from "react";
 import { Toaster } from "react-hot-toast";
@@ -10,7 +11,9 @@ const App: React.FC = () => {
     <BrowserRouter>
       <ErrorBoundary>
         <AuthProvider>
-          <AppRouter />
+          <UnsavedChangesProvider>
+            <AppRouter />
+          </UnsavedChangesProvider>
           <Toaster
             position="top-right"
             toastOptions={{

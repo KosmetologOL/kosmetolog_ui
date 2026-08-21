@@ -4,10 +4,13 @@ import {
   getReportByPatientId,
   type IReport,
   type IReportEditHistoryItem,
+  type IReportProcedure,
+  type IReportProcedureStage,
   updateReport,
 } from "#api/reportsApi";
 import { getSettings } from "#api/settingsApi";
 import { useAuth } from "#hooks/useAuth";
+import { useUnsavedChanges } from "#hooks/useUnsavedChanges";
 import axios from "axios";
 import React, {
   useCallback,
@@ -15,7 +18,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import SearchCategories, {
   type IReportCategoryItem,
@@ -50,8 +53,10 @@ import {
   INTERVAL_OPTIONS,
   ZONE_OPTIONS,
 } from "#components/ReportForm/procedureStageOptions";
+import { groupProceduresByStage } from "#lib/normalizeProcedureStages";
+import { reportToExportParams } from "#lib/reportToExportParams";
 import { plural } from "#lib/plural";
-import { isDocxLinkingSupported } from "#lib/docxCardLink";
+import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
 import { isAbortError } from "#lib/abortError";
 import toast from "react-hot-toast";
@@ -88,6 +93,8 @@ const NOTE_PLACEHOLDER =
 
 const CreateReportForm: React.FC = () => {
   const { patientId } = useParams();
+  const navigate = useNavigate();
+  const { setIsDirty } = useUnsavedChanges();
   const [patient, setPatient] = useState<IPatient | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
 
@@ -167,6 +174,14 @@ const CreateReportForm: React.FC = () => {
 
   const isDirty = savedSnapshot !== null && currentSnapshot !== savedSnapshot;
 
+  // Шапка (навігація і «Вийти») питає підтвердження через цей прапорець.
+  // Скидання на розмонтуванні обовʼязкове: інакше після виходу з листа
+  // застосунок і далі вважав би, що є незбережені зміни.
+  useEffect(() => {
+    setIsDirty(isDirty);
+    return () => setIsDirty(false);
+  }, [isDirty, setIsDirty]);
+
   useEffect(() => {
     const fetchData = async () => {
       if (!patientId) return;
@@ -219,32 +234,12 @@ const CreateReportForm: React.FC = () => {
           setComments(reportData.comments ?? "");
           setReportHistory(reportData.editHistory ?? []);
 
-          interface ReportProcedure {
-            _id?: string;
-            name: string;
-            recommendation?: string;
-            comment?: string;
-            stage?: string;
-            zoneEnabled?: boolean;
-            zone?: string;
-            intervalEnabled?: boolean;
-            interval?: string;
-            visitCountEnabled?: boolean;
-            visitCount?: number;
-          }
-
-          interface ReportProcedureStage {
-            stage: string;
-            workWithEnabled?: boolean;
-            workWith?: string;
-            procedures: ReportProcedure[];
-          }
           if (
             Array.isArray(reportData.procedureStages) &&
             reportData.procedureStages.length > 0
           ) {
             const stages = (
-              reportData.procedureStages as ReportProcedureStage[]
+              reportData.procedureStages as IReportProcedureStage[]
             ).map((s) => ({
               id: crypto.randomUUID(),
               title: s.stage,
@@ -259,25 +254,15 @@ const CreateReportForm: React.FC = () => {
             Array.isArray(reportData.procedures) &&
             reportData.procedures.length > 0
           ) {
-            const grouped = (reportData.procedures as ReportProcedure[]).reduce(
-              (acc, proc) => {
-                const stageName = proc.stage || "Етап 1";
-                if (!acc[stageName]) acc[stageName] = [];
-                acc[stageName].push(proc);
-                return acc;
-              },
-              {} as Record<string, ReportProcedure[]>,
-            );
-
-            const stages = Object.entries(grouped).map(
-              ([stageName, procs]) => ({
-                id: crypto.randomUUID(),
-                title: stageName,
-                workWithEnabled: false,
-                workWith: "",
-                procedures: withOtherFlags(procs as RawStageProcedure[]),
-              }),
-            );
+            const stages = groupProceduresByStage(
+              reportData.procedures as IReportProcedure[],
+            ).map(({ title, procedures }) => ({
+              id: crypto.randomUUID(),
+              title,
+              workWithEnabled: false,
+              workWith: "",
+              procedures: withOtherFlags(procedures as RawStageProcedure[]),
+            }));
 
             setProcedureStages(stages);
           } else {
@@ -319,8 +304,10 @@ const CreateReportForm: React.FC = () => {
     ) {
       return;
     }
-    window.history.back();
-  }, [isDirty]);
+    // Не history.back(): лист могли відкрити прямим посиланням у новій
+    // вкладці, і «назад» повів би за межі застосунку.
+    navigate("/patients");
+  }, [isDirty, navigate]);
 
   const addStage = () => {
     setProcedureStages((prev) => [
@@ -519,25 +506,11 @@ const CreateReportForm: React.FC = () => {
       if (!savedReport) return;
 
       await generateReportHtml({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
+        ...reportToExportParams(
+          savedReport,
+          patient,
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
         directoryHandle,
       });
     } catch (error) {
@@ -569,25 +542,11 @@ const CreateReportForm: React.FC = () => {
       );
 
       await generateReportPdf({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
+        ...reportToExportParams(
+          savedReport,
+          patient,
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
         directoryHandle,
       });
     } catch (error) {
@@ -604,32 +563,24 @@ const CreateReportForm: React.FC = () => {
   const handleAppendToDocx = async () => {
     if (!patient?._id) return;
 
+    // Пікер — до збереження: showOpenFilePicker вимагає свіжої взаємодії
+    // користувача, а після довгого saveReport() вона вже прострочена.
+    const handle = await pickPatientDocxCard(patient.fullName);
+    if (!handle) return;
+
     setIsAppendingToDocx(true);
     try {
       const savedReport = await saveReport();
       if (!savedReport) return;
 
-      await appendReportToDocx({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
-      });
+      await appendReportToDocx(
+        reportToExportParams(
+          savedReport,
+          patient,
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
+        handle,
+      );
     } catch (error) {
       if (!isAbortError(error)) {
         toast.error(

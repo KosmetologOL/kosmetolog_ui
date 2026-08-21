@@ -1,5 +1,8 @@
 import HomeCare from "../models/HomeCareSchema";
+import { rethrowDuplicateAs } from "../utils/duplicateKey";
 import { buildNameSearchPattern } from "../utils/translitSearch";
+
+const DUPLICATE_NAME_MESSAGE = "Засіб з такою назвою вже існує";
 
 const ensureHomeCareOrder = async () => {
   const homeCares = await HomeCare.find().sort({ order: 1, _id: 1 });
@@ -33,16 +36,24 @@ export const createHomeCareService = async (data: {
   const lastItem = await HomeCare.findOne().sort({ order: -1 });
   const nextOrder = typeof lastItem?.order === "number" ? lastItem.order + 1 : 0;
 
-  return await HomeCare.create({
-    ...data,
-    order: nextOrder,
-  });
+  try {
+    return await HomeCare.create({
+      ...data,
+      order: nextOrder,
+    });
+  } catch (err) {
+    return rethrowDuplicateAs(err, DUPLICATE_NAME_MESSAGE);
+  }
 };
 export const updateHomeCareService = async (
   id: string,
   data: { name: string; morning?: boolean; evening?: boolean }
 ) => {
-  return await HomeCare.findByIdAndUpdate(id, { $set: data }, { new: true });
+  try {
+    return await HomeCare.findByIdAndUpdate(id, { $set: data }, { new: true });
+  } catch (err) {
+    return rethrowDuplicateAs(err, DUPLICATE_NAME_MESSAGE);
+  }
 };
 export const deleteHomeCareService = async (id: string) => {
   const deleted = await HomeCare.findByIdAndDelete(id);

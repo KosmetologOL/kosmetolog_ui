@@ -20,10 +20,10 @@
 
 ## Критерії приймання
 
-- [ ] Файли admin.service.ts і utils/generateTokens.ts відсутні в репозиторії; grep по backend/src не знаходить посилань на них.
-- [ ] Логін, refresh і logout працюють як раніше: cookie refreshToken ставиться при вході і чиститься при виході.
+- [x] Файли admin.service.ts і utils/generateTokens.ts відсутні в репозиторії; grep по backend/src не знаходить посилань на них.
+- [x] Логін, refresh і logout працюють як раніше: cookie refreshToken ставиться при вході і чиститься при виході.
 - [ ] У backend/src/controllers/ всі контролери відповідають шаблону *.controller.ts (без одруків); роути /specialists працюють повністю (список, пошук, create/update/delete).
-- [ ] POST і PUT /home-cares приймають name/morning/evening як раніше; зайві поля не потрапляють у валідатор.
+- [x] POST і PUT /home-cares приймають name/morning/evening як раніше; зайві поля не потрапляють у валідатор.
 
 ## Ручна перевірка
 

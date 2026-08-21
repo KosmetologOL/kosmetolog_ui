@@ -1,3 +1,4 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
 export interface ISettings {
@@ -7,7 +8,7 @@ export interface ISettings {
   proceduresNote?: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL + "/settings";
+const API_URL = BASE_URL + "/settings";
 
 export const getSettings = async (): Promise<ISettings> => {
   const response = await axios.get<ISettings>(API_URL);

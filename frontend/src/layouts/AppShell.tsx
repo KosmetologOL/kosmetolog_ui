@@ -1,5 +1,6 @@
 import logoMark from "#assets/logo-mark.png";
 import { useAuth } from "#hooks/useAuth";
+import { useUnsavedChanges } from "#hooks/useUnsavedChanges";
 import React from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
@@ -18,6 +19,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, canAccessReferencePanel, logout } = useAuth();
+  const { confirmLeave } = useUnsavedChanges();
   const role = user?.role?.toLowerCase() ?? "user";
   const { pathname } = useLocation();
   // «Пацієнти» активна і на сторінці створення листа, щоб лікар не «випадав»
@@ -27,12 +29,20 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     pathname.startsWith("/patients") ||
     pathname.startsWith("/create-report");
 
+  // Переходи по шапці — клієнтські, тож beforeunload їх не ловить.
+  // Link/NavLink виконують свою навігацію лише якщо onClick не викликав
+  // preventDefault, тому скасоване підтвердження лишає користувача на місці.
+  const guardNavigation = (e: React.MouseEvent) => {
+    if (!confirmLeave()) e.preventDefault();
+  };
+
   return (
     <div className="min-h-dvh flex flex-col bg-paper text-ink font-brand">
       <header className="bg-surface border-b border-line sticky top-0 z-20">
         <div className="max-w-[960px] mx-auto px-4 sm:px-6 h-[60px] sm:h-17 flex items-center gap-4 sm:gap-8">
           <Link
             to="/patients"
+            onClick={guardNavigation}
             aria-label="Олійник косметологія — на головну"
             className="flex flex-none items-center gap-3 rounded-lg transition-opacity duration-150 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand active:scale-[0.98]"
           >
@@ -48,13 +58,18 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <nav className="flex gap-1.5 mr-auto" aria-label="Основна навігація">
             <Link
               to="/patients"
+              onClick={guardNavigation}
               aria-current={onPatients ? "page" : undefined}
               className={navLinkClass({ isActive: onPatients })}
             >
               Пацієнти
             </Link>
             {canAccessReferencePanel && (
-              <NavLink to="/references" className={navLinkClass}>
+              <NavLink
+                to="/references"
+                onClick={guardNavigation}
+                className={navLinkClass}
+              >
                 Довідники
               </NavLink>
             )}
@@ -68,7 +83,10 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </span>
             </div>
             <button
-              onClick={() => void logout()}
+              onClick={() => {
+                if (!confirmLeave()) return;
+                void logout();
+              }}
               className="btn btn-ghost btn-sm"
             >
               Вийти

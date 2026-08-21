@@ -4,7 +4,7 @@ import FormattedText from "#components/FormattedText";
 import { IconClose, IconEdit } from "#components/icons";
 import ReferenceItemModal from "#components/ReferenceItemModal";
 import Spinner from "#components/Spinner";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface Props {
@@ -25,23 +25,27 @@ const SearchHomeCare: React.FC<Props> = ({
   >({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [loadingCares, setLoadingCares] = useState(true);
+  const [caresError, setCaresError] = useState(false);
   const [checkboxes, setCheckboxes] = useState<
     Record<string, { morning: boolean; evening: boolean }>
   >({});
 
-  useEffect(() => {
-    const fetchCares = async () => {
-      try {
-        setLoadingCares(true);
-        const data = await getAllHomeCares();
-        setAllHomeCares(data);
-      } finally {
-        setLoadingCares(false);
-      }
-    };
-
-    void fetchCares();
+  const fetchCares = useCallback(async () => {
+    try {
+      setLoadingCares(true);
+      setCaresError(false);
+      const data = await getAllHomeCares();
+      setAllHomeCares(data);
+    } catch {
+      setCaresError(true);
+    } finally {
+      setLoadingCares(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchCares();
+  }, [fetchCares]);
 
   useEffect(() => {
     let ignore = false;
@@ -121,6 +125,30 @@ const SearchHomeCare: React.FC<Props> = ({
 
   if (loadingCares) {
     return <p className="text-sm text-ink-soft">Завантаження категорій…</p>;
+  }
+
+  if (caresError) {
+    return (
+      <p className="text-sm text-ink-soft">
+        Не вдалося завантажити категорії догляду.{" "}
+        <button
+          type="button"
+          onClick={() => void fetchCares()}
+          className="btn-link"
+        >
+          Спробувати ще раз
+        </button>
+      </p>
+    );
+  }
+
+  if (allHomeCares.length === 0) {
+    return (
+      <p className="text-sm text-ink-soft">
+        Категорій догляду ще немає. Додайте їх у розділі «Довідники → Домашній
+        догляд».
+      </p>
+    );
   }
 
   return (

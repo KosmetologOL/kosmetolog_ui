@@ -24,13 +24,13 @@ Refresh-токен зараз — stateless JWT ({ id }, 7 днів, backend/src
 
 ## Критерії приймання
 
-- [ ] Login з rememberMe: true видає куку Max-Age 30 діб і refresh-JWT з exp через 30 діб; без rememberMe — 7/7 (розбіжності немає)
-- [ ] Кожен успішний GET /auth/refresh повертає новий accessToken, ставить нову refresh-куку і закриває стару сесію; стара кука через 60+ с після ротації → 403
-- [ ] POST /auth/logout видаляє сесію з БД: повторний refresh тією ж кукою → 403
-- [ ] Деактивація користувача (PATCH /doctors/:id/active { active: false }) видаляє всі його сесії — refresh дає 403 негайно, не через 7 діб
-- [ ] Обʼєкт cookieOptions у auth.service.login видалено; maxAge куки визначається в одному місці (refreshTtlMs із сервісу)
-- [ ] Два паралельні запити /auth/refresh (дві вкладки) в межах grace-періоду обидва завершуються успішно
-- [ ] Колекція refreshsessions має TTL-індекс по expiresAt — прострочені сесії зникають самі
+- [x] Login з rememberMe: true видає куку Max-Age 30 діб і refresh-JWT з exp через 30 діб; без rememberMe — 7/7 (розбіжності немає)
+- [x] Кожен успішний GET /auth/refresh повертає новий accessToken, ставить нову refresh-куку і закриває стару сесію; стара кука через 60+ с після ротації → 403
+- [x] POST /auth/logout видаляє сесію з БД: повторний refresh тією ж кукою → 403
+- [x] Деактивація користувача (PATCH /doctors/:id/active { active: false }) видаляє всі його сесії — refresh дає 403 негайно, не через 7 діб
+- [x] Обʼєкт cookieOptions у auth.service.login видалено; maxAge куки визначається в одному місці (refreshTtlMs із сервісу)
+- [x] Два паралельні запити /auth/refresh (дві вкладки) в межах grace-періоду обидва завершуються успішно
+- [x] Колекція refreshsessions має TTL-індекс по expiresAt — прострочені сесії зникають самі
 
 ## Ручна перевірка
 

@@ -1,6 +1,6 @@
 import type { IExam } from "#api/examsApi";
 import type { IHomeCare } from "#api/homeCaresApi";
-import { getAllHomeCares } from "#api/homeCaresApi";
+import { groupHomeCaresByCategory } from "../homeCareGroups";
 import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
@@ -8,10 +8,12 @@ import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type { ISpecialist } from "#api/specialistsApi";
 import type { IReportCategoryItem } from "#components/Categories/SearchCategories";
 import logoUrl from "#assets/logo.png";
-import NoahBoldTTFUrl from "#fonts/Noah-Bold.ttf";
-import NoahTTFUrl from "#fonts/Noah-Regular.ttf";
+import NoahBoldWoff2Url from "#fonts/Noah-Bold.woff2";
+import NoahWoff2Url from "#fonts/Noah-Regular.woff2";
 import toast from "react-hot-toast";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
+import { safeFileName } from "#lib/safeFileName";
+import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
   type StructuredContent,
@@ -160,17 +162,6 @@ const secWrap = (num: number, title: string, inner: string): string => `
     ${inner}
   </section>`;
 
-const fetchAsBase64 = async (url: string): Promise<string> => {
-  const res = await fetch(url);
-  const arrayBuffer = await res.arrayBuffer();
-  return btoa(
-    new Uint8Array(arrayBuffer).reduce(
-      (data, byte) => data + String.fromCharCode(byte),
-      "",
-    ),
-  );
-};
-
 const fetchAsDataUrl = async (url: string): Promise<string> => {
   const res = await fetch(url);
   const blob = await res.blob();
@@ -207,9 +198,9 @@ export const generateReportHtml = async ({
     toast.error("Не вдалося завантажити логотип для звіту.");
   }
 
-  const [noahRegularBase64, noahBoldBase64] = await Promise.all([
-    fetchAsBase64(NoahTTFUrl),
-    fetchAsBase64(NoahBoldTTFUrl),
+  const [noahRegularDataUrl, noahBoldDataUrl] = await Promise.all([
+    fetchAsDataUrl(NoahWoff2Url),
+    fetchAsDataUrl(NoahBoldWoff2Url),
   ]);
 
   const sectionBodies: { title: string; html: string }[] = [];
@@ -303,9 +294,9 @@ export const generateReportHtml = async ({
   }
   flushCategoriesFor("after_exams");
 
-  // TEMPORARILY DISABLED: client asked not to include "Засоби" in the report for now.
-  const includeMedicationsSection = false;
-  if (includeMedicationsSection && medications.length > 0) {
+  // Розділ «Засоби» вмикається одним прапорцем на всі формати експорту —
+  // див. ../reportSectionFlags.
+  if (INCLUDE_MEDICATIONS_SECTION && medications.length > 0) {
     const blocks = medications
       .map((m) => itemBlock(m.name, parseStructuredContent(m.recommendation)))
       .join("");
@@ -317,16 +308,8 @@ export const generateReportHtml = async ({
   flushCategoriesFor("after_medications");
 
   if (homeCares.length > 0) {
-    const allCares = await getAllHomeCares();
-    const uniqueCategories = Array.from(
-      new Set(allCares.map((c) => c.name?.trim()).filter(Boolean)),
-    );
-
-    const groups = uniqueCategories
-      .map((category) => {
-        const items = homeCares.filter((h) => h.name === category);
-        if (items.length === 0) return "";
-
+    const groups = groupHomeCaresByCategory(homeCares)
+      .map(({ category, items }) => {
         const rowHtml = (h: (typeof items)[number]): string => {
           const content = parseStructuredContent(h.recommendations);
           return `
@@ -350,7 +333,7 @@ export const generateReportHtml = async ({
 
         return `
           <div class="hc-category">
-            <div class="hc-cat-h">${escapeHtml(category as string)}</div>
+            <div class="hc-cat-h">${escapeHtml(category)}</div>
             <div class="hc-cat-b">
               <div class="hc-grid">
                 <div class="hc-intro">
@@ -472,13 +455,13 @@ export const generateReportHtml = async ({
   const styles = `
   @font-face {
     font-family: "Noah";
-    src: url(data:font/truetype;base64,${noahRegularBase64}) format("truetype");
+    src: url(${noahRegularDataUrl}) format("woff2");
     font-weight: 400;
     font-style: normal;
   }
   @font-face {
     font-family: "Noah";
-    src: url(data:font/truetype;base64,${noahBoldBase64}) format("truetype");
+    src: url(${noahBoldDataUrl}) format("woff2");
     font-weight: 700;
     font-style: normal;
   }
@@ -1209,9 +1192,10 @@ ${footerHtml}
 </body>
 </html>`;
 
-  const fileName = `Рекомендаційний_лист_${
-    patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
-  }.html`;
+  const fileName = `${safeFileName(
+    `Рекомендаційний_лист_${patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"}`,
+    "Рекомендаційний_лист",
+  )}.html`;
 
   const blob = new Blob([html], { type: "text/html" });
   const result = await saveHtmlBlob(fileName, blob, directoryHandle);

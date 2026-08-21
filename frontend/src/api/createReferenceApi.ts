@@ -1,3 +1,4 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
 interface ReferenceApiOptions {
@@ -9,7 +10,7 @@ export const createReferenceApi = <T, TCreate = Partial<T>>(
   options: ReferenceApiOptions = {},
 ) => {
   const { searchParamName = "query" } = options;
-  const apiUrl = `${import.meta.env.VITE_API_URL}/${resourcePath}`;
+  const apiUrl = `${BASE_URL}/${resourcePath}`;
 
   return {
     apiUrl,

@@ -14,6 +14,7 @@ import ReferenceItemModal from "#components/ReferenceItemModal";
 import Select from "#components/Select";
 import { plural } from "#lib/plural";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { safeFileName } from "#lib/safeFileName";
 import { matchesNameQuery } from "#lib/translitSearch";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -178,7 +179,10 @@ const CategoryItemsManager: React.FC<Props> = ({
   const handleExportCsv = () => {
     const header = ["Назва", "Рекомендація"];
     const rows = items.map((item) => [item.name, item.recommendation ?? ""]);
-    downloadCsv(`${categoryName}.csv`, toCsv(header, rows));
+    downloadCsv(
+      `${safeFileName(categoryName, "Категорія")}.csv`,
+      toCsv(header, rows),
+    );
   };
 
   const handleImportClick = () => fileInputRef.current?.click();

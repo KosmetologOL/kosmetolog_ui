@@ -6,12 +6,12 @@ import { appendReportToDocx } from "#components/ReportForm/docx/appendReportToDo
 import { generateReportHtml } from "#components/ReportForm/html/generateReportHtml";
 import { useAuth } from "#hooks/useAuth";
 import { getReportCreatorName } from "#lib/getReportCreatorName";
-import { normalizeProcedureStages } from "#lib/normalizeProcedureStages";
+import { reportToExportParams } from "#lib/reportToExportParams";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { isAbortError } from "#lib/abortError";
 import { useNavigate } from "react-router-dom";
-import { isDocxLinkingSupported } from "#lib/docxCardLink";
+import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 
 interface Props {
   patient: IPatient;
@@ -67,29 +67,18 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit, highlight }) => {
 
   const openChart = () => navigate(`/create-report/${patient._id}`);
 
-  const normalizeCategoryItems = (report: Awaited<ReturnType<typeof getReportByPatientId>>) =>
-    (report.categories || []).map((c) => ({ ...c, _id: c._id ?? "" }));
-
   const handleExportHtml = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExportingHtml(true);
     try {
       const report = await getReportByPatientId(patient._id!);
-      const procedureStages = normalizeProcedureStages(report);
-      await generateReportHtml({
-        patient,
-        exams: report.exams || [],
-        medications: report.medications || [],
-        procedures: report.procedures || [],
-        procedureStages: procedureStages,
-        specialists: report.specialists || [],
-        homeCares: report.homeCares || [],
-        categoryItems: normalizeCategoryItems(report),
-        additionalInfo: report.additionalInfo || "",
-        comments: report.comments || "",
-        finalNote: report.finalNote || "",
-        doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
-      });
+      await generateReportHtml(
+        reportToExportParams(
+          report,
+          patient,
+          getReportCreatorName(report.editHistory) || user?.name || "",
+        ),
+      );
     } catch (error) {
       if (isAbortError(error)) {
         toast("Скасовано — файл не збережено.", { icon: "ℹ️" });
@@ -103,24 +92,23 @@ const PatientItem: React.FC<Props> = ({ patient, onEdit, highlight }) => {
 
   const handleAppendToDocx = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Пікер — до завантаження звіту: showOpenFilePicker вимагає свіжої
+    // взаємодії користувача, а після довгого запиту вона вже прострочена.
+    const handle = await pickPatientDocxCard(patient.fullName);
+    if (!handle) return;
+
     setIsAppendingToDocx(true);
     try {
       const report = await getReportByPatientId(patient._id!);
-      const procedureStages = normalizeProcedureStages(report);
-      await appendReportToDocx({
-        patient,
-        exams: report.exams || [],
-        medications: report.medications || [],
-        procedures: report.procedures || [],
-        procedureStages: procedureStages,
-        specialists: report.specialists || [],
-        homeCares: report.homeCares || [],
-        categoryItems: normalizeCategoryItems(report),
-        additionalInfo: report.additionalInfo || "",
-        comments: report.comments || "",
-        finalNote: report.finalNote || "",
-        doctorName: getReportCreatorName(report.editHistory) || user?.name || "",
-      });
+      await appendReportToDocx(
+        reportToExportParams(
+          report,
+          patient,
+          getReportCreatorName(report.editHistory) || user?.name || "",
+        ),
+        handle,
+      );
     } catch {
       toast.error("Не вдалося додати в картку — можливо, звіт ще не створено.");
     } finally {

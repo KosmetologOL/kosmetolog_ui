@@ -1,49 +1,54 @@
-import type { IProcedure } from "#api/proceduresApi";
+import type {
+  IReport,
+  IReportProcedure,
+  IReportProcedureStage,
+} from "#api/reportsApi";
 
-interface ReportProcedure {
-  _id?: string;
-  name: string;
-  recommendation?: string;
-  comment?: string;
-  stage?: string;
-}
+/**
+ * Групування процедур старого (доетапного) формату за назвою етапу.
+ * Єдине джерело цієї логіки — її використовують і форма листа, і
+ * нормалізація звіту для експорту.
+ */
+export const groupProceduresByStage = (
+  procedures: IReportProcedure[],
+): { title: string; procedures: IReportProcedure[] }[] => {
+  const grouped = procedures.reduce(
+    (acc, proc) => {
+      const stageName = proc.stage || "Етап 1";
+      if (!acc[stageName]) acc[stageName] = [];
+      acc[stageName].push(proc);
+      return acc;
+    },
+    {} as Record<string, IReportProcedure[]>
+  );
 
-interface ReportProcedureStage {
-  stage: string;
-  procedures: ReportProcedure[];
-}
+  return Object.entries(grouped).map(([stageName, stageProcedures]) => ({
+    title: stageName,
+    procedures: stageProcedures,
+  }));
+};
 
-interface Report {
-  procedures?: ReportProcedure[];
-  procedureStages?: ReportProcedureStage[];
-}
-export const normalizeProcedureStages = (report: Report) => {
+export const normalizeProcedureStages = (
+  report: Pick<IReport, "procedures" | "procedureStages">
+) => {
   if (
     Array.isArray(report.procedureStages) &&
     report.procedureStages.length > 0
   ) {
-    return report.procedureStages.map((stage: ReportProcedureStage) => ({
+    return report.procedureStages.map((stage: IReportProcedureStage) => ({
       title: stage.stage,
-      procedures: (stage.procedures ?? []) as (IProcedure & {
-        comment?: string;
-      })[],
+      workWithEnabled: stage.workWithEnabled ?? false,
+      workWith: stage.workWith ?? "",
+      procedures: stage.procedures ?? [],
     }));
   }
 
   if (Array.isArray(report.procedures) && report.procedures.length > 0) {
-    const grouped = (report.procedures as ReportProcedure[]).reduce(
-      (acc, proc) => {
-        const stageName = proc.stage || "Етап 1";
-        if (!acc[stageName]) acc[stageName] = [];
-        acc[stageName].push(proc);
-        return acc;
-      },
-      {} as Record<string, ReportProcedure[]>
-    );
-
-    return Object.entries(grouped).map(([stageName, procedures]) => ({
-      title: stageName,
-      procedures: procedures as (IProcedure & { comment?: string })[],
+    return groupProceduresByStage(report.procedures).map((stage) => ({
+      title: stage.title,
+      workWithEnabled: false,
+      workWith: "",
+      procedures: stage.procedures,
     }));
   }
 

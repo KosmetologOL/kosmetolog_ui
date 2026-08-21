@@ -19,14 +19,12 @@ import {
 } from "../html/structuredContent";
 import { pdfText } from "./pdfText";
 import RichText, { NumberedRow } from "./RichText";
+import { groupHomeCaresByCategory } from "../homeCareGroups";
 import { FONT, FOOTER_RESERVE, styles } from "./reportPdfStyles";
 
 export interface ReportPdfProps {
   params: Omit<GenerateReportHtmlParams, "directoryHandle">;
   categoriesMeta: ICategory[];
-  /** Назви категорій домашнього догляду в порядку довідника — саме він
-   *  задає порядок груп у звіті. */
-  homeCareNames: string[];
   logoSrc: string;
 }
 
@@ -324,7 +322,6 @@ const ProcedureStages: React.FC<{ stages: IProcedureStage[] }> = ({
 const ReportPdfDocument: React.FC<ReportPdfProps> = ({
   params,
   categoriesMeta,
-  homeCareNames,
   logoSrc,
 }) => {
   const {
@@ -470,10 +467,7 @@ const ReportPdfDocument: React.FC<ReportPdfProps> = ({
       title: "Домашній догляд",
       body: (
         <>
-          {homeCareNames.map((category) => {
-            const items = homeCares.filter((h) => h.name === category);
-            if (items.length === 0) return null;
-
+          {groupHomeCaresByCategory(homeCares).map(({ category, items }) => {
             return (
               <View key={category} style={styles.hcCategory}>
                 <Text style={styles.hcCategoryHead}>{pdfText(category)}</Text>

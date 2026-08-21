@@ -1,3 +1,4 @@
+import { API_URL as BASE_URL } from "#lib/config";
 import axios from "axios";
 
 export interface IReportEditHistoryItem {
@@ -65,7 +66,7 @@ export interface IReport {
   editHistory?: IReportEditHistoryItem[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL + "/reports";
+const API_URL = BASE_URL + "/reports";
 
 export const getReportById = async (id: string): Promise<IReport> => {
   const response = await axios.get<IReport>(`${API_URL}/${id}`);

@@ -1,10 +1,10 @@
 // Точка входу PDF-експорту. HTML-експорт лишається окремо й недоторканим —
 // це другий, паралельний вихід із тих самих даних.
 
-import { getAllHomeCares } from "#api/homeCaresApi";
 import { getCategories } from "#api/referenceApi";
 import logoUrl from "#assets/logo.png";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
+import { safeFileName } from "#lib/safeFileName";
 import { pdf } from "@react-pdf/renderer";
 import { toast } from "react-hot-toast";
 import type { GenerateReportHtmlParams } from "../html/generateReportHtml";
@@ -55,30 +55,26 @@ export const generateReportPdf = async ({
   registerReportFonts();
 
   // Рендер PDF синхронний, тож усе, що дочитується з бекенда, треба мати
-  // на руках заздалегідь: метадані категорій (де саме в звіті їх місце) і
-  // повний довідник домашнього догляду (він задає порядок груп).
-  const [categoriesMeta, allHomeCares, logoSrc] = await Promise.all([
+  // на руках заздалегідь: метадані категорій (де саме в звіті їх місце).
+  // Довідник домашнього догляду більше не читається — групи будуються з
+  // самого звіту через спільний `groupHomeCaresByCategory` (issue #120).
+  const [categoriesMeta, logoSrc] = await Promise.all([
     params.categoryItems?.length ? getCategories() : Promise.resolve([]),
-    params.homeCares.length ? getAllHomeCares() : Promise.resolve([]),
     loadBlackLogo(logoUrl),
   ]);
-
-  const homeCareNames = Array.from(
-    new Set(allHomeCares.map((care) => care.name?.trim()).filter(Boolean)),
-  ) as string[];
 
   const blob = await pdf(
     <ReportPdfDocument
       params={params}
       categoriesMeta={categoriesMeta}
-      homeCareNames={homeCareNames}
       logoSrc={logoSrc}
     />,
   ).toBlob();
 
-  const fileName = `Рекомендаційний_лист_${
-    params.patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
-  }.pdf`;
+  const fileName = `${safeFileName(
+    `Рекомендаційний_лист_${params.patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"}`,
+    "Рекомендаційний_лист",
+  )}.pdf`;
 
   const result = await saveHtmlBlob(fileName, blob, directoryHandle);
 

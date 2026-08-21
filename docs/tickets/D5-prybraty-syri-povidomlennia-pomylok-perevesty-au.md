@@ -1,8 +1,22 @@
 # D5 · Прибрати сирі повідомлення помилок: перевести auth/doctors/categories/registration-requests/home-cares на ApiError
 
+> ## ⛔️ ЗАКРИТО ЯК ДУБЛІКАТ E2 — НЕ ВИКОНУВАТИ
+>
+> Порівняння списків «## Файли» показало **10 із 10 однакових файлів** з
+> [E2](E2-pryvesty-auth-categories-doctors-homecare-regist.md), а кроки реалізації описують той самий рефактор.
+> **E2 — надмножина**: додатково покриває `reports.controller.ts:62`, `auth.controller.ts:72`
+> і `message: "Approved"` → «Підтверджено».
+>
+> Унікальна частина D5 — пре-чек існуючого email перед `User.collection.insertOne`
+> у `approveRegistration` — виконується окремим тікетом
+> [E3](E3-approveregistration-pereviriaty-isnuiuchyi-email.md).
+>
+> Issue [#54](https://github.com/KosmetologOL/kosmetolog_ui/issues/54) закрито 2026-08-17;
+> залежність D7 перевішено на E2. Текст нижче лишено як історію.
+
 | Пріоритет | Оцінка | Епік | Залежить від |
 |---|---|---|---|
-| **P1** | S (до пів дня) | Автентифікація і безпека | D4 |
+| **P1** ~~(дублікат E2)~~ | S (до пів дня) | Автентифікація і безпека | D4 |
 
 ## Контекст
 

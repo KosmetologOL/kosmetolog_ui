@@ -7,6 +7,7 @@ import { useDebouncedValue } from "#hooks/useDebouncedValue";
 import { plural } from "#lib/plural";
 import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { safeFileName } from "#lib/safeFileName";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -76,6 +77,7 @@ const CRUDManager = <T,>({
   const api = useMemo(() => createReferenceApi<T, unknown>(apiPath), [apiPath]);
   const [list, setList] = useState<CRUDItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 300);
   const [visibleCount, setVisibleCount] = useState(VISIBLE_STEP);
@@ -105,6 +107,7 @@ const CRUDManager = <T,>({
 
   const fetchList = useCallback(async () => {
     try {
+      setHasError(false);
       // Деякі ресурси повертають масив напряму, інші — обгортку
       // виду { items: [...] }; шукаємо перший масив у відповіді.
       const data = (await api.getAll()) as unknown;
@@ -121,10 +124,19 @@ const CRUDManager = <T,>({
 
       const items = Array.isArray(raw) ? raw : [];
       setList(mapItem ? (items as T[]).map(mapItem) : (items as CRUDItem[]));
+    } catch {
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
   }, [api, mapItem]);
+
+  // Ретрай показує скелетони, щоб між скиданням hasError і відповіддю сервера
+  // не блимнув фальшивий порожній стан «Записів ще немає».
+  const handleRetry = useCallback(() => {
+    setIsLoading(true);
+    void fetchList();
+  }, [fetchList]);
 
   useEffect(() => {
     setVisibleCount(VISIBLE_STEP);
@@ -198,7 +210,7 @@ const CRUDManager = <T,>({
         ? [item.name, item.recommendation ?? ""]
         : [item.name],
     );
-    downloadCsv(`${title}.csv`, toCsv(header, rows));
+    downloadCsv(`${safeFileName(title)}.csv`, toCsv(header, rows));
   };
 
   const handleImportClick = () => fileInputRef.current?.click();
@@ -424,6 +436,20 @@ const CRUDManager = <T,>({
               )}
             </div>
           ))}
+        </div>
+      ) : hasError ? (
+        <div className="w-full py-8 text-center">
+          <p className="font-bold mb-1.5">Не вдалося завантажити записи</p>
+          <p className="text-ink-soft mb-4">
+            Перевірте зʼєднання з інтернетом і спробуйте ще раз.
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="btn btn-tint btn-sm"
+          >
+            Спробувати ще раз
+          </button>
         </div>
       ) : filteredList.length === 0 ? (
         normalizedSearch ? (

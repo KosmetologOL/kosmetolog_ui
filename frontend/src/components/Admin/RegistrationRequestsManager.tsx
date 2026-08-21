@@ -6,12 +6,22 @@ import {
 } from "#api/referenceApi";
 import ConfirmModal from "#components/ConfirmModal";
 import Spinner from "#components/Spinner";
+import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
+// Бекенд відповідає на колізії конкретним текстом («Користувач з таким email
+// вже існує»). Загальне «Спробуйте ще раз» радило б адміну зробити те, що
+// гарантовано не спрацює, тож повідомлення сервера має пріоритет.
+const serverMessageOr = (err: unknown, fallback: string): string => {
+  const message = axios.isAxiosError(err) && err.response?.data?.message;
+  return typeof message === "string" && message.trim() ? message : fallback;
+};
 
 const RegistrationRequestsManager: React.FC = () => {
   const [requests, setRequests] = useState<IRegistrationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingRequest, setRejectingRequest] =
     useState<IRegistrationRequest | null>(null);
@@ -19,6 +29,7 @@ const RegistrationRequestsManager: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
+      setHasError(false);
       const r = await getRegistrationRequests();
       const next = r || [];
       setRequests(next);
@@ -26,10 +37,21 @@ const RegistrationRequestsManager: React.FC = () => {
       window.dispatchEvent(
         new CustomEvent("registrationRequestsUpdated", { detail: next.length }),
       );
+    } catch {
+      // Подію не диспатчимо: бейдж має лишитися з попереднім значенням,
+      // а не показати фальшивий нуль.
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Ретрай показує скелетони, щоб між скиданням hasError і відповіддю сервера
+  // не блимнув фальшивий порожній стан «Немає нових запитів на реєстрацію».
+  const handleRetry = useCallback(() => {
+    setIsLoading(true);
+    void load();
+  }, [load]);
 
   useEffect(() => {
     void load();
@@ -41,8 +63,14 @@ const RegistrationRequestsManager: React.FC = () => {
       await approveRegistration(id);
       toast.success("Лікаря підтверджено.");
       await load();
-    } catch {
-      toast.error("Не вдалося підтвердити запит. Спробуйте ще раз.");
+    } catch (err) {
+      toast.error(
+        serverMessageOr(err, "Не вдалося підтвердити запит. Спробуйте ще раз."),
+      );
+      // Сервер міг видалити заявку разом із помилкою (колізія email), тож
+      // перечитуємо список і в невдалій гілці — інакше рядок висить до
+      // ручного перезавантаження, а повторна спроба дає «Запит не знайдено».
+      await load();
     } finally {
       setApprovingId(null);
     }
@@ -56,8 +84,14 @@ const RegistrationRequestsManager: React.FC = () => {
       setRejectingRequest(null);
       toast.success("Запит відхилено.");
       await load();
-    } catch {
-      toast.error("Не вдалося відхилити запит. Спробуйте ще раз.");
+    } catch (err) {
+      toast.error(
+        serverMessageOr(err, "Не вдалося відхилити запит. Спробуйте ще раз."),
+      );
+      // Модалку закриваємо разом із перечитуванням: якщо заявки на сервері
+      // вже немає, вона лишилась би відкритою на неіснуючому запиті.
+      setRejectingRequest(null);
+      await load();
     } finally {
       setIsRejecting(false);
     }
@@ -87,6 +121,20 @@ const RegistrationRequestsManager: React.FC = () => {
               </div>
             </div>
           ))}
+        </div>
+      ) : hasError ? (
+        <div className="w-full py-8 text-center">
+          <p className="font-bold mb-1.5">Не вдалося завантажити запити</p>
+          <p className="text-ink-soft mb-4">
+            Перевірте зʼєднання з інтернетом і спробуйте ще раз.
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="btn btn-tint btn-sm"
+          >
+            Спробувати ще раз
+          </button>
         </div>
       ) : requests.length === 0 ? (
         <p className="w-full py-8 text-center text-ink-soft">
