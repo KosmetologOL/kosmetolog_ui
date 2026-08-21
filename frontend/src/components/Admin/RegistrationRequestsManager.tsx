@@ -6,8 +6,17 @@ import {
 } from "#api/referenceApi";
 import ConfirmModal from "#components/ConfirmModal";
 import Spinner from "#components/Spinner";
+import axios from "axios";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+
+// Бекенд відповідає на колізії конкретним текстом («Користувач з таким email
+// вже існує»). Загальне «Спробуйте ще раз» радило б адміну зробити те, що
+// гарантовано не спрацює, тож повідомлення сервера має пріоритет.
+const serverMessageOr = (err: unknown, fallback: string): string => {
+  const message = axios.isAxiosError(err) && err.response?.data?.message;
+  return typeof message === "string" && message.trim() ? message : fallback;
+};
 
 const RegistrationRequestsManager: React.FC = () => {
   const [requests, setRequests] = useState<IRegistrationRequest[]>([]);
@@ -54,8 +63,14 @@ const RegistrationRequestsManager: React.FC = () => {
       await approveRegistration(id);
       toast.success("Лікаря підтверджено.");
       await load();
-    } catch {
-      toast.error("Не вдалося підтвердити запит. Спробуйте ще раз.");
+    } catch (err) {
+      toast.error(
+        serverMessageOr(err, "Не вдалося підтвердити запит. Спробуйте ще раз."),
+      );
+      // Сервер міг видалити заявку разом із помилкою (колізія email), тож
+      // перечитуємо список і в невдалій гілці — інакше рядок висить до
+      // ручного перезавантаження, а повторна спроба дає «Запит не знайдено».
+      await load();
     } finally {
       setApprovingId(null);
     }
@@ -69,8 +84,14 @@ const RegistrationRequestsManager: React.FC = () => {
       setRejectingRequest(null);
       toast.success("Запит відхилено.");
       await load();
-    } catch {
-      toast.error("Не вдалося відхилити запит. Спробуйте ще раз.");
+    } catch (err) {
+      toast.error(
+        serverMessageOr(err, "Не вдалося відхилити запит. Спробуйте ще раз."),
+      );
+      // Модалку закриваємо разом із перечитуванням: якщо заявки на сервері
+      // вже немає, вона лишилась би відкритою на неіснуючому запиті.
+      setRejectingRequest(null);
+      await load();
     } finally {
       setIsRejecting(false);
     }
