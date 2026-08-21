@@ -11,6 +11,7 @@ import NoahBoldWoff2Url from "#fonts/Noah-Bold.woff2";
 import NoahWoff2Url from "#fonts/Noah-Regular.woff2";
 import toast from "react-hot-toast";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
+import { safeFileName } from "#lib/safeFileName";
 import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
@@ -1201,9 +1202,10 @@ ${footerHtml}
 </body>
 </html>`;
 
-  const fileName = `Рекомендаційний_лист_${
-    patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
-  }.html`;
+  const fileName = `${safeFileName(
+    `Рекомендаційний_лист_${patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"}`,
+    "Рекомендаційний_лист",
+  )}.html`;
 
   const blob = new Blob([html], { type: "text/html" });
   const result = await saveHtmlBlob(fileName, blob, directoryHandle);

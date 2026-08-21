@@ -7,6 +7,7 @@ import { useDebouncedValue } from "#hooks/useDebouncedValue";
 import { plural } from "#lib/plural";
 import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { safeFileName } from "#lib/safeFileName";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -209,7 +210,7 @@ const CRUDManager = <T,>({
         ? [item.name, item.recommendation ?? ""]
         : [item.name],
     );
-    downloadCsv(`${title}.csv`, toCsv(header, rows));
+    downloadCsv(`${safeFileName(title)}.csv`, toCsv(header, rows));
   };
 
   const handleImportClick = () => fileInputRef.current?.click();

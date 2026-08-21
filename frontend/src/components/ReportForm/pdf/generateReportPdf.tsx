@@ -5,6 +5,7 @@ import { getAllHomeCares } from "#api/homeCaresApi";
 import { getCategories } from "#api/referenceApi";
 import logoUrl from "#assets/logo.png";
 import { saveHtmlBlob } from "#lib/htmlSaveLocation";
+import { safeFileName } from "#lib/safeFileName";
 import { pdf } from "@react-pdf/renderer";
 import { toast } from "react-hot-toast";
 import type { GenerateReportHtmlParams } from "../html/generateReportHtml";
@@ -76,9 +77,10 @@ export const generateReportPdf = async ({
     />,
   ).toBlob();
 
-  const fileName = `Рекомендаційний_лист_${
-    params.patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"
-  }.pdf`;
+  const fileName = `${safeFileName(
+    `Рекомендаційний_лист_${params.patient.fullName?.replace(/\s+/g, "_") ?? "Пацієнт"}`,
+    "Рекомендаційний_лист",
+  )}.pdf`;
 
   const result = await saveHtmlBlob(fileName, blob, directoryHandle);
 
