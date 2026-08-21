@@ -12,6 +12,7 @@ import ReferenceItemModal from "#components/ReferenceItemModal";
 import { plural } from "#lib/plural";
 import { matchesNameQuery } from "#lib/translitSearch";
 import { downloadCsv, parseCsv, toCsv } from "#lib/csv";
+import { safeFileName } from "#lib/safeFileName";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -199,7 +200,10 @@ export default function HomeCaresManager({
       item.evening ? "Так" : "Ні",
     ]);
 
-    downloadCsv("Домашній догляд.csv", toCsv(header, rows));
+    downloadCsv(
+      `${safeFileName("Домашній догляд")}.csv`,
+      toCsv(header, rows),
+    );
   };
 
   const handleImportClick = () => {
