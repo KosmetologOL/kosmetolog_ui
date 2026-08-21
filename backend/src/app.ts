@@ -4,7 +4,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import mongoose from "mongoose";
-import { CLIENT_URL, MONGODB_URI } from "./config/env";
+import { CLIENT_URL } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFound } from "./middlewares/notFound";
 import routes from "./routes";
@@ -41,15 +41,17 @@ app.use("/reference-sync", express.json({ limit: "20mb" }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Публічний health-check для зовнішнього моніторингу (пінгер, оркестратор):
+// без авторизації, 503 поки немає живого зʼєднання з MongoDB.
+app.get("/health", (_req, res) => {
+  const ok = mongoose.connection.readyState === 1;
+  res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "degraded" });
+});
+
 app.use("/", routes);
 
 app.use(notFound);
 
 app.use(errorHandler);
-
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((error) => console.error("MongoDB error:", error));
 
 export default app;
