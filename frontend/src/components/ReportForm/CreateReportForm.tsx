@@ -54,6 +54,7 @@ import {
   ZONE_OPTIONS,
 } from "#components/ReportForm/procedureStageOptions";
 import { groupProceduresByStage } from "#lib/normalizeProcedureStages";
+import { reportToExportParams } from "#lib/reportToExportParams";
 import { plural } from "#lib/plural";
 import { isDocxLinkingSupported, pickPatientDocxCard } from "#lib/docxCardLink";
 import { ensureReportsDirectoryHandle } from "#lib/pdfSaveLocation";
@@ -505,25 +506,11 @@ const CreateReportForm: React.FC = () => {
       if (!savedReport) return;
 
       await generateReportHtml({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
+        ...reportToExportParams(
+          savedReport,
+          patient,
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
         directoryHandle,
       });
     } catch (error) {
@@ -555,25 +542,11 @@ const CreateReportForm: React.FC = () => {
       );
 
       await generateReportPdf({
-        patient,
-        exams: selectedExams,
-        medications: selectedMedications,
-        procedures: procedureStages.flatMap((s) => s.procedures),
-        procedureStages,
-        specialists: selectedSpecialists,
-        homeCares: selectedHomeCares,
-        categoryItems: selectedCategoryItems,
-        comments,
-        additionalInfo,
-        finalNote,
-        medicationsNote,
-        homeCareNote,
-        examsNote,
-        proceduresNote,
-        doctorName:
-          getReportCreatorName(savedReport.editHistory ?? []) ||
-          user?.name ||
-          "",
+        ...reportToExportParams(
+          savedReport,
+          patient,
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
         directoryHandle,
       });
     } catch (error) {
@@ -601,27 +574,11 @@ const CreateReportForm: React.FC = () => {
       if (!savedReport) return;
 
       await appendReportToDocx(
-        {
+        reportToExportParams(
+          savedReport,
           patient,
-          exams: selectedExams,
-          medications: selectedMedications,
-          procedures: procedureStages.flatMap((s) => s.procedures),
-          procedureStages,
-          specialists: selectedSpecialists,
-          homeCares: selectedHomeCares,
-          categoryItems: selectedCategoryItems,
-          comments,
-          additionalInfo,
-          finalNote,
-          medicationsNote,
-          homeCareNote,
-          examsNote,
-          proceduresNote,
-          doctorName:
-            getReportCreatorName(savedReport.editHistory ?? []) ||
-            user?.name ||
-            "",
-        },
+          getReportCreatorName(savedReport.editHistory) || user?.name || "",
+        ),
         handle,
       );
     } catch (error) {
