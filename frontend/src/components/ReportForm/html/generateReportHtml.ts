@@ -1,5 +1,6 @@
 import type { IExam } from "#api/examsApi";
 import type { IHomeCare } from "#api/homeCaresApi";
+import { groupHomeCaresByCategory } from "../homeCareGroups";
 import type { IMedication } from "#api/medicationsApi";
 import type { IPatient } from "#api/patientsApi";
 import type { IProcedure } from "#api/proceduresApi";
@@ -307,19 +308,8 @@ export const generateReportHtml = async ({
   flushCategoriesFor("after_medications");
 
   if (homeCares.length > 0) {
-    // Групи беруться з назв категорій у самих вибраних засобах, а не з
-    // поточного довідника: інакше засіб, чию категорію після збереження
-    // звіту перейменували чи видалили, мовчки зникав би з листа. Порядок
-    // груп — порядок додавання засобів у звіт.
-    const uniqueCategories = Array.from(
-      new Set(homeCares.map((h) => h.name?.trim()).filter(Boolean)),
-    );
-
-    const groups = uniqueCategories
-      .map((category) => {
-        const items = homeCares.filter((h) => h.name?.trim() === category);
-        if (items.length === 0) return "";
-
+    const groups = groupHomeCaresByCategory(homeCares)
+      .map(({ category, items }) => {
         const rowHtml = (h: (typeof items)[number]): string => {
           const content = parseStructuredContent(h.recommendations);
           return `
@@ -343,7 +333,7 @@ export const generateReportHtml = async ({
 
         return `
           <div class="hc-category">
-            <div class="hc-cat-h">${escapeHtml(category as string)}</div>
+            <div class="hc-cat-h">${escapeHtml(category)}</div>
             <div class="hc-cat-b">
               <div class="hc-grid">
                 <div class="hc-intro">

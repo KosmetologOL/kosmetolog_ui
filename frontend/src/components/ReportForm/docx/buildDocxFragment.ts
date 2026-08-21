@@ -2,6 +2,7 @@ import { getCategories, type CategoryReportPosition } from "#api/referenceApi";
 import type {
   GenerateReportHtmlParams,
 } from "../html/generateReportHtml";
+import { groupHomeCaresByCategory } from "../homeCareGroups";
 import { INCLUDE_MEDICATIONS_SECTION } from "../reportSectionFlags";
 import {
   parseStructuredContent,
@@ -303,18 +304,9 @@ export const buildAppendParagraphsXml = async (
 
   if (homeCares.length > 0) {
     parts.push(headingParagraph("Домашній догляд"));
-    // Групування — за назвами категорій із самих вибраних засобів (як і в
-    // HTML-версії): довідник міг змінитися після збереження звіту, і засоби
-    // перейменованої чи видаленої категорії випадали б із картки.
-    const uniqueCategories = Array.from(
-      new Set(homeCares.map((h) => h.name?.trim()).filter(Boolean)),
-    );
 
-    uniqueCategories.forEach((category) => {
-      const items = homeCares.filter((h) => h.name?.trim() === category);
-      if (items.length === 0) return;
-
-      parts.push(paragraph(run(category as string, { bold: true })));
+    groupHomeCaresByCategory(homeCares).forEach(({ category, items }) => {
+      parts.push(paragraph(run(category, { bold: true })));
       items.forEach((h) => {
         const when = [h.morning ? "день" : "", h.evening ? "вечір" : ""]
           .filter(Boolean)

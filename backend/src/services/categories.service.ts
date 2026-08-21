@@ -2,6 +2,12 @@ import ActivityLog from "../models/ActivityLog";
 import Category, { CategoryReportPosition } from "../models/Category";
 import CategoryItem from "../models/CategoryItem";
 import ApiError from "../utils/ApiError";
+import { rethrowDuplicateAs } from "../utils/duplicateKey";
+
+// Компаундний unique-індекс { category, name }: дублем є збіг у межах однієї
+// категорії, тож текст говорить саме про категорію, а не про довідник узагалі.
+const DUPLICATE_ITEM_MESSAGE = "Позиція з такою назвою вже існує в цій категорії";
+const DUPLICATE_CATEGORY_MESSAGE = "Категорія вже існує";
 
 export const listCategories = async () => {
   return Category.find();
@@ -15,7 +21,7 @@ export const createCategory = async (
 ) => {
   const existing = await Category.findOne({ name });
   if (existing) {
-    throw ApiError.badRequest("Категорія вже існує");
+    throw ApiError.badRequest(DUPLICATE_CATEGORY_MESSAGE);
   }
 
   const category = new Category({
@@ -42,7 +48,9 @@ export const updateCategory = async (
   if (reportPosition) update.reportPosition = reportPosition;
   if (importantNote !== undefined) update.importantNote = importantNote;
 
-  const category = await Category.findByIdAndUpdate(id, update, { new: true });
+  const category = await Category.findByIdAndUpdate(id, update, {
+    new: true,
+  }).catch((err) => rethrowDuplicateAs(err, DUPLICATE_CATEGORY_MESSAGE));
   if (!category) {
     throw ApiError.notFound("Категорію не знайдено");
   }
@@ -75,7 +83,9 @@ export const createCategoryItem = async (
   recommendation?: string,
 ) => {
   const item = new CategoryItem({ category: categoryId, name, recommendation });
-  await item.save();
+  await item
+    .save()
+    .catch((err) => rethrowDuplicateAs(err, DUPLICATE_ITEM_MESSAGE));
   await ActivityLog.create({
     action: "create-category-item",
     meta: { categoryId, name },
@@ -93,7 +103,7 @@ export const updateCategoryItem = async (
     itemId,
     { name, recommendation },
     { new: true },
-  );
+  ).catch((err) => rethrowDuplicateAs(err, DUPLICATE_ITEM_MESSAGE));
 
   if (!item) {
     throw ApiError.notFound("Елемент не знайдено");
